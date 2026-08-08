@@ -90,11 +90,17 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 
 - [x] B-1 Capacitorプロジェクト化(com.tsukune.travelnote、共有スキーム、
       ITSAppUsesNonExemptEncryption=false)
-- [ ] B-2 法務文書を実内容で記述(`public/legal/privacy.html` /
-      `terms.html` は骨組みのみ。**広告SDK確定後に取得情報を確定させる**)、
-      設定とオンボーディングからリンク
-- [ ] B-3 GitHub Pages に紹介ページ+法務ページ(App Store Connectが
-      到達可能なプライバシーポリシーURLを要求する)
+- [x] B-2 法務文書を実内容で記述。運営者 Shintaro Fujisawa /
+      連絡先 tsukune.devlab@gmail.com。**アプリの実装そのものを書いた**ので、
+      実装を変えたら必ずここへ戻る。設定・購入画面・ようこそ画面からリンク済み
+- [x] B-3 GitHub Pages の中身(紹介ページ + 法務2枚 + 共通CSS)。
+      CI と同じ手順で組んでブラウザで確認済み(リンク切れ・404 なし)
+- [ ] B-3b **GitHub リポジトリ `tsukune131/TravelNote` を Public で作成して push**
+      ── ここだけユーザー作業。push すると Actions の
+      「Deploy to GitHub Pages」が走り、
+      https://tsukune131.github.io/TravelNote/ が公開される。
+      アプリ内のリンク先もこの URL(`src/lib/openExternal.ts` の `LEGAL_BASE`)。
+      **App Store Connect が到達できるプライバシーポリシーURLとして必要**
 - [x] B-4 **非同期共有(サーバーなし)**(→ docs/ux-design.md §6)
   - [x] Snapshot 形式(書き出し・読み込み)と baseline
   - [x] 3方向マージ(ぶつかった Day だけ「案」に分ける)— 実行して検証済み
@@ -274,5 +280,14 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   そこに口が無いと何もできなかった(往復を試して詰まった)。
   ペイウォールは「自分の旅をはじめて送るとき」だけ出る。
   **課金の配線は D-0** なので、いまは「このまま送る」で抜けられる。
-  **残るのは B-2(法務文書の中身)と B-3(GitHub Pages)。**
-  どちらも**あなたから内容をもらう必要がある**。
+- 2026-08-09 **B-2 / B-3 完了。フェーズB の作業はすべて終わり。**
+  運営者 Shintaro Fujisawa / 連絡先 tsukune.devlab@gmail.com で
+  プライバシーポリシーと利用規約を実内容で記述。
+  **アプリの実装そのものを書いた**(サーバーなし・アカウントなし・広告なし・
+  解析なし・決済は Apple・共有はユーザー自身がファイルを送る)ので、
+  **実装を変えたら必ずここへ戻る**。
+  利用規約には 3.1.2 が要求するサブスク条項(期間・価格・自動更新・解約方法・
+  解約後も既存の旅は編集でき共有済みの旅は送り続けられること)を明記。
+  紹介ページも作り、CI と同じ手順で組んでブラウザで確認(リンク切れ・404 なし)。
+  **→ 残るは B-3b(GitHub に Public リポジトリを作って push)のみ。ユーザー作業。**
+  **→ そのあとチェックポイントB(Apple Developer 年99ドルの判断)。**

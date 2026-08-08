@@ -31,6 +31,13 @@ export function openDirections(
 }
 
 /**
+ * 法務ページの置き場。GitHub Pages で公開する(ROADMAP B-3)。
+ * **App Store Connect も到達できる URL でなければならない**ので、
+ * アプリ内に同梱せず、必ずこの公開ページを指す。
+ */
+export const LEGAL_BASE = 'https://tsukune131.github.io/TravelNote/legal';
+
+/**
  * リンクは**アプリ内ブラウザ**で開く。
  * Safari に飛ばしてアプリを離れさせない(docs/ux-design.md §5.2)。
  */

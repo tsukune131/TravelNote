@@ -1,0 +1,110 @@
+/*
+ * 法務ページの体裁。アプリと同じ「手作りのしおり」の色に揃える。
+ * この2枚はアプリからも App Store Connect からも参照されるので、
+ * 読みやすさだけを優先して飾らない。
+ */
+:root {
+  --paper: #fff7f5;
+  --surface: #ffffff;
+  --ink: #3d2a33;
+  --ink-2: #7d6470;
+  --ink-3: #ab929e;
+  --rule: #f6dcdd;
+  --primary: #e35d8b;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1419;
+    --surface: #291d24;
+    --ink: #f7e9ee;
+    --ink-2: #c8aab6;
+    --ink-3: #9a7f8c;
+    --rule: #44303a;
+    --primary: #ff8fb0;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', system-ui, sans-serif;
+  line-height: 1.9;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+}
+
+.back {
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.back a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+h1 {
+  font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+  font-size: 1.75rem;
+  margin: 0 0 0.25rem;
+}
+
+.meta {
+  margin: 0 0 1.75rem;
+  color: var(--ink-3);
+  font-size: 0.88rem;
+}
+
+.lead {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--primary);
+  border-radius: 0.9rem;
+  padding: 1rem 1.15rem;
+  margin: 0 0 2rem;
+}
+
+h2 {
+  font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+  font-size: 1.1rem;
+  margin: 2.25rem 0 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+p,
+ul {
+  margin: 0 0 1rem;
+}
+
+ul {
+  padding-left: 1.3rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+a {
+  color: var(--primary);
+}
+
+code {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.9em;
+}

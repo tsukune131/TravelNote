@@ -442,6 +442,15 @@ button {
   gap: 0.6rem;
 }
 
+.linklike {
+  align-self: flex-start;
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  min-height: 2.75rem;
+  padding: 0 0.2rem;
+}
+
 .welcome-points li::before {
   content: '✓';
   color: var(--cat-nature);

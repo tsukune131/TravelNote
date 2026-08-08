@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { getDisplayName, getMapProvider, setDisplayName, setMapProvider } from '../db/settings';
-import { openLink } from '../lib/openExternal';
+import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
 
-const LEGAL_BASE = 'https://tsukune131.github.io/TravelNote/legal';
 
 export function Settings({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();

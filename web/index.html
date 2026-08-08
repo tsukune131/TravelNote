@@ -3,43 +3,217 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>たびのしおり</title>
-    <meta name="description" content="旅の記録をまとめる iOS アプリ「たびのしおり」の紹介ページ" />
+    <title>たびのしおり — 友達や恋人と一緒に作る、旅のしおり</title>
+    <meta
+      name="description"
+      content="友達や恋人と一緒に作って、旅行中に片手で見る旅のしおり。登録も、パスワードも要りません。旅程はあなたの端末の中だけに保存されます。"
+    />
+    <meta property="og:title" content="たびのしおり" />
+    <meta property="og:description" content="友達や恋人と一緒に作って、旅行中に片手で見る旅のしおり。" />
+    <meta property="og:type" content="website" />
     <style>
-      :root { color-scheme: light dark; }
-      body {
-        margin: 0 auto; padding: 2rem 1.25rem; max-width: 42rem;
-        font-family: "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
-        line-height: 1.8;
+      :root {
+        --paper: #fff7f5;
+        --surface: #ffffff;
+        --ink: #3d2a33;
+        --ink-2: #7d6470;
+        --ink-3: #ab929e;
+        --rule: #f6dcdd;
+        --primary: #e35d8b;
+        --sunset: linear-gradient(105deg, #ff9a76 0%, #e35d8b 55%, #d05a9e 100%);
+        --cat-culture: #8b6fe0;
+        --cat-nature: #2fb9a0;
+        --cat-food: #f5843b;
+        --cat-stay: #4a9fe0;
+        color-scheme: light dark;
       }
-      h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
-      .lead { opacity: 0.8; margin-top: 0; }
-      nav a { margin-right: 1rem; }
-      footer { margin-top: 3rem; font-size: 0.875rem; opacity: 0.7; }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #1c1419;
+          --surface: #291d24;
+          --ink: #f7e9ee;
+          --ink-2: #c8aab6;
+          --ink-3: #9a7f8c;
+          --rule: #44303a;
+          --primary: #ff8fb0;
+          --sunset: linear-gradient(105deg, #ffb391 0%, #ff8fb0 55%, #f08ac6 100%);
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', system-ui, sans-serif;
+        line-height: 1.85;
+        -webkit-font-smoothing: antialiased;
+      }
+      main { max-width: 46rem; margin: 0 auto; padding: clamp(3rem, 10vw, 6rem) 1.25rem 5rem; }
+      h1 {
+        font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+        font-size: clamp(2.2rem, 8vw, 3rem);
+        margin: 0 0 0.5rem;
+        letter-spacing: 0.02em;
+      }
+      .tagline {
+        font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+        font-size: clamp(1.1rem, 4vw, 1.4rem);
+        color: var(--primary);
+        margin: 0 0 2.5rem;
+        line-height: 1.7;
+      }
+      h2 {
+        font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+        font-size: 1.25rem;
+        margin: 3rem 0 1rem;
+      }
+      .points { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+      .points li {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 1.1rem;
+        padding: 1rem 1.2rem;
+      }
+      .points b { display: block; font-size: 1.02rem; margin-bottom: 0.2rem; }
+      .points span { color: var(--ink-2); font-size: 0.94rem; }
+      .privacy {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-left: 4px solid var(--primary);
+        border-radius: 1.1rem;
+        padding: 1.1rem 1.3rem;
+        margin: 2.5rem 0;
+      }
+      .privacy b { color: var(--primary); }
+      .badge {
+        display: inline-block;
+        background: var(--sunset);
+        color: #fff;
+        border-radius: 999px;
+        padding: 0.5rem 1.3rem;
+        font-weight: 700;
+        margin: 1rem 0;
+      }
+      .price { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 0.5rem 0 0; }
+      .price div {
+        flex: 1 1 8rem;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 0.9rem;
+        padding: 0.8rem;
+        text-align: center;
+      }
+      .price small { display: block; color: var(--ink-2); font-size: 0.85rem; }
+      .price strong { font-size: 1.3rem; }
+      footer {
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--rule);
+        color: var(--ink-3);
+        font-size: 0.9rem;
+      }
+      footer nav { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+      a { color: var(--primary); }
+      /* しおりの見た目をひとつだけ添える。写真の代わり */
+      .peek {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 1.2rem;
+        padding: 1rem 1.1rem;
+        margin: 2.5rem 0;
+        display: grid;
+        gap: 0.55rem;
+        font-size: 0.95rem;
+      }
+      .peek .row { display: grid; grid-template-columns: 3.4rem 1.7rem 1fr; gap: 0.6rem; align-items: center; }
+      .peek .t { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+      .peek .p {
+        width: 1.7rem; height: 1.7rem; border-radius: 50%;
+        display: grid; place-items: center; border: 2.5px solid var(--cat-culture);
+      }
+      .peek .p.food { border-color: var(--cat-food); }
+      .peek .p.nature { border-color: var(--cat-nature); }
+      .peek .p.stay { border-color: var(--cat-stay); }
+      .peek .gap { grid-column: 3; color: var(--ink-3); font-size: 0.85rem; }
     </style>
   </head>
   <body>
-    <h1>たびのしおり</h1>
-    <p class="lead">(ポジショニングを1行で。ストアのサブタイトルと揃える)</p>
+    <main>
+      <h1>たびのしおり</h1>
+      <p class="tagline">友達や恋人と一緒に作って、<br />旅行中に片手で見る。</p>
 
-    <h2>できること</h2>
-    <ul>
-      <li>(機能1)</li>
-      <li>(機能2)</li>
-      <li>(機能3)</li>
-    </ul>
+      <div class="peek" aria-label="画面のイメージ">
+        <div class="row"><span class="t">09:00</span><span class="p">🏯</span><span>二条城</span></div>
+        <div class="row"><span class="gap">⌛ 2時間の空き</span></div>
+        <div class="row"><span class="t">13:00</span><span class="p food">🍜</span><span>本家第一旭</span></div>
+        <div class="row"><span class="gap">🚃 約35分 ⚠️ 間に合わない可能性</span></div>
+        <div class="row"><span class="t">15:00</span><span class="p">⛩</span><span>清水寺</span></div>
+        <div class="row"><span class="t">--:--</span><span class="p stay">🛏</span><span>京都タワーホテル</span></div>
+      </div>
 
-    <h2>ダウンロード</h2>
-    <p>(App Store のリンク。公開までは「準備中」)</p>
+      <h2>旅行中に強い、しおりです</h2>
+      <ul class="points">
+        <li>
+          <b>時刻は決めなくていい</b>
+          <span>「だいたい昼ごはん」のまま置けます。あとから足せます。</span>
+        </li>
+        <li>
+          <b>押しても、一発で立て直せる</b>
+          <span>予定を長押しして「30分後ろへ」。以降の予定がまとめてずれます。</span>
+        </li>
+        <li>
+          <b>間に合わないと、先に教えてくれる</b>
+          <span>移動時間が空き時間を超えていたら、計画している最中に警告が出ます。</span>
+        </li>
+        <li>
+          <b>電波がなくても書き換えられる</b>
+          <span>すべて端末の中で動きます。地下でも山でも海外でも同じです。</span>
+        </li>
+      </ul>
 
-    <h2>お問い合わせ</h2>
-    <p>(問い合わせ先メールアドレス。App Store Connect のサポートURLとして提出する)</p>
+      <h2>一緒に作れます</h2>
+      <ul class="points">
+        <li>
+          <b>しおりを送るだけ</b>
+          <span>LINE でも AirDrop でも。<strong>相手はアプリを入れるだけで、登録も支払いも要りません。</strong></span>
+        </li>
+        <li>
+          <b>ふたりが同じ日を直しても、どちらも消えません</b>
+          <span>2つの案として残るので、見比べてから決められます。</span>
+        </li>
+      </ul>
 
-    <nav>
-      <a href="./legal/privacy.html">プライバシーポリシー</a>
-      <a href="./legal/terms.html">利用規約</a>
-    </nav>
+      <div class="privacy">
+        <b>私たちのサーバーは、ありません。</b><br />
+        旅程はあなたの端末の中だけに保存されます。会員登録も、広告も、利用状況の収集もありません。
+        共有は、あなた自身がファイルを送ることで行われます。
+        <br /><a href="./legal/privacy.html">プライバシーポリシー</a>
+      </div>
 
-    <footer>&copy; 2026 tsukune</footer>
+      <h2>料金</h2>
+      <p>
+        ひとりで使うぶんには、旅の数も機能も制限なく<strong>ずっと無料</strong>です。
+        送られたしおりを開いて、直して、送り返すのも無料です。
+        <br />
+        自分の旅を共有し始めるときだけ、たびのしおり Pro が必要です。
+      </p>
+      <div class="price">
+        <div><small>1か月</small><strong>¥300</strong></div>
+        <div><small>1年</small><strong>¥1,800</strong></div>
+      </div>
+
+      <h2>ダウンロード</h2>
+      <p><span class="badge">準備中</span></p>
+      <p>App Store での公開に向けて準備しています。</p>
+
+      <footer>
+        <nav>
+          <a href="./legal/privacy.html">プライバシーポリシー</a>
+          <a href="./legal/terms.html">利用規約</a>
+          <a href="mailto:tsukune.devlab@gmail.com">お問い合わせ</a>
+        </nav>
+        Shintaro Fujisawa
+      </footer>
+    </main>
   </body>
 </html>

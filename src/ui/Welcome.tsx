@@ -1,4 +1,5 @@
 import { useI18n } from '../i18n/context';
+import { LEGAL_BASE, openLink } from '../lib/openExternal';
 
 /**
  * 初回だけ出す1枚。
@@ -24,6 +25,14 @@ export function Welcome({ onStart }: { onStart: () => void }) {
             <li>{t('welcome.point2')}</li>
             <li>{t('welcome.point3')}</li>
           </ul>
+          {/* 「端末の中だけ」と言った直後に、その根拠へ行けるようにする */}
+          <button
+            type="button"
+            className="linklike"
+            onClick={() => void openLink(`${LEGAL_BASE}/privacy.html`)}
+          >
+            {t('settings.privacy')}
+          </button>
         </div>
       </div>
       <div className="addbar">

@@ -1,9 +1,8 @@
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { openLink } from '../lib/openExternal';
+import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import { REFERENCE_PRICE_JPY } from '../pro/entitlement';
 
-const LEGAL_BASE = 'https://tsukune131.github.io/TravelNote/legal';
 
 /**
  * 唯一の課金点 ── **自分の旅をはじめて送ろうとしたとき**だけ出る。
