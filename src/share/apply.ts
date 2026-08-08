@@ -26,8 +26,14 @@ export async function importSnapshot(
 
   // 知らない旅なら、まるごと受け入れるだけ。つき合わせる相手がいない
   if (!existing) {
+    // 受け取った旅は imported。送り返しは無料でできる(docs/pricing.md §3)
+    const received: Snapshot['trip'] = {
+      ...incoming.trip,
+      imported: true,
+      sharedAt: incoming.trip.sharedAt ?? incoming.exportedAt,
+    };
     await db.transaction('rw', db.trips, db.events, db.members, db.dayVariants, async () => {
-      await db.trips.put(incoming.trip);
+      await db.trips.put(received);
       await db.events.bulkPut(incoming.events);
       await db.members.bulkPut(incoming.members);
       await db.dayVariants.bulkPut(incoming.variants);
@@ -82,12 +88,22 @@ export async function importSnapshot(
 /**
  * 書き出す。**書き出した時点の中身も共通祖先として覚える** —
  * 「これを相手に渡した」という宣言であり、次に受け取ったときの比較基準になる。
+ *
+ * あわせて `sharedAt` を立てる。一度共有した旅は、
+ * **Pro が切れても送り続けられる**(docs/pricing.md §5)。
+ *
+ * ⚠️ Pro の判定は呼び出し側で行うこと(`canShare`)。
+ * ここは「送れると決まったあと」の処理。
  */
 export async function exportSnapshotText(
   tripId: string,
   myName: string,
 ): Promise<{ text: string; snapshot: Snapshot }> {
   const deviceId = await getDeviceId();
+  const trip = await db.trips.get(tripId);
+  if (trip && trip.sharedAt === null) {
+    await db.trips.update(tripId, { sharedAt: Date.now() });
+  }
   const snapshot = await buildSnapshot(tripId, deviceId, myName);
   await saveBaseline(tripId, snapshot);
   return { text: JSON.stringify(snapshot), snapshot };

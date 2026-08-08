@@ -44,6 +44,8 @@ export async function createTrip(input: {
     startDate: input.startDate,
     endDate: input.endDate,
     order: orderKeyBetween(last, null),
+    sharedAt: null,
+    imported: false,
     ...(await stamp()),
   };
   await db.trips.add(trip);
