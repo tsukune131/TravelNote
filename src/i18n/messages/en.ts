@@ -30,6 +30,21 @@ export const en: DeepPartial<Messages> = {
     menu: 'Menu',
   },
 
+  tripForm: {
+    newTitle: 'New trip',
+    editTitle: 'Trip settings',
+    name: 'Name of the trip',
+    namePlaceholder: 'Kyoto & Osaka, 4 days',
+    startDate: 'Leaving',
+    endDate: 'Coming home',
+    create: 'Create',
+    rangeError: 'The return date has to come after the departure date',
+    nameError: 'Give the trip a name',
+    tooLong: 'That trip is too long (60 days max)',
+    deleteTrip: 'Delete this trip',
+    deleteConfirm: 'Delete "{title}"? Everything in it goes too.',
+  },
+
   timeline: {
     unscheduled: 'No time set',
     noTime: '—',
@@ -146,12 +161,25 @@ export const en: DeepPartial<Messages> = {
     m: '{m}m',
   },
 
+  settings: {
+    title: 'Settings',
+    mapProvider: 'Maps app',
+    displayName: 'Display name',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Use',
+    restore: 'Restore Purchases',
+    version: 'Version',
+  },
+
   common: {
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
     undo: 'Undo',
     close: 'Close',
+    back: 'Back',
     settings: 'Settings',
+    none: 'None',
+    add: 'Add',
   },
 };

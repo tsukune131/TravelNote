@@ -30,6 +30,21 @@ export const ja = {
     menu: 'メニュー',
   },
 
+  tripForm: {
+    newTitle: '旅をつくる',
+    editTitle: '旅の設定',
+    name: '旅の名前',
+    namePlaceholder: '京都・大阪 3泊4日',
+    startDate: '出発日',
+    endDate: '帰る日',
+    create: 'つくる',
+    rangeError: '帰る日は出発日より後にしてください',
+    nameError: '名前を入れてください',
+    tooLong: '旅の日数が長すぎます(最大60日)',
+    deleteTrip: 'この旅を削除',
+    deleteConfirm: '「{title}」を削除しますか? 中の予定もすべて消えます。',
+  },
+
   timeline: {
     unscheduled: '時刻未定',
     noTime: '—',
@@ -147,12 +162,25 @@ export const ja = {
     m: '{m}分',
   },
 
+  settings: {
+    title: '設定',
+    mapProvider: '地図アプリ',
+    displayName: '表示名',
+    privacy: 'プライバシーポリシー',
+    terms: '利用規約',
+    restore: '購入を復元',
+    version: 'バージョン',
+  },
+
   common: {
     save: '保存',
     cancel: 'やめる',
     delete: '削除',
     undo: '元に戻す',
     close: '閉じる',
+    back: '戻る',
     settings: '設定',
+    none: 'なし',
+    add: '追加',
   },
 } as const;

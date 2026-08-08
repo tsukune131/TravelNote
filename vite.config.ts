@@ -7,4 +7,8 @@ import react from '@vitejs/plugin-react-swc';
 export default defineConfig({
   base: './',
   plugins: [react()],
+  define: {
+    // 設定画面に出すバージョン。package.json を正とする
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+  },
 });
