@@ -12,7 +12,7 @@ export const en: DeepPartial<Messages> = {
   },
 
   welcome: {
-    tagline: 'Plan it together.\nCarry it in one hand.',
+    tagline: 'Plan it with the people\nyou are going with.',
     point1: 'No sign-up, no password',
     point2: 'Your itinerary stays on this device',
     point3: "Times are optional — you can fill them in later",
@@ -122,6 +122,7 @@ export const en: DeepPartial<Messages> = {
     up: 'Move up',
     down: 'Move down',
     moveToDay: 'Move to another day',
+    reorder: 'Reorder',
     pin: '📌 Pin (never reflow)',
     unpin: '📌 Unpin',
     edit: 'Edit details',
@@ -129,7 +130,7 @@ export const en: DeepPartial<Messages> = {
 
   event: {
     namePlaceholder: 'Name of the place',
-    nameHint: 'Press return to keep adding. Time, map and links can come later.',
+    nameHint: 'Press return to keep adding. Type "9:00 Nijo Castle" to set the time too.',
     guessedCategory: 'Guessed',
     changeCategory: 'Tap to change',
     time: 'Time',

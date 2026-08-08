@@ -12,7 +12,7 @@ export const ja = {
   },
 
   welcome: {
-    tagline: '同行者と一緒に作って、\n旅行中に片手で見る。',
+    tagline: '友達や恋人と一緒に作って、\n旅行中に片手で見る。',
     point1: '登録も、パスワードも要りません',
     point2: '旅程はこの端末の中だけに保存されます',
     point3: '時刻は決めなくて大丈夫。あとから足せます',
@@ -123,6 +123,7 @@ export const ja = {
     up: 'ひとつ上へ',
     down: 'ひとつ下へ',
     moveToDay: '別の日へ移す',
+    reorder: '並べ替え',
     pin: '📌 固定する(ずらさない)',
     unpin: '📌 固定をやめる',
     edit: '詳しく編集',
@@ -130,7 +131,7 @@ export const ja = {
 
   event: {
     namePlaceholder: '場所の名前',
-    nameHint: '改行で連続追加。時刻・地図・リンクはあとから足せます。',
+    nameHint: '改行で続けて追加。「9:00 二条城」と書けば時刻ごと入ります。',
     guessedCategory: '推定',
     changeCategory: 'タップで変更',
     time: '時刻',

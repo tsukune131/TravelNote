@@ -321,35 +321,50 @@ async function swipe(page, selector, direction) {
   await page.waitForTimeout(350);
 }
 
-/** 予定に時刻を入れる(詳細シート経由) */
-async function setTime(page, name, hhmm) {
-  await page.locator('.ev-main').filter({ hasText: name }).first().click();
-  await page.waitForSelector('.sheet');
-  const toggle = page.getByLabel('時刻を決めない');
-  if (await toggle.isChecked()) {
-    // controlled checkbox の状態は IndexedDB 往復のあとに反映される。
-    // uncheck() は即座に検証してしまうので click() + waitForSelector を使う
-    await toggle.click();
-    await page.waitForSelector('#ev-time');
+/**
+ * 並べ替え。**つまみ(.ev-drag)からしか始まらない**ので、行の横スワイプとは別物。
+ * from / to は 0 始まりの行番号。
+ */
+async function dragRow(page, from, to) {
+  const handle = page.locator('.ev-drag').nth(from);
+  const src = await handle.boundingBox();
+  const dst = await page.locator('.ev').nth(to).boundingBox();
+  if (!src || !dst) throw new Error(`行が見つかりません: ${from} → ${to}`);
+
+  const y0 = src.y + src.height / 2;
+  // 上へ動かすときは行の上寄り、下へ動かすときは下寄りを狙う
+  const y1 = to < from ? dst.y + dst.height * 0.2 : dst.y + dst.height * 0.8;
+
+  await page.mouse.move(src.x + src.width / 2, y0);
+  await page.mouse.down();
+  for (const k of [0.25, 0.5, 0.75, 1]) {
+    await page.mouse.move(src.x + src.width / 2, y0 + (y1 - y0) * k, { steps: 3 });
   }
-  await page.fill('#ev-time', hhmm);
-  await page.locator('.sheet-head .iconbtn').last().click();
-  await page.waitForTimeout(250);
+  await page.mouse.up();
+  await page.waitForTimeout(350);
 }
 
 /**
- * 予定に所要時間を入れる。
+ * 予定に時刻を入れる。
+ *
+ * 行の時刻欄を直に埋めるだけ ── **シートを開く必要が無くなった**
+ * (2026-08-09 のフィードバックで、行から直接入れられるようにしたため)。
+ * 空文字を渡すと時刻を外す。外しても行は沈まない。
+ */
+async function setTime(page, name, hhmm) {
+  const row = page.locator('.ev').filter({ hasText: name }).first();
+  await row.locator('.timefield').fill(hhmm ?? '');
+  await page.waitForTimeout(300);
+}
+
+/**
+ * 予定に所要時間を入れる(詳細シート経由。行からは入れられない)。
  * これが無いと「終わる時刻」が動かないので、
  * **間に合わない警告を出すシナリオが組めない**(実際に詰まった)。
  */
 async function setDuration(page, name, minutes) {
   await page.locator('.ev-main').filter({ hasText: name }).first().click();
-  await page.waitForSelector('.sheet');
-  const toggle = page.getByLabel('時刻を決めない');
-  if (await toggle.isChecked()) {
-    await toggle.click();
-    await page.waitForSelector('#ev-time');
-  }
+  await page.waitForSelector('#ev-dur');
   await page.selectOption('#ev-dur', String(minutes));
   await page.locator('.sheet-head .iconbtn').last().click();
   await page.waitForTimeout(250);
@@ -386,12 +401,14 @@ async function smoke() {
   console.log('  推定カテゴリ:', pins.join(' '));
   await shot(page, 'smoke-02-timeline');
 
-  step('詳細シート — 時刻・所要時間・リンク');
+  step('行から直接 時刻を入れる(シートを開かない)');
+  await setTime(page, '二条城', '11:20');
+  console.log('  時刻:', await page.locator('.ev').filter({ hasText: '二条城' }).locator('.timefield').inputValue());
+  console.log('  並び:', (await page.locator('.ev-name').allTextContents()).join(' → '));
+
+  step('詳細シート — 所要時間・リンク');
   await page.locator('.ev-main').filter({ hasText: '二条城' }).click();
-  await page.waitForSelector('.sheet');
-  await page.getByLabel('時刻を決めない').click();
-  await page.waitForSelector('#ev-time');
-  await page.fill('#ev-time', '11:20');
+  await page.waitForSelector('#ev-dur');
   await page.selectOption('#ev-dur', '90');
   await page.getByPlaceholder('https://tabelog.com/...').fill('https://nijo-jo.city.kyoto.lg.jp/');
   await page.locator('.sheet').getByRole('button', { name: '追加', exact: true }).click();
@@ -510,6 +527,7 @@ const HELP = `
   click :: <selector>          クリック(Playwright セレクタ)
   longpress :: <selector>      長押し → 予定のアクションメニュー
   swipe :: <selector> :: right|left   右=行った / 左=削除
+  drag  :: <行番号> :: <行番号>  つまみで並べ替え(0始まり)
   fill  :: <selector> :: <値>  入力
   press :: <selector> :: <キー> キー送信(Enter など)
   text  :: <selector>          一致した要素のテキストを全部出す
@@ -565,6 +583,9 @@ async function repl() {
           break;
         case 'swipe':
           await swipe(page, args[0], args[1] === 'left' ? 'left' : 'right');
+          break;
+        case 'drag':
+          await dragRow(page, Number(args[0]), Number(args[1]));
           break;
         case 'fill':
           await page.locator(args[0]).first().fill(args[1] ?? '');

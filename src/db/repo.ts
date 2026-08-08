@@ -4,6 +4,7 @@ import type { DayVariant, Member, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
+import { placeForTime } from '../lib/ordering';
 import type { TravelMode } from '../lib/maps';
 import { dayCount } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
@@ -89,7 +90,8 @@ export async function listEventsOfDay(tripId: string, dayIndex: number): Promise
     .toArray();
   const alive = rows.filter((e) => e.deletedAt === ALIVE);
   const activeVariantId = await getActiveVariantId(tripId, dayIndex);
-  return alive.filter((e) => e.variantId === activeVariantId).sort(compareTimeline);
+  // 並びは order がすべて。時刻で勝手に沈めない(src/lib/ordering.ts)
+  return alive.filter((e) => e.variantId === activeVariantId).sort(compareOrder);
 }
 
 /* ────────── 案(衝突したときだけ現れる) ────────── */
@@ -149,13 +151,30 @@ export async function adoptVariant(
   });
 }
 
-export function compareTimeline(a: TripEvent, b: TripEvent): number {
-  if (a.startMinutes === null && b.startMinutes !== null) return 1;
-  if (a.startMinutes !== null && b.startMinutes === null) return -1;
-  if (a.startMinutes !== null && b.startMinutes !== null && a.startMinutes !== b.startMinutes) {
-    return a.startMinutes - b.startMinutes;
+/**
+ * 時刻を入れる/変える。
+ *
+ * **入れた瞬間に一度だけ**、ほかの「時刻あり」と前後が合う位置へ移す。
+ * 以後は動かない ── 勝手に動くのが困るのだから(src/lib/ordering.ts)。
+ */
+export async function setEventTime(id: string, minutes: number | null): Promise<void> {
+  const event = await db.events.get(id);
+  if (!event) return;
+
+  if (minutes === null) {
+    // 時刻を外しても位置は動かさない。下へ落とすのが不評だった
+    await updateEvent(id, { startMinutes: null });
+    return;
   }
-  return compareOrder(a, b);
+
+  const siblings = await listEventsOfDay(event.tripId, event.dayIndex);
+  const place = placeForTime(siblings, id, minutes);
+  await updateEvent(id, {
+    startMinutes: minutes,
+    ...(place
+      ? { order: orderKeyBetween(place.before?.order ?? null, place.after?.order ?? null) }
+      : {}),
+  });
 }
 
 /**
@@ -166,11 +185,14 @@ export async function addEvent(
   tripId: string,
   dayIndex: number,
   name: string,
+  startMinutes: number | null = null,
 ): Promise<TripEvent> {
   const existing = await listEventsOfDay(tripId, dayIndex);
   const last = existing.length > 0 ? maxOrder(existing) : null;
   const event = buildEvent(tripId, dayIndex, name, orderKeyBetween(last, null), await stamp());
   await db.events.add(event);
+  // 「9:00 二条城」のように時刻ごと入れられたときは、そのまま正しい位置へ
+  if (startMinutes !== null) await setEventTime(event.id, startMinutes);
   return event;
 }
 

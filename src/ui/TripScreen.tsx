@@ -3,9 +3,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
-import { addEvent, listEventsOfDay } from '../db/repo';
+import { addEvent, listEventsOfDay, setEventCategory } from '../db/repo';
 import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
 import { guessCategory } from '../lib/category';
+import { parseLeadingTime } from '../lib/ordering';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
 import { openMap } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
@@ -16,6 +17,8 @@ import { EventSheet } from './EventSheet';
 import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
 import { MapProviderPrompt } from './Settings';
+import { Sheet } from './Sheet';
+import { CategoryPicker } from './CategoryPicker';
 import { IconBack, IconMore } from './Icon';
 
 export function TripScreen({
@@ -36,6 +39,7 @@ export function TripScreen({
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [actionEventId, setActionEventId] = useState<string | null>(null);
+  const [categoryEventId, setCategoryEventId] = useState<string | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
@@ -45,6 +49,7 @@ export function TripScreen({
 
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
   const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
+  const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
 
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
@@ -98,9 +103,11 @@ export function TripScreen({
   }
 
   async function submitDraft() {
-    const name = draft.trim();
+    // 「9:00 二条城」のように、時刻ごと1行で入れられる。
+    // 時刻を入れるためだけに詳細シートを開かせない
+    const { minutes, name } = parseLeadingTime(draft);
     if (name.length === 0) return;
-    await addEvent(tripId, dayIndex, name);
+    await addEvent(tripId, dayIndex, name, minutes);
     setDraft('');
     // 連続追加。計画段階で行きたい場所をまとめて放り込めることが大事
     inputRef.current?.focus();
@@ -164,6 +171,7 @@ export function TripScreen({
                 dismissHint();
                 setActionEventId(e.id);
               }}
+              onPickCategory={(e) => setCategoryEventId(e.id)}
             />
           )}
 
@@ -227,6 +235,18 @@ export function TripScreen({
           }}
           onReflowed={(result, delta) => setUndo({ result, delta })}
         />
+      )}
+
+      {categoryEvent && (
+        <Sheet title={categoryEvent.name} onClose={() => setCategoryEventId(null)}>
+          <CategoryPicker
+            value={categoryEvent.category}
+            onChange={(next) => {
+              void setEventCategory(categoryEvent.id, next);
+              setCategoryEventId(null);
+            }}
+          />
+        </Sheet>
       )}
 
       {openEvent && (

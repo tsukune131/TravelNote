@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/context';
 import { categoryLabelKey, linkLabelKey } from '../i18n/keys';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
-import { deleteEvent, renameEvent, setEventCategory, updateEvent } from '../db/repo';
+import { deleteEvent, renameEvent, setEventCategory, setEventTime, updateEvent } from '../db/repo';
 import { guessLinkLabel } from '../lib/maps';
 import { normalizeUrl, openLink } from '../lib/openExternal';
 import { clampMinutes } from '../lib/plainDate';
@@ -51,51 +51,42 @@ export function EventSheet({
         />
       </div>
 
-      <label className="inline-toggle">
-        <input
-          type="checkbox"
-          checked={!hasTime}
-          onChange={(e) =>
-            void updateEvent(event.id, { startMinutes: e.target.checked ? null : 9 * 60 })
-          }
-        />
-        {t('event.noTimeToggle')}
-      </label>
-
-      {hasTime && (
-        <div className="row">
-          <div className="field">
-            <label htmlFor="ev-time">{t('event.time')}</label>
-            <input
-              id="ev-time"
-              type="time"
-              value={toTimeValue(event.startMinutes ?? 0)}
-              onChange={(e) =>
-                void updateEvent(event.id, { startMinutes: fromTimeValue(e.target.value) })
-              }
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="ev-dur">{t('event.duration')}</label>
-            <select
-              id="ev-dur"
-              value={event.durationMinutes ?? ''}
-              onChange={(e) =>
-                void updateEvent(event.id, {
-                  durationMinutes: e.target.value === '' ? null : Number(e.target.value),
-                })
-              }
-            >
-              <option value="">{t('common.none')}</option>
-              {DURATIONS.map((m) => (
-                <option key={m} value={m}>
-                  {duration(m)}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/*
+        時刻は空にできる。チェックボックスで切り替えていたのをやめた ──
+        時刻欄そのものを空にすれば済むし、そのほうが操作が1つ減る
+      */}
+      <div className="row">
+        <div className="field">
+          <label htmlFor="ev-time">{t('event.time')}</label>
+          <input
+            id="ev-time"
+            type="time"
+            value={hasTime ? toTimeValue(event.startMinutes ?? 0) : ''}
+            onChange={(e) =>
+              void setEventTime(event.id, e.target.value === '' ? null : fromTimeValue(e.target.value))
+            }
+          />
         </div>
-      )}
+        <div className="field">
+          <label htmlFor="ev-dur">{t('event.duration')}</label>
+          <select
+            id="ev-dur"
+            value={event.durationMinutes ?? ''}
+            onChange={(e) =>
+              void updateEvent(event.id, {
+                durationMinutes: e.target.value === '' ? null : Number(e.target.value),
+              })
+            }
+          >
+            <option value="">{t('common.none')}</option>
+            {DURATIONS.map((m) => (
+              <option key={m} value={m}>
+                {duration(m)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <CategoryPicker
         value={event.category}

@@ -64,3 +64,7 @@ export const IconSettings = (p: Props) =>
   );
 
 export const IconPlus = (p: Props) => svg(<path d="M12 5.5v13M5.5 12h13" />, p);
+
+/** 並べ替えのつまみ。三本線 */
+export const IconDrag = (p: Props) =>
+  svg(<path d="M4 8h16M4 12h16M4 16h16" strokeWidth="1.6" />, p);

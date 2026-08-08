@@ -444,6 +444,36 @@ button {
   padding-top: 0.1rem;
 }
 
+/*
+ * 時刻はここで直接入れる。シートを開かせない。
+ * 見た目は文字のままだが、押すと OS の時刻ピッカーが出る。
+ * 空のときは --:-- が出て、それが「押せる」ことを伝える。
+ */
+.timefield {
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  text-align: right;
+  min-height: 1.4rem;
+}
+
+.timefield::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.timefield:not(:focus):invalid,
+.timefield[value=''] {
+  color: var(--ink-3);
+}
+
+.ev.done .timefield {
+  color: var(--ink-3);
+}
+
 .ev-time small {
   display: block;
   font-size: 0.62rem;
@@ -563,12 +593,42 @@ button {
 .ev-map {
   flex: 0 0 auto;
   color: var(--indigo);
-  min-width: 2.75rem;
+  min-width: 2.4rem;
   min-height: 2.75rem;
-  margin: -0.6rem -0.4rem;
+  margin: -0.6rem 0;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+}
+
+/*
+ * 並べ替えのつまみ。**ここからしかドラッグが始まらない**ので、
+ * 行の横スワイプ(完了・削除)と衝突しない。
+ * ドラッグを見送っていた理由がこれで解けた。
+ */
+.ev-drag {
+  flex: 0 0 auto;
+  color: var(--ink-3);
+  min-width: 2.4rem;
+  min-height: 2.75rem;
+  margin: -0.6rem -0.4rem -0.6rem 0;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.ev.drag {
+  opacity: 0.45;
+}
+
+.ev.drag .ev-drag {
+  color: var(--indigo);
+  cursor: grabbing;
+}
+
+/* ドラッグ中は、落とす場所が読めるように行の境目を見せる */
+.dragging [data-row] {
+  border-top: 1px dashed var(--rule-soft);
 }
 
 /* ───────── 予定と予定のあいだ ───────── */
