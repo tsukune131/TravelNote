@@ -101,7 +101,10 @@ export async function listVariants(tripId: string, dayIndex: number): Promise<Da
     .where('[tripId+dayIndex]')
     .equals([tripId, dayIndex])
     .toArray();
-  return rows.filter((v) => v.deletedAt === ALIVE);
+  const alive = rows.filter((v) => v.deletedAt === ALIVE);
+  // 自分の案を必ず左に。並びが毎回変わると、どちらを見ているか分からなくなる
+  const me = await getDeviceId();
+  return alive.sort((a, b) => Number(b.createdBy === me) - Number(a.createdBy === me));
 }
 
 /** 案が無ければ null(= 本線の予定を見る) */

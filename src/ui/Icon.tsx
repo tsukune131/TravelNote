@@ -65,6 +65,17 @@ export const IconSettings = (p: Props) =>
 
 export const IconPlus = (p: Props) => svg(<path d="M12 5.5v13M5.5 12h13" />, p);
 
+/** 共有。箱から出ていく矢印 */
+export const IconShare = (p: Props) =>
+  svg(
+    <>
+      <path d="M12 3.5v11" />
+      <path d="M8 7.2 12 3.4l4 3.8" />
+      <path d="M5 13.5v5.2a1.6 1.6 0 0 0 1.6 1.6h10.8a1.6 1.6 0 0 0 1.6-1.6v-5.2" />
+    </>,
+    p,
+  );
+
 /** 並べ替えのつまみ。三本線 */
 export const IconDrag = (p: Props) =>
   svg(<path d="M4 8h16M4 12h16M4 16h16" strokeWidth="1.6" />, p);

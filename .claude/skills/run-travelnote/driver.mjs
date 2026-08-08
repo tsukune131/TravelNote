@@ -514,6 +514,192 @@ async function perf() {
   await close(s, 'perf');
 }
 
+/* ───────────────── share: A→B→A の往復を通す ───────────────── */
+
+/**
+ * **サーバーが無い共有の本番相当**を、ブラウザだけで通す。
+ *
+ * A と B を別のブラウザコンテキスト(= 別の端末・別の IndexedDB)にして、
+ * A が書き出したファイルを B に読ませ、B が直して書き出したものを A に戻す。
+ * 同じ日を両方が直したときに「案」に分かれるところまで見る。
+ *
+ * 実機の共有シート経由の受け取り(appUrlOpen)は Windows では試せない。
+ * ここで通しているのは**ファイルの中身とマージの正しさ**まで。
+ */
+async function shareRoundTrip() {
+  mkdirSync(SHOTS, { recursive: true });
+  const executablePath = findBrowser();
+  const server = await startServer();
+  registerCleanup(server);
+  const browser = await chromium.launch({ executablePath, headless: !HEADED });
+
+  const errors = [];
+  async function device(label) {
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      locale: LOCALE,
+      timezoneId: 'Asia/Tokyo',
+    });
+    ctx.setDefaultTimeout(8000);
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(`[${label}] pageerror: ${e.message}`));
+    page.on('console', (m) => {
+      if (m.type() === 'error') errors.push(`[${label}] console.error: ${m.text()}`);
+    });
+    await page.goto(URL, { waitUntil: 'networkidle' });
+    await reset(page);
+    await skipWelcome(page);
+    return page;
+  }
+
+  /** 共有画面から書き出して、ダウンロードされた中身を文字列で取る */
+  async function exportFrom(page, who) {
+    await page.locator('header .iconbtn').nth(1).click();
+    await page.waitForSelector('.sheet');
+    await page.fill('#share-name', who);
+    await page.locator('#share-name').blur();
+    // 未共有の自分の旅を初めて送るときはペイウォールが出る(唯一の課金点)。
+    // 課金はフェーズDなので、いまは「このまま送る」で抜けられる
+    await page.locator('.sheet .btn').first().click();
+    const proceed = page.getByRole('button', { name: 'このまま送る' });
+    if (await proceed.isVisible().catch(() => false)) {
+      console.log('  ペイウォール: 出た →「このまま送る」で抜ける');
+      const [dl] = await Promise.all([page.waitForEvent('download'), proceed.click()]);
+      return await readDownload(dl, page);
+    }
+    const download = await page.waitForEvent('download');
+    return await readDownload(download, page);
+  }
+
+  async function readDownload(download, page) {
+    const stream = await download.createReadStream();
+    const chunks = [];
+    for await (const c of stream) chunks.push(c);
+    await page.locator('.sheet-head .iconbtn').last().click();
+    await page.waitForTimeout(300);
+    return Buffer.concat(chunks).toString('utf8');
+  }
+
+  /**
+   * ファイル選択で取り込む。
+   * 旅を持っていない端末は**旅一覧の取り込みボタン**から、
+   * 持っている端末は旅の共有画面から入る。
+   */
+  async function importInto(page, who, text) {
+    const onList = (await page.locator('.daytabs').count()) === 0;
+    let trigger;
+    if (onList) {
+      trigger = page.getByRole('button', { name: /ファイルから取り込む/ }).first();
+    } else {
+      await page.locator('header .iconbtn').nth(1).click();
+      await page.waitForSelector('.sheet');
+      await page.fill('#share-name', who);
+      await page.locator('#share-name').blur();
+      trigger = page.locator('.sheet .btn.ghost').first();
+    }
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), trigger.click()]);
+    await chooser.setFiles({
+      name: 'trip.tabishiori',
+      mimeType: 'application/json',
+      buffer: Buffer.from(text, 'utf8'),
+    });
+    await page.waitForSelector('.sheet');
+    await page.waitForTimeout(600);
+  }
+
+  const step = (m) => console.log(`\n▶ ${m}`);
+
+  step('A が旅を作る');
+  const a = await device('A');
+  await seed(a, { title: '京都・大阪 3泊4日', places: [] });
+  for (const [name] of [['9:00 二条城'], ['13:00 本家第一旭'], ['15:00 清水寺']]) {
+    await a.getByPlaceholder('場所の名前').fill(name);
+    await a.getByPlaceholder('場所の名前').press('Enter');
+    await a.waitForTimeout(120);
+  }
+  console.log('  A:', (await a.locator('.ev-name').allTextContents()).join(' / '));
+
+  step('A → B にしおりを送る');
+  const file1 = await exportFrom(a, 'しん');
+  console.log('  ファイル:', `${(file1.length / 1024).toFixed(1)} KB`);
+  console.log('  中身に旅程が入っているか:', file1.includes('二条城') ? 'はい' : 'いいえ');
+  console.log('  送信サーバの記録: なし(ファイルを渡すだけ)');
+
+  step('B が受け取る(別の端末 = 別の IndexedDB)');
+  const b = await device('B');
+  await importInto(b, 'ともき', file1);
+  console.log('  取り込み結果:', await b.locator('.sheet-head h2').textContent());
+  await b.locator('.sheet .btn').last().click();
+  await b.waitForTimeout(400);
+  console.log('  B:', (await b.locator('.ev-name').allTextContents()).join(' / '));
+  await shot(b, 'share-01-b-received');
+
+  step('B が Day 2 に足して、送り返す');
+  await b.locator('.daytab').nth(1).click();
+  await b.waitForTimeout(250);
+  await b.getByPlaceholder('場所の名前').fill('11:00 嵐山 竹林の小径');
+  await b.getByPlaceholder('場所の名前').press('Enter');
+  await b.waitForTimeout(250);
+  const file2 = await exportFrom(b, 'ともき');
+
+  step('A が取り込む → 衝突していないので黙って合流する');
+  await importInto(a, 'しん', file2);
+  console.log('  取り込み結果:', await a.locator('.sheet-head h2').textContent());
+  const chips = await a.locator('.sheet .chip').allTextContents();
+  console.log('  要約:', chips.join(' ') || '(なし)');
+  await shot(a, 'share-02-a-merged');
+  await a.locator('.sheet .btn').last().click();
+  await a.waitForTimeout(400);
+  await a.locator('.daytab').nth(1).click();
+  await a.waitForTimeout(250);
+  console.log('  A の Day 2:', (await a.locator('.ev-name').allTextContents()).join(' / '));
+
+  /*
+   * 別々の「新しい予定」を足しただけでは衝突しない ── id が違うので両方入るのが正解。
+   * 衝突するのは**同じ予定を両方が別々に直した**とき。ここではそれを作る。
+   */
+  step('両方が同じ予定を直す → 「案」に分かれる');
+  await a.locator('.daytab').nth(0).click();
+  await a.waitForTimeout(200);
+  await setTime(a, '清水寺', '16:00');
+
+  await b.locator('.daytab').nth(0).click();
+  await b.waitForTimeout(200);
+  await setTime(b, '清水寺', '14:00');
+
+  const file3 = await exportFrom(b, 'ともき');
+  await importInto(a, 'しん', file3);
+  console.log('  取り込み結果:', await a.locator('.sheet-head h2').textContent());
+  const conflictText = await a.locator('.sheet .hintbar span').textContent().catch(() => null);
+  console.log('  衝突の知らせ:', conflictText?.replace(/\s+/g, ' ').trim() ?? '(出ていない)');
+  await shot(a, 'share-03-conflict');
+  await a.locator('.sheet .btn').last().click();
+  await a.waitForTimeout(400);
+
+  console.log('  案の帯:', (await a.locator('.variantbar').count()) > 0 ? 'あり' : 'なし');
+  console.log('  案:', (await a.locator('.variantbar .catbtn').allTextContents()).join(' / '));
+  await shot(a, 'share-04-variants');
+
+  step('相手の案に切り替えて、採用する');
+  await a.locator('.variantbar .catbtn').nth(1).click();
+  await a.waitForTimeout(400);
+  console.log('  相手の案:', (await a.locator('.ev-name').allTextContents()).join(' / '));
+  await a.locator('.variantbar .btn').click();
+  await a.waitForTimeout(500);
+  console.log('  採用後の案の帯:', (await a.locator('.variantbar').count()) > 0 ? 'あり' : 'なし');
+  console.log('  採用後:', (await a.locator('.ev-name').allTextContents()).join(' / '));
+  await shot(a, 'share-05-adopted');
+
+  await browser.close();
+  stopServer(server);
+  console.log('\n── share / ブラウザのエラー ──');
+  console.log(errors.length === 0 ? 'なし' : errors.join('\n'));
+  process.exit(errors.length === 0 ? 0 : 1);
+}
+
 /* ───────────────── repl: 好きに触る ───────────────── */
 
 const HELP = `
@@ -643,7 +829,8 @@ const mode = process.argv[2] ?? 'smoke';
 if (mode === 'smoke') await smoke();
 else if (mode === 'repl') await repl();
 else if (mode === 'perf') await perf();
+else if (mode === 'share') await shareRoundTrip();
 else {
-  console.error(`使い方: node driver.mjs [smoke|repl|perf]\n${HELP}`);
+  console.error(`使い方: node driver.mjs [smoke|repl|perf|share]\n${HELP}`);
   process.exit(2);
 }

@@ -7,6 +7,9 @@ import type { Trip } from '../db/types';
 import { TripForm } from './TripForm';
 import { Settings } from './Settings';
 import { IconPlus, IconSettings } from './Icon';
+import { ImportButton } from './ImportButton';
+import { ImportResult } from './ImportResult';
+import type { ImportOutcome } from './ShareSheet';
 
 
 export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number) => void }) {
@@ -14,6 +17,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
   const trips = useLiveQuery(() => listTrips(), []);
   const [creating, setCreating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [imported, setImported] = useState<ImportOutcome | null>(null);
   const now = today();
 
   return (
@@ -38,6 +42,11 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             <div className="empty">
               <b>{t('tripList.empty')}</b>
               <p>{t('tripList.emptyHint')}</p>
+              {/*
+                しおりを送られた人は、まさにこの画面に着く。
+                ここに取り込み口が無いと何もできない
+              */}
+              <ImportButton className="seed" onImported={setImported} />
             </div>
           )}
 
@@ -64,6 +73,9 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       </div>
 
       <div className="addbar">
+        {trips !== undefined && trips.length > 0 && (
+          <ImportButton className="btn ghost" onImported={setImported} />
+        )}
         <button type="button" className="btn wide with-icon" onClick={() => setCreating(true)}>
           <IconPlus size={18} />
           {t('tripList.create')}
@@ -80,6 +92,18 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
         />
       )}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+
+      {imported && (
+        <ImportResult
+          outcome={imported}
+          onClose={() => {
+            const tripId = imported.kind === 'failed' ? null : imported.tripId;
+            setImported(null);
+            // 取り込んだしおりをそのまま開く。一覧に戻して探させない
+            if (tripId) onOpen(tripId, 0);
+          }}
+        />
+      )}
     </div>
   );
 }

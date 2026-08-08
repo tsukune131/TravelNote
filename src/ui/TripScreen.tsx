@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
-import { addEvent, listEventsOfDay, setEventCategory } from '../db/repo';
+import { addEvent, listEventsOfDay, listVariants, setEventCategory } from '../db/repo';
 import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
 import { guessCategory } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
@@ -19,7 +19,12 @@ import { TripForm } from './TripForm';
 import { MapProviderPrompt } from './Settings';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
-import { IconBack, IconMore } from './Icon';
+import { IconBack, IconMore, IconShare } from './Icon';
+import { ShareSheet } from './ShareSheet';
+import type { ImportOutcome } from './ShareSheet';
+import { ImportResult } from './ImportResult';
+import { VariantBar } from './VariantBar';
+import { countUnsentChanges } from '../share/snapshot';
 
 export function TripScreen({
   tripId,
@@ -35,11 +40,15 @@ export function TripScreen({
   const { t, date } = useI18n();
   const trip = useLiveQuery(() => db.trips.get(tripId), [tripId]);
   const events = useLiveQuery(() => listEventsOfDay(tripId, dayIndex), [tripId, dayIndex]);
+  const variants = useLiveQuery(() => listVariants(tripId, dayIndex), [tripId, dayIndex]);
+  const unsent = useLiveQuery(() => countUnsentChanges(tripId), [tripId]);
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [categoryEventId, setCategoryEventId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
@@ -123,6 +132,18 @@ export function TripScreen({
           <h1>{trip.title}</h1>
           <button
             type="button"
+            className="iconbtn"
+            onClick={() => setSharing(true)}
+            aria-label={t('share.title')}
+          >
+            <IconShare />
+            {/* 送ったあとに変わった件数。「送り返すのを忘れる」への手当て */}
+            {unsent !== undefined && unsent > 0 && trip.sharedAt !== null && (
+              <span className="dot" aria-hidden="true" />
+            )}
+          </button>
+          <button
+            type="button"
             className="iconbtn plain"
             onClick={() => setEditingTrip(true)}
             aria-label={t('trip.menu')}
@@ -156,6 +177,10 @@ export function TripScreen({
 
       <div className="scroller">
         <div className="pad">
+          {variants && variants.length >= 2 && (
+            <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
+          )}
+
           {events && (
             <Timeline
               tripId={tripId}
@@ -256,6 +281,19 @@ export function TripScreen({
           onOpenMap={(e) => void handleOpenMap(e)}
         />
       )}
+
+      {sharing && (
+        <ShareSheet
+          trip={trip}
+          onClose={() => setSharing(false)}
+          onImported={(outcome) => {
+            setSharing(false);
+            setImported(outcome);
+          }}
+        />
+      )}
+
+      {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
 
       {editingTrip && <TripForm trip={trip} onClose={() => setEditingTrip(false)} />}
 
