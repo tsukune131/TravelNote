@@ -346,14 +346,35 @@ button {
 
 /* ───────── Day タブ ───────── */
 
+/*
+ * しおりの「見出し」。選んでいるタブは下の角を落として本文と地続きにする。
+ * 冊子のインデックスタブの比喩 ── この製品名そのもの。
+ */
+/*
+ * 線はスクロールしない外側に置く。内側(スクロールする箱)に置くと、
+ * 横スクロールしたときに線が中身と一緒に流れて途中で切れる(実際に踏んだ)。
+ */
+.daytabs-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.daytabs-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--rule);
+}
+
 .daytabs {
   display: flex;
-  gap: 0.4rem;
-  padding: 0.5rem 0.9rem 0.6rem;
+  gap: 0.3rem;
+  padding: 0.5rem 0.9rem 0;
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid var(--rule-soft);
-  flex: 0 0 auto;
 }
 
 .daytabs::-webkit-scrollbar {
@@ -363,15 +384,19 @@ button {
 .daytab {
   flex: 0 0 auto;
   border: 1px solid var(--rule);
-  border-radius: 0.6rem;
-  padding: 0.3rem 0.6rem;
+  border-bottom-color: transparent;
+  border-radius: 0.55rem 0.55rem 0 0;
+  padding: 0.35rem 0.7rem 0.4rem;
+  margin-bottom: 1px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.25;
+  line-height: 1.3;
   font-variant-numeric: tabular-nums;
   min-height: 2.75rem;
   justify-content: center;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
 }
 
 .daytab b {
@@ -388,6 +413,11 @@ button {
   background: var(--indigo);
   border-color: var(--indigo);
   color: var(--on-indigo);
+  /* 足元の線を隠して、本文と地続きに見せる */
+  margin-bottom: 0;
+  padding-bottom: 0.45rem;
+  position: relative;
+  z-index: 1;
 }
 
 .daytab[aria-selected='true'] small {
@@ -429,23 +459,28 @@ button {
   align-items: center;
 }
 
+/*
+ * タイムラインの節。円にして「レールの上の点」として読ませる。
+ * 色は6系統(下の family クラス)、形は絵文字。色だけに頼らない。
+ */
 .pin {
   width: 1.5rem;
   height: 1.5rem;
-  border-radius: 0.45rem;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
-  background: var(--surface-2);
-  border-left: 3px solid var(--cat-move);
+  font-size: 0.8rem;
+  line-height: 1;
+  background: var(--surface);
+  border: 2px solid var(--cat-move);
   flex: 0 0 auto;
 }
 
-.pin.culture { border-left-color: var(--cat-culture); }
-.pin.nature { border-left-color: var(--cat-nature); }
-.pin.food { border-left-color: var(--cat-food); }
-.pin.play { border-left-color: var(--cat-play); }
-.pin.stay { border-left-color: var(--cat-stay); }
+.pin.culture { border-color: var(--cat-culture); }
+.pin.nature { border-color: var(--cat-nature); }
+.pin.food { border-color: var(--cat-food); }
+.pin.play { border-color: var(--cat-play); }
+.pin.stay { border-color: var(--cat-stay); }
 
 .rail-line {
   flex: 1;
@@ -477,8 +512,27 @@ button {
   white-space: nowrap;
 }
 
-.ev.done .ev-name {
+/* 済んだ予定は名前だけでなく節も落として、視線が先へ進むようにする */
+.ev.done .ev-label {
   text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+.ev.done .ev-name {
+  color: var(--ink-3);
+}
+
+.donemark {
+  color: var(--cat-nature);
+  font-weight: 700;
+  margin-right: 0.3rem;
+}
+
+.ev.done .pin {
+  opacity: 0.45;
+}
+
+.ev.done .ev-time {
   color: var(--ink-3);
 }
 
@@ -560,10 +614,15 @@ button {
   font-weight: 700;
 }
 
-/* 未設定のときは目立たせない。押せることだけ伝わればいい */
+/*
+ * 未設定のときは徹底的に静かに。同じ行が何本も並ぶと騒がしく、
+ * 旅程そのものより「入れてください」が目立ってしまう。
+ * 押せることだけ伝わればいい。
+ */
 .conn-txt .conn-add {
   color: var(--ink-3);
-  opacity: 0.75;
+  opacity: 0.55;
+  font-size: 0.72rem;
 }
 
 .gap-box {
@@ -759,6 +818,13 @@ button {
 .btn.wide {
   width: 100%;
   display: block;
+}
+
+.btn.with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .guess {

@@ -3,6 +3,7 @@ import { CATEGORIES } from '../lib/category';
 import { nowMinutes } from '../lib/plainDate';
 import { deleteEvent, toggleDone } from '../db/repo';
 import { Connector } from './Connector';
+import { IconMap } from './Icon';
 import { SeedChips } from './SeedChips';
 import { SwipeRow } from './SwipeRow';
 import type { MapProvider } from '../lib/maps';
@@ -175,8 +176,9 @@ function EventRow({
       <div className="ev-body">
         <button type="button" className="ev-main" onClick={() => onOpen(event)}>
           <div className="ev-name">
-            {event.done && <span aria-hidden="true">✓ </span>}
-            {event.name}
+            {/* ✓ は取り消し線の外に出す。中に入れると線が重なって別の字に見える */}
+            {event.done && <span className="donemark" aria-hidden="true">✓</span>}
+            <span className="ev-label">{event.name}</span>
           </div>
           <div className="ev-sub">
             {event.note && <span>{firstLine(event.note)}</span>}
@@ -193,7 +195,7 @@ function EventRow({
           onClick={() => onOpenMap(event)}
           aria-label={`${event.name} — ${t('timeline.openMap')}`}
         >
-          🗺
+          <IconMap size={20} />
         </button>
       </div>
     </div>

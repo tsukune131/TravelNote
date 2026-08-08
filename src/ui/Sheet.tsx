@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/context';
+import { IconClose } from './Icon';
 
 /**
  * 下から出るシート。詳細の編集も追加も、画面遷移させずにここで済ませる
@@ -48,7 +49,7 @@ export function Sheet({
           <h2>{title}</h2>
           {headerAction}
           <button type="button" className="iconbtn" onClick={onClose} aria-label={t('common.close')}>
-            ✕
+            <IconClose />
           </button>
         </div>
         <div className="sheet-body">{children}</div>

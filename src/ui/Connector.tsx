@@ -50,7 +50,8 @@ export function Connector({
           ) : c.freeMinutes !== null ? (
             <span className="gap-box">⌛ {t('timeline.gap', { duration: duration(c.freeMinutes) })}</span>
           ) : (
-            <span className="conn-add">+ {t('connector.setTravel')}</span>
+            // まだ入れていない区間は静かに。同じ行が何本も並ぶと騒がしい
+            <span className="conn-add">{t('connector.setTravel')}</span>
           )}
         </button>
       </div>

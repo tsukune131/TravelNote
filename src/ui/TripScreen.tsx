@@ -16,6 +16,7 @@ import { EventSheet } from './EventSheet';
 import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
 import { MapProviderPrompt } from './Settings';
+import { IconBack, IconMore } from './Icon';
 
 export function TripScreen({
   tripId,
@@ -110,7 +111,7 @@ export function TripScreen({
       <header className="topbar">
         <div className="topbar-row">
           <button type="button" className="iconbtn" onClick={onBack} aria-label={t('common.back')}>
-            ‹
+            <IconBack />
           </button>
           <h1>{trip.title}</h1>
           <button
@@ -119,28 +120,31 @@ export function TripScreen({
             onClick={() => setEditingTrip(true)}
             aria-label={t('trip.menu')}
           >
-            ⋯
+            <IconMore />
           </button>
         </div>
       </header>
 
-      <div className="daytabs" role="tablist" aria-label={t('trip.dayTab', { n: total })}>
-        {Array.from({ length: total }, (_, i) => {
-          const d = dateOfDay(trip.startDate, i);
-          return (
-            <button
-              key={i}
-              type="button"
-              role="tab"
-              className="daytab"
-              aria-selected={i === dayIndex}
-              onClick={() => onChangeDay(i)}
-            >
-              <b>{t('trip.dayTab', { n: i + 1 })}</b>
-              <small>{date(toDate(d))}</small>
-            </button>
-          );
-        })}
+      {/* 線は外側に。内側に置くと横スクロールで一緒に流れて途中で切れる */}
+      <div className="daytabs-wrap">
+        <div className="daytabs" role="tablist" aria-label={t('trip.dayTab', { n: total })}>
+          {Array.from({ length: total }, (_, i) => {
+            const d = dateOfDay(trip.startDate, i);
+            return (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                className="daytab"
+                aria-selected={i === dayIndex}
+                onClick={() => onChangeDay(i)}
+              >
+                <b>{t('trip.dayTab', { n: i + 1 })}</b>
+                <small>{date(toDate(d))}</small>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="scroller">

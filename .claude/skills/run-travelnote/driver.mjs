@@ -546,6 +546,8 @@ async function repl() {
           await seed(page, {
             ...(args[0] ? { title: args[0] } : {}),
             places: args[1] ? args[1].split(',').map((x) => x.trim()) : [],
+            // 3つめは日数。既定は4日(昨日〜3日後)で、今日が必ず Day 2 になる
+            ...(args[2] ? { offsetEnd: Number(args[2]) - 2 } : {}),
           });
           break;
         case 'time':

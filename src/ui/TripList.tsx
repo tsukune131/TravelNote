@@ -6,6 +6,8 @@ import { dayCount, diffDays, toDate, today } from '../lib/plainDate';
 import type { Trip } from '../db/types';
 import { TripForm } from './TripForm';
 import { Settings } from './Settings';
+import { IconPlus, IconSettings } from './Icon';
+
 
 export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number) => void }) {
   const { t, date } = useI18n();
@@ -25,7 +27,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             onClick={() => setShowSettings(true)}
             aria-label={t('settings.title')}
           >
-            ⚙
+            <IconSettings />
           </button>
         </div>
       </header>
@@ -62,8 +64,9 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       </div>
 
       <div className="addbar">
-        <button type="button" className="btn wide" onClick={() => setCreating(true)}>
-          + {t('tripList.create')}
+        <button type="button" className="btn wide with-icon" onClick={() => setCreating(true)}>
+          <IconPlus size={18} />
+          {t('tripList.create')}
         </button>
       </div>
 
