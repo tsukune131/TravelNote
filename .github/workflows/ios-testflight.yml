@@ -1,0 +1,67 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "実行する fastlane レーン"
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+          - certificates
+          - refresh_profiles
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      # ビルドは相対パス配信 + Service Worker なしの1種類だけにする。
+      # GitHub Pages 用のサブパス build を取り違えると
+      # WKWebView で全アセットが 404 になり実機が真っ白になる。
+      - name: Build web assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+
+      - name: Run fastlane
+        run: bundle exec fastlane ios ${{ inputs.lane }}
+
+      - name: Upload IPA artifact
+        if: inputs.lane == 'beta'
+        uses: actions/upload-artifact@v7
+        with:
+          name: TravelNote-ipa
+          path: build/*.ipa
+          if-no-files-found: warn

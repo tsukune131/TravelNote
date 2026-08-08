@@ -1,0 +1,108 @@
+default_platform(:ios)
+
+APP_IDENTIFIER = "com.tsukune.travelnote"
+XCODEPROJ = "ios/App/App.xcodeproj"
+SCHEME = "App"
+
+platform :ios do
+  # App Store Connect API キー (p8 は base64 で GitHub Secrets に入れておく)
+  private_lane :asc_api_key do
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8_BASE64"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+  end
+
+  desc "証明書とプロビジョニングプロファイルを作成して match リポジトリへ保存する(初回のみ手動実行)"
+  lane :certificates do
+    setup_ci(force: true)
+    match(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_api_key,
+      readonly: false
+    )
+  end
+
+  desc "プロビジョニングプロファイルを作り直す(App IDのCapabilityを変えたときに実行)"
+  lane :refresh_profiles do
+    setup_ci(force: true)
+    # 既存のプロファイルは期限切れではないので force: true が無いと作り直されず、
+    # 新しく足した Capability(HealthKitなど)が入らないままになる
+    match(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_api_key,
+      readonly: false,
+      force: true
+    )
+  end
+
+  desc "ビルドして TestFlight にアップロードする"
+  lane :beta do
+    setup_ci(force: true)
+    api_key = asc_api_key
+
+    match(
+      type: "appstore",
+      app_identifier: APP_IDENTIFIER,
+      api_key: api_key,
+      readonly: true
+    )
+
+    increment_build_number(
+      xcodeproj: XCODEPROJ,
+      build_number: next_build_number(api_key)
+    )
+
+    profile_name = ENV.fetch("sigh_#{APP_IDENTIFIER}_appstore_profile-name")
+
+    update_code_signing_settings(
+      path: XCODEPROJ,
+      targets: [SCHEME],
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile_name,
+      bundle_identifier: APP_IDENTIFIER
+    )
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      # 表示名は日本語(たびのしおり)だが、成果物名はASCIIに固定する
+      output_name: "TravelNote.ipa",
+      export_options: {
+        provisioningProfiles: { APP_IDENTIFIER => profile_name }
+      }
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_waiting_for_build_processing: true,
+      # 内部テスト用。外部テスターを使うときは Apple のレビューが必要になる
+      distribute_external: false
+    )
+  end
+
+  # TestFlight 上の最新ビルド番号 +1。
+  # App Store Connect にまだビルドが無い初回は Actions の run number を使う。
+  def next_build_number(api_key)
+    latest = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: APP_IDENTIFIER,
+      initial_build_number: 0
+    )
+    latest.to_i + 1
+  rescue StandardError => e
+    UI.important("TestFlight のビルド番号を取得できませんでした (#{e.message})。run number にフォールバックします")
+    ENV.fetch("GITHUB_RUN_NUMBER", "1").to_i
+  end
+end

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>プライバシーポリシー — たびのしおり</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0 auto; padding: 2rem 1.25rem; max-width: 42rem;
+        font-family: "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+        line-height: 1.8;
+      }
+      .todo { padding: 0.75rem 1rem; border-left: 4px solid #cf4a41; opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <h1>プライバシーポリシー</h1>
+    <p>最終改定日: 未公開(公開前に必ず日付を入れる)</p>
+
+    <p class="todo">
+      <strong>要記入(フェーズB-2)。</strong>
+      本アプリは<strong>広告を配信し、外部と通信する</strong>方針のため、
+      「データを収集していません」型のポリシーは使えない。
+      採用する広告SDKを決めたうえで、下記を実際の内容で埋めること。
+    </p>
+
+    <h2>1. 取得する情報</h2>
+    <ul>
+      <li>旅の記録(端末内の Dexie / IndexedDB に保存。開発者は参照できない)</li>
+      <li>広告配信のために広告事業者が取得する情報(広告識別子 IDFA、
+          おおよその位置、デバイス情報、広告の表示・タップ状況など)
+          — <em>採用する広告SDKの仕様に合わせて確定する</em></li>
+    </ul>
+
+    <h2>2. 広告について</h2>
+    <p>
+      (広告事業者名とそのプライバシーポリシーへのリンク。
+      パーソナライズ広告を行う場合は、ATT のトラッキング許可を求めること、
+      許可しなくてもアプリは利用できることを明記する)
+    </p>
+
+    <h2>3. 第三者への提供</h2>
+    <p>(広告事業者以外へは提供しない旨など)</p>
+
+    <h2>4. 利用者の選択</h2>
+    <p>(iOS の「トラッキングを許可」設定からいつでも変更できる旨)</p>
+
+    <h2>5. 子どもの利用</h2>
+    <p>(対象年齢と、Kids Category に該当しない旨)</p>
+
+    <h2>6. お問い合わせ</h2>
+    <p>(連絡先メールアドレス)</p>
+  </body>
+</html>

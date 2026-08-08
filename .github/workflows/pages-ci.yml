@@ -1,0 +1,58 @@
+name: Deploy to GitHub Pages
+
+# 公開するのはアプリではなく、紹介1枚と法務ページだけ。
+# App Store Connect が到達可能なプライバシーポリシーのURLを要求するため。
+# あわせて、pushのたびに型チェックとテストを回すCIも兼ねる。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # tsconfig.json はソリューション形式(references)なので -b で型チェックする。
+      # 各プロジェクトは noEmit: true なので出力は出ない
+      - run: npx tsc -b
+      - run: npm run lint
+
+      # 法務ページはアプリに同梱しているものと同じ実体を配る(二重管理を避ける)
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp web/index.html site/
+          cp -r public/legal site/legal
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
