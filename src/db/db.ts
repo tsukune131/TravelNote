@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import type { EntityTable } from 'dexie';
-import type { Member, Setting, Trip, TripEvent } from './types';
+import type { Baseline, DayVariant, Member, Setting, Trip, TripEvent } from './types';
 
 /**
  * 端末内のデータベース(IndexedDB)。
@@ -14,6 +14,8 @@ export class TabiDB extends Dexie {
   trips!: EntityTable<Trip, 'id'>;
   events!: EntityTable<TripEvent, 'id'>;
   members!: EntityTable<Member, 'id'>;
+  dayVariants!: EntityTable<DayVariant, 'id'>;
+  baselines!: EntityTable<Baseline, 'tripId'>;
   settings!: EntityTable<Setting, 'key'>;
 
   constructor() {
@@ -21,10 +23,13 @@ export class TabiDB extends Dexie {
 
     // [tripId+dayIndex+order] の複合索引で、その日の予定を「並び順のまま」取り出せる。
     // deletedAt は 0 が生存。IndexedDB は null を索引できないので null を使わない。
+    // 同じ理由で variantId も索引しない(本線を null で表すため)。件数が少ないので JS 側で絞る。
     this.version(1).stores({
       trips: 'id, order, startDate, endDate, updatedAt, deletedAt',
       events: 'id, tripId, [tripId+dayIndex+order], [tripId+updatedAt], updatedAt, deletedAt',
       members: 'id, tripId, deviceId',
+      dayVariants: 'id, tripId, [tripId+dayIndex]',
+      baselines: 'tripId',
       settings: 'key',
     });
   }

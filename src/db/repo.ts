@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { db, getDeviceId, newId } from './db';
-import type { Member, Trip, TripEvent } from './types';
+import type { DayVariant, Member, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
@@ -75,13 +75,75 @@ export async function deleteTrip(id: string): Promise<void> {
 /**
  * その日の予定を、表示順のまま返す。
  * 時刻ありが先(時刻の昇順)、時刻未定は末尾。同じ時刻どうしは order で決める。
+ *
+ * その日に「案」がある場合は、採用中(active)の案のぶんだけを返す。
+ * ふだんは案が無く、variantId が null のものだけが並ぶ。
  */
 export async function listEventsOfDay(tripId: string, dayIndex: number): Promise<TripEvent[]> {
   const rows = await db.events
     .where('[tripId+dayIndex+order]')
     .between([tripId, dayIndex, Dexie.minKey], [tripId, dayIndex, Dexie.maxKey])
     .toArray();
-  return rows.filter((e) => e.deletedAt === ALIVE).sort(compareTimeline);
+  const alive = rows.filter((e) => e.deletedAt === ALIVE);
+  const activeVariantId = await getActiveVariantId(tripId, dayIndex);
+  return alive.filter((e) => e.variantId === activeVariantId).sort(compareTimeline);
+}
+
+/* ────────── 案(衝突したときだけ現れる) ────────── */
+
+export async function listVariants(tripId: string, dayIndex: number): Promise<DayVariant[]> {
+  const rows = await db.dayVariants
+    .where('[tripId+dayIndex]')
+    .equals([tripId, dayIndex])
+    .toArray();
+  return rows.filter((v) => v.deletedAt === ALIVE);
+}
+
+/** 案が無ければ null(= 本線の予定を見る) */
+export async function getActiveVariantId(tripId: string, dayIndex: number): Promise<string | null> {
+  const variants = await listVariants(tripId, dayIndex);
+  if (variants.length === 0) return null;
+  return (variants.find((v) => v.active) ?? variants[0]).id;
+}
+
+/** 見比べるために表示を切り替える(採用はしない) */
+export async function showVariant(tripId: string, dayIndex: number, variantId: string): Promise<void> {
+  const variants = await listVariants(tripId, dayIndex);
+  const s = await stamp();
+  await db.dayVariants.bulkUpdate(
+    variants.map((v) => ({ key: v.id, changes: { active: v.id === variantId, ...s } })),
+  );
+}
+
+/**
+ * 案を採用して本線に戻す。採用した案の予定は variantId を外し、
+ * ほかの案の予定は論理削除する。これでその日から枝分かれが消える。
+ */
+export async function adoptVariant(
+  tripId: string,
+  dayIndex: number,
+  variantId: string,
+): Promise<void> {
+  const variants = await listVariants(tripId, dayIndex);
+  const rows = await db.events
+    .where('[tripId+dayIndex+order]')
+    .between([tripId, dayIndex, Dexie.minKey], [tripId, dayIndex, Dexie.maxKey])
+    .toArray();
+  const s = await stamp();
+  const tombstone = { ...s, deletedAt: s.updatedAt };
+
+  await db.transaction('rw', db.events, db.dayVariants, async () => {
+    await db.events.bulkUpdate(
+      rows
+        .filter((e) => e.deletedAt === ALIVE && e.variantId !== null)
+        .map((e) =>
+          e.variantId === variantId
+            ? { key: e.id, changes: { variantId: null, ...s } }
+            : { key: e.id, changes: tombstone },
+        ),
+    );
+    await db.dayVariants.bulkUpdate(variants.map((v) => ({ key: v.id, changes: tombstone })));
+  });
 }
 
 export function compareTimeline(a: TripEvent, b: TripEvent): number {
@@ -147,6 +209,7 @@ function buildEvent(
     pinned: false,
     done: false,
     order,
+    variantId: null,
     ...s,
   };
 }

@@ -78,6 +78,45 @@ export type TripEvent = SyncFields & {
   costYen?: number;
   /** 同じ (tripId, dayIndex) の中での並び順(fractional index) */
   order: string;
+  /**
+   * 所属する案。**null が本線**(ふだんはこれしかない)。
+   * 取り込みでその日が衝突したときだけ、両方の案が枝分かれして値が入る。
+   */
+  variantId: string | null;
+};
+
+/**
+ * その日の「案」。
+ *
+ * 非同期共有(ファイルを送り合う方式)では、A と B が同じ日を別々に直してしまうことがある。
+ * そのとき**どちらかを捨てずに両方残して見比べられるようにする**ための入れ物。
+ *
+ * 粒度が Day なのは、人が見比べるのが「フィールド」ではなく「その日の過ごし方」だから。
+ * 衝突していない日には案を作らない(そこまで枝分かれさせると読めなくなる)。
+ */
+export type DayVariant = SyncFields & {
+  id: string;
+  tripId: string;
+  dayIndex: number;
+  /** 「わたしの案」「ともきの案」など。取り込み時に相手の表示名から作る */
+  label: string;
+  createdBy: string;
+  /** 表示中・採用中の案。ひとつの (tripId, dayIndex) で必ず1件だけ true */
+  active: boolean;
+};
+
+/**
+ * 最後にやり取りした時点の中身(3方向マージの共通祖先)。
+ *
+ * これが無いと「相手が直した」と「自分が直した」を区別できず、
+ * 衝突していないただの新しい変更まで衝突として扱ってしまう。
+ * 旅ひとつぶんの JSON なので、そのまま持っても数KB。
+ */
+export type Baseline = {
+  tripId: string;
+  /** Snapshot をそのまま JSON 文字列にしたもの */
+  json: string;
+  savedAt: number;
 };
 
 export type MemberRole = 'owner' | 'editor' | 'viewer';
