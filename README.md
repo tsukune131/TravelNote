@@ -5,7 +5,8 @@ Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
 
 - Bundle ID: `com.tsukune.travelnote`(変更禁止)
 - 紹介ページ: https://tsukune131.github.io/TravelNote/
-- 収益モデル: 基本無料 + 広告収入(通信あり)
+- 収益モデル: 自動更新サブスク(月額¥500)。**広告なし・サーバーなし・通信なし**
+- プライバシーラベル: **データを収集していません**
 
 ## 開発
 
@@ -21,8 +22,11 @@ npx cap sync ios   # dist/ を iOS プロジェクトへ反映
 
 | ファイル | 内容 |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | 開発方針。**広告・通信ありによる制約**はここが正 |
+| [CLAUDE.md](CLAUDE.md) | 開発方針。守るべき制約はここが正 |
 | [ROADMAP.md](ROADMAP.md) | 関門付きフェーズ制の進行表。現在地もここ |
+| [docs/ux-design.md](docs/ux-design.md) | UI/UX の設計。**画面を作る前に必ず読む** |
+| [docs/pricing.md](docs/pricing.md) | 価格と、無料 / Pro の線引き |
+| [docs/competitive-landscape.md](docs/competitive-landscape.md) | 競合とポジショニングの根拠 |
 | [docs/ios-release-setup.md](docs/ios-release-setup.md) | TestFlight 自動配布の構築手順 |
 | [store/appstore-listing.md](store/appstore-listing.md) | ストア掲載テキストとプライバシーラベル |
 
