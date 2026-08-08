@@ -63,20 +63,44 @@ export const ja = {
   },
 
   connector: {
-    /** 概算であることを必ず示す。経路探索APIは使わない(距離ベースの推定) */
+    /** 概算であることを必ず示す。経路探索APIは使わない */
     estimate: '約{duration}',
     walk: '徒歩',
     transit: '電車',
     drive: '車',
-    tooTight: '次に間に合わない可能性',
+    tooTight: '間に合わない可能性',
+    setTravel: '移動時間を入れる',
+    title: '次までの移動',
+    mode: '手段',
+    minutes: 'かかる時間',
+    clear: '移動を消す',
+    route: '経路を地図で見る',
+    gapNote: 'この区間の空きは{duration}です',
+    noGap: 'どちらかの時刻が未定なので、間に合うかは判定できません',
   },
 
   reflow: {
     action: 'ここから後ろへずらす',
     by: '{n}分',
-    done: '{count}件の予定を{n}分ずらしました',
+    ahead: '{n}分前へ',
+    done: '{count}件を{n}分ずらしました',
+    preview: 'これ以降の{count}件が動きます',
+    nothing: 'ずらせる予定がありません',
     undo: '元に戻す',
-    pinnedSkipped: '固定した予定はそのままです',
+    pinnedSkipped: '📌 固定の{n}件はそのままです',
+  },
+
+  actions: {
+    title: '{name}',
+    done: '行ったことにする',
+    undone: '「行った」を取り消す',
+    duplicate: '複製する',
+    up: 'ひとつ上へ',
+    down: 'ひとつ下へ',
+    moveToDay: '別の日へ移す',
+    pin: '📌 固定する(ずらさない)',
+    unpin: '📌 固定をやめる',
+    edit: '詳しく編集',
   },
 
   event: {

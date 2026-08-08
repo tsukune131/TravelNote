@@ -437,6 +437,144 @@ button {
   font-size: 1rem;
 }
 
+/* ───────── 予定と予定のあいだ ───────── */
+
+.conn {
+  display: grid;
+  grid-template-columns: 4.1rem 1.5rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  margin: -0.35rem 0 0.35rem;
+}
+
+.conn-rail {
+  display: flex;
+  justify-content: center;
+}
+
+.conn-rail::before {
+  content: '';
+  width: 1.5px;
+  height: 1.6rem;
+  background: repeating-linear-gradient(var(--rule) 0 3px, transparent 3px 6px);
+}
+
+.conn-txt {
+  font-size: 0.76rem;
+  color: var(--ink-2);
+  text-align: left;
+  min-height: 2.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.conn.warn .conn-txt {
+  color: var(--seal);
+  font-weight: 700;
+}
+
+.conn-txt .warnmark {
+  color: var(--seal);
+  font-weight: 700;
+}
+
+/* 未設定のときは目立たせない。押せることだけ伝わればいい */
+.conn-txt .conn-add {
+  color: var(--ink-3);
+  opacity: 0.75;
+}
+
+.gap-box {
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  border: 1px dashed var(--rule);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.45rem;
+}
+
+/* ───────── スワイプ ───────── */
+
+.swipe {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-back {
+  position: absolute;
+  inset: 0 0 0.7rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.swipe-act {
+  opacity: 0.45;
+  transition: opacity 0.12s;
+}
+
+.swipe-act.right {
+  color: var(--cat-nature);
+}
+
+.swipe-act.left {
+  color: var(--seal);
+}
+
+.swipe-act.armed {
+  opacity: 1;
+}
+
+.swipe-front {
+  position: relative;
+  background: var(--paper);
+  /* 縦スクロールはブラウザに任せ、横だけこちらで扱う */
+  touch-action: pan-y;
+}
+
+/* ───────── 元に戻す ───────── */
+
+.undobar {
+  position: fixed;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: calc(var(--safe-bottom) + 4.3rem);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow);
+  z-index: 15;
+  animation: rise 0.18s ease-out;
+}
+
+.undobar span {
+  flex: 1;
+  min-width: 0;
+}
+
+.undobar button {
+  flex: 0 0 auto;
+  color: var(--paper);
+  font-weight: 700;
+  text-decoration: underline;
+  min-height: 2.75rem;
+  padding: 0 0.2rem;
+}
+
+.catbtn[disabled] {
+  opacity: 0.35;
+}
+
 .nowline {
   display: grid;
   grid-template-columns: 4.1rem 1fr;

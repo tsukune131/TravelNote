@@ -240,6 +240,38 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
   console.log(`  seed: 「${title}」に ${places.length} 件`);
 }
 
+/**
+ * 長押し(アクションメニューを開く)。
+ * SwipeRow は pointerdown から 480ms 指が動かなければ発火する。
+ */
+async function longPress(page, selector, ms = 700) {
+  const box = await page.locator(selector).first().boundingBox();
+  if (!box) throw new Error(`要素が見つかりません: ${selector}`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(ms);
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+}
+
+/**
+ * 横スワイプ(右=行った / 左=削除)。
+ * 72px を超えると発火する。縦スクロールと区別するため、
+ * **最初に横へ大きく動かしてから**離す。
+ */
+async function swipe(page, selector, direction) {
+  const box = await page.locator(selector).first().boundingBox();
+  if (!box) throw new Error(`要素が見つかりません: ${selector}`);
+  const y = box.y + box.height / 2;
+  const from = direction === 'right' ? box.x + 20 : box.x + box.width - 20;
+  const sign = direction === 'right' ? 1 : -1;
+  await page.mouse.move(from, y);
+  await page.mouse.down();
+  for (const dx of [15, 45, 80, 100]) await page.mouse.move(from + sign * dx, y, { steps: 3 });
+  await page.mouse.up();
+  await page.waitForTimeout(350);
+}
+
 /** 予定に時刻を入れる(詳細シート経由) */
 async function setTime(page, name, hhmm) {
   await page.locator('.ev-main').filter({ hasText: name }).first().click();
@@ -252,6 +284,24 @@ async function setTime(page, name, hhmm) {
     await page.waitForSelector('#ev-time');
   }
   await page.fill('#ev-time', hhmm);
+  await page.locator('.sheet-head .iconbtn').last().click();
+  await page.waitForTimeout(250);
+}
+
+/**
+ * 予定に所要時間を入れる。
+ * これが無いと「終わる時刻」が動かないので、
+ * **間に合わない警告を出すシナリオが組めない**(実際に詰まった)。
+ */
+async function setDuration(page, name, minutes) {
+  await page.locator('.ev-main').filter({ hasText: name }).first().click();
+  await page.waitForSelector('.sheet');
+  const toggle = page.getByLabel('時刻を決めない');
+  if (await toggle.isChecked()) {
+    await toggle.click();
+    await page.waitForSelector('#ev-time');
+  }
+  await page.selectOption('#ev-dur', String(minutes));
   await page.locator('.sheet-head .iconbtn').last().click();
   await page.waitForTimeout(250);
 }
@@ -338,7 +388,10 @@ const HELP = `
   reset                        端末のデータを消して初期状態へ
   seed  :: [タイトル] :: [場所,場所,...]   旅と予定を UI 経由で作る
   time  :: <予定名> :: <HH:MM>  予定に時刻を入れる
+  dur   :: <予定名> :: <分>     所要時間を入れる(15/30/45/60/90/120/180/240)
   click :: <selector>          クリック(Playwright セレクタ)
+  longpress :: <selector>      長押し → 予定のアクションメニュー
+  swipe :: <selector> :: right|left   右=行った / 左=削除
   fill  :: <selector> :: <値>  入力
   press :: <selector> :: <キー> キー送信(Enter など)
   text  :: <selector>          一致した要素のテキストを全部出す
@@ -380,9 +433,18 @@ async function repl() {
         case 'time':
           await setTime(page, args[0], args[1]);
           break;
+        case 'dur':
+          await setDuration(page, args[0], Number(args[1]));
+          break;
         case 'click':
           await page.locator(args[0]).first().click();
           await page.waitForTimeout(200);
+          break;
+        case 'longpress':
+          await longPress(page, args[0]);
+          break;
+        case 'swipe':
+          await swipe(page, args[0], args[1] === 'left' ? 'left' : 'right');
           break;
         case 'fill':
           await page.locator(args[0]).first().fill(args[1] ?? '');

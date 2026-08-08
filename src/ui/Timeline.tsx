@@ -1,6 +1,10 @@
 import { useI18n } from '../i18n/context';
 import { CATEGORIES } from '../lib/category';
 import { nowMinutes } from '../lib/plainDate';
+import { deleteEvent, toggleDone } from '../db/repo';
+import { Connector } from './Connector';
+import { SwipeRow } from './SwipeRow';
+import type { MapProvider } from '../lib/maps';
 import type { TripEvent } from '../db/types';
 
 /**
@@ -11,22 +15,26 @@ import type { TripEvent } from '../db/types';
  * 1日の全体像が消える(docs/ux-design.md §3.1)。
  *
  * 時刻ありが先、**時刻未定は末尾にまとめる**。
- * 時刻を決めずに置けることが、この製品の入口の軽さそのもの。
+ * 予定と予定のあいだには Connector が入る ── ここがこの製品の核。
  */
 export function Timeline({
   events,
   dayIndex,
   isToday,
   isLastDay,
+  mapProvider,
   onOpen,
   onOpenMap,
+  onLongPress,
 }: {
   events: TripEvent[];
   dayIndex: number;
   isToday: boolean;
   isLastDay: boolean;
+  mapProvider: MapProvider | null;
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
+  onLongPress: (event: TripEvent) => void;
 }) {
   const { t } = useI18n();
 
@@ -48,7 +56,15 @@ export function Timeline({
       {timed.map((event, i) => (
         <div key={event.id}>
           {isToday && crossesNow(timed, i, now) && <NowLine now={now} />}
-          <EventRow event={event} onOpen={onOpen} onOpenMap={onOpenMap} />
+          <Row
+            event={event}
+            onOpen={onOpen}
+            onOpenMap={onOpenMap}
+            onLongPress={onLongPress}
+          />
+          {timed[i + 1] && (
+            <Connector prev={event} next={timed[i + 1]} mapProvider={mapProvider} />
+          )}
         </div>
       ))}
 
@@ -61,7 +77,13 @@ export function Timeline({
         <>
           <div className="unscheduled">{t('timeline.unscheduled')}</div>
           {untimed.map((event) => (
-            <EventRow key={event.id} event={event} onOpen={onOpen} onOpenMap={onOpenMap} />
+            <Row
+              key={event.id}
+              event={event}
+              onOpen={onOpen}
+              onOpenMap={onOpenMap}
+              onLongPress={onLongPress}
+            />
           ))}
         </>
       )}
@@ -84,6 +106,31 @@ function NowLine({ now }: { now: number }) {
       <span className="t">{time(now)}</span>
       <span className="l" />
     </div>
+  );
+}
+
+function Row({
+  event,
+  onOpen,
+  onOpenMap,
+  onLongPress,
+}: {
+  event: TripEvent;
+  onOpen: (event: TripEvent) => void;
+  onOpenMap: (event: TripEvent) => void;
+  onLongPress: (event: TripEvent) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <SwipeRow
+      rightLabel={`✓ ${t(event.done ? 'actions.undone' : 'timeline.done')}`}
+      leftLabel={`${t('timeline.delete')} ✕`}
+      onSwipeRight={() => void toggleDone(event.id)}
+      onSwipeLeft={() => void deleteEvent(event.id)}
+      onLongPress={() => onLongPress(event)}
+    >
+      <EventRow event={event} onOpen={onOpen} onOpenMap={onOpenMap} />
+    </SwipeRow>
   );
 }
 
@@ -117,7 +164,10 @@ function EventRow({
 
       <div className="ev-body">
         <button type="button" className="ev-main" onClick={() => onOpen(event)}>
-          <div className="ev-name">{event.name}</div>
+          <div className="ev-name">
+            {event.done && <span aria-hidden="true">✓ </span>}
+            {event.name}
+          </div>
           <div className="ev-sub">
             {event.note && <span>{firstLine(event.note)}</span>}
             {event.pinned && <span className="badge">📌 {t('timeline.pinned')}</span>}

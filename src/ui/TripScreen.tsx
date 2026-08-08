@@ -10,8 +10,10 @@ import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
 import { openMap } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
 import type { TripEvent } from '../db/types';
+import type { ReflowResult } from '../db/repo';
 import { Timeline } from './Timeline';
 import { EventSheet } from './EventSheet';
+import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
 import { MapProviderPrompt } from './Settings';
 
@@ -32,11 +34,26 @@ export function TripScreen({
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
+  const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
+  const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
+  const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
+  const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
+
+  useEffect(() => {
+    void getMapProvider().then(setMapProviderState);
+  }, []);
+
+  // 「元に戻す」は数秒で消える。押さなければそのまま確定
+  useEffect(() => {
+    if (!undo) return;
+    const id = window.setTimeout(() => setUndo(null), 6000);
+    return () => window.clearTimeout(id);
+  }, [undo]);
 
   // 旅の日数が縮んで、開いていた Day が範囲外になったときの保険
   const total = trip ? dayCount(trip.startDate, trip.endDate) : 1;
@@ -57,6 +74,11 @@ export function TripScreen({
       return;
     }
     openMap(provider, { name: event.name, lat: event.lat, lng: event.lng });
+  }
+
+  function pickedMapProvider(provider: MapProvider) {
+    void setMapProvider(provider);
+    setMapProviderState(provider);
   }
 
   async function submitDraft() {
@@ -114,8 +136,10 @@ export function TripScreen({
               dayIndex={dayIndex}
               isToday={dayDate === todayDate}
               isLastDay={dayIndex === total - 1}
+              mapProvider={mapProvider}
               onOpen={(e) => setOpenEventId(e.id)}
               onOpenMap={(e) => void handleOpenMap(e)}
+              onLongPress={(e) => setActionEventId(e.id)}
             />
           )}
         </div>
@@ -154,6 +178,24 @@ export function TripScreen({
         </p>
       )}
 
+      {undo && (
+        <UndoBar result={undo.result} deltaMinutes={undo.delta} onDismiss={() => setUndo(null)} />
+      )}
+
+      {actionEvent && events && (
+        <EventActions
+          event={actionEvent}
+          events={events}
+          dayCount={total}
+          onClose={() => setActionEventId(null)}
+          onEdit={() => {
+            setOpenEventId(actionEvent.id);
+            setActionEventId(null);
+          }}
+          onReflowed={(result, delta) => setUndo({ result, delta })}
+        />
+      )}
+
       {openEvent && (
         <EventSheet
           event={openEvent}
@@ -168,7 +210,7 @@ export function TripScreen({
         <MapProviderPrompt
           onClose={() => setPendingMapFor(null)}
           onPick={(provider: MapProvider) => {
-            void setMapProvider(provider);
+            pickedMapProvider(provider);
             openMap(provider, {
               name: pendingMapFor.name,
               lat: pendingMapFor.lat,

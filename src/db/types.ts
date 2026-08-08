@@ -1,5 +1,5 @@
 import type { CategoryId } from '../lib/category';
-import type { LinkLabelId } from '../lib/maps';
+import type { LinkLabelId, TravelMode } from '../lib/maps';
 import type { PlainDate } from '../lib/plainDate';
 
 /**
@@ -83,6 +83,16 @@ export type TripEvent = SyncFields & {
   address?: string;
   links: EventLink[];
   booking?: Booking;
+  /**
+   * **次の予定への移動**。旅程アプリの価値は「点」ではなく「点と点の間」にある。
+   *
+   * 座標が無いので距離からは出せない(場所検索APIを叩くとクエリが外部に出て
+   * 「データを収集していません」が崩れる)。**手入力**で持つ。
+   * 座標が入る日が来たら `estimateTravelMinutes` で初期値を出せるようにしてある。
+   */
+  travelMinutes: number | null;
+  travelMode: TravelMode | null;
+
   /** リフローの対象外にする(宿のチェックイン時刻など) */
   pinned: boolean;
   done: boolean;

@@ -4,6 +4,7 @@ import type { DayVariant, Member, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
+import type { TravelMode } from '../lib/maps';
 import { dayCount } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 
@@ -208,6 +209,8 @@ function buildEvent(
     categoryLocked: false,
     name: name.trim(),
     links: [],
+    travelMinutes: null,
+    travelMode: null,
     pinned: false,
     done: false,
     order,
@@ -255,6 +258,86 @@ export async function moveEvent(
   await updateEvent(id, {
     dayIndex: toDayIndex,
     order: orderKeyBetween(before?.order ?? null, after?.order ?? null),
+  });
+}
+
+/**
+ * 別の日へ移す。移した先の末尾に置く。
+ * 移動時間は「次の予定への」ものなので、日をまたいだら意味を失う。落とす。
+ */
+export async function moveEventToDay(id: string, toDayIndex: number): Promise<void> {
+  const event = await db.events.get(id);
+  if (!event || event.dayIndex === toDayIndex) return;
+  const target = await listEventsOfDay(event.tripId, toDayIndex);
+  const last = target.length > 0 ? maxOrder(target) : null;
+  await updateEvent(id, {
+    dayIndex: toDayIndex,
+    order: orderKeyBetween(last, null),
+    travelMinutes: null,
+    travelMode: null,
+  });
+}
+
+/**
+ * ひとつ上/下へ。
+ *
+ * ドラッグ&ドロップにしていないのは、**同じ行で横スワイプ(完了・削除)を
+ * 使っているため縦ドラッグとジェスチャが衝突する**から。
+ * 時刻ありの予定は時刻順に並ぶので、手で並べ替えたいのは実質「時刻未定」だけで、
+ * それには上下ボタンで足りる。
+ */
+export async function nudgeEvent(id: string, direction: -1 | 1): Promise<void> {
+  const event = await db.events.get(id);
+  if (!event) return;
+  const siblings = (await listEventsOfDay(event.tripId, event.dayIndex)).filter(
+    (e) => (e.startMinutes === null) === (event.startMinutes === null),
+  );
+  const i = siblings.findIndex((e) => e.id === id);
+  const j = i + direction;
+  if (i < 0 || j < 0 || j >= siblings.length) return;
+
+  // 入れ替え先の「向こう隣」との間に入る
+  const target = siblings[j];
+  const beyond = siblings[j + direction] ?? null;
+  const [before, after] = direction === 1 ? [target, beyond] : [beyond, target];
+  await updateEvent(id, { order: orderKeyBetween(before?.order ?? null, after?.order ?? null) });
+}
+
+/** 複製。同じ日の、元の直後に置く */
+export async function duplicateEvent(id: string): Promise<TripEvent | null> {
+  const event = await db.events.get(id);
+  if (!event) return null;
+  const siblings = await listEventsOfDay(event.tripId, event.dayIndex);
+  const i = siblings.findIndex((e) => e.id === id);
+  const next = i >= 0 ? (siblings[i + 1] ?? null) : null;
+  const copy: TripEvent = {
+    ...event,
+    id: newId(),
+    done: false,
+    order: orderKeyBetween(event.order, next?.order ?? null),
+    ...(await stamp()),
+  };
+  await db.events.add(copy);
+  return copy;
+}
+
+/** 旅行中に「行った」を潰していく。右スワイプから呼ぶ */
+export async function toggleDone(id: string): Promise<void> {
+  const event = await db.events.get(id);
+  if (!event) return;
+  await updateEvent(id, { done: !event.done });
+}
+
+/** 次の予定への移動時間。0 や null で「未設定」に戻る */
+export async function setTravel(
+  id: string,
+  minutes: number | null,
+  mode: TravelMode | null,
+): Promise<void> {
+  const cleared = minutes === null || minutes <= 0;
+  await updateEvent(id, {
+    travelMinutes: cleared ? null : minutes,
+    travelMode: cleared ? null : mode,
   });
 }
 
