@@ -35,6 +35,7 @@ npm install
 npx tsc -b --force     # tsconfig.json は references のソリューション形式。--noEmit は使えない
 npm run build          # tsc -b && vite build。base: './' の相対パスビルド
 npm run lint           # oxlint
+npm run size           # バンドルの上限。build のあとに走らせる(CI でも回る)
 npx cap sync ios       # dist/ を iOS プロジェクトへ反映
 ```
 
@@ -56,7 +57,19 @@ node .claude/skills/run-travelnote/driver.mjs smoke
 **ブラウザに `pageerror` / `console.error` が1件でもあれば exit 1。**
 スクリーンショットは `.shots/smoke-*.png`(gitignore 済み)。
 
-### 2. 好きに触る
+### 2. 起動の速さを測る
+
+```bash
+node .claude/skills/run-travelnote/driver.mjs perf
+```
+
+**必ず本番ビルドで測る**(このモードは自動で `npm run build` → `vite preview`)。
+dev サーバはモジュールを個別に配るので、実際に端末へ入るものとは別物。
+
+2日×10件を仕込んでから5回リロードし、中央値を出す。
+本命の数字は「**タイムラインが見えるまで**」。2026-08-09 時点で **89ms**。
+
+### 3. 好きに触る
 
 標準入力に1行1コマンドを流す。tmux は要らない。
 

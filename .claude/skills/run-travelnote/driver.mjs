@@ -28,6 +28,8 @@ const SHOTS = path.join(UNIT, '.shots');
 const PORT = Number(process.env.TN_PORT ?? 5199);
 const URL = process.env.TN_URL ?? `http://127.0.0.1:${PORT}/`;
 const HEADED = process.env.TN_HEADED === '1';
+/** 本番ビルドを配る。perf は既定でこちら(dev サーバでは測る意味がない) */
+const PROD = process.env.TN_PROD === '1' || process.argv[2] === 'perf';
 const DARK = process.env.TN_DARK === '1';
 const LOCALE = process.env.TN_LOCALE ?? 'ja-JP';
 
@@ -85,9 +87,28 @@ function portOpen(port) {
 
 async function startServer() {
   if (await portOpen(PORT)) {
-    console.log(`· dev サーバは既に :${PORT} で動いています(起動しません)`);
+    console.log(`· サーバは既に :${PORT} で動いています(起動しません)`);
     return null;
   }
+  // 本番ビルドを配る。**実際に端末へ入るのはこれ**なので、
+  // 起動時間を測るときは必ず PROD で測る(dev サーバはモジュールを個別に配るので別物)
+  if (PROD) {
+    console.log('· 本番ビルドを作って :%d で配ります', PORT);
+    const built = spawnSync('npm', ['run', 'build'], { cwd: UNIT, shell: true, stdio: 'ignore' });
+    if (built.status !== 0) throw new Error('npm run build に失敗しました');
+    const child = spawn('npm', ['run', 'preview', '--', '--port', String(PORT), '--host', '127.0.0.1'], {
+      cwd: UNIT,
+      shell: true,
+      stdio: 'ignore',
+      detached: process.platform !== 'win32',
+    });
+    for (let i = 0; i < 60; i += 1) {
+      await new Promise((r) => setTimeout(r, 400));
+      if (await portOpen(PORT)) return child;
+    }
+    throw new Error(`preview が :${PORT} で立ち上がりませんでした`);
+  }
+
   console.log(`· dev サーバを :${PORT} で起動します`);
   const child = spawn('npm', ['run', 'dev', '--', '--port', String(PORT), '--host', '127.0.0.1'], {
     cwd: UNIT,
@@ -414,6 +435,68 @@ async function smoke() {
   await close(s, 'smoke');
 }
 
+/* ───────────────── perf: 起動を実測する ───────────────── */
+
+/**
+ * バンドルの大きさではなく、**実際に何ミリ秒で使える状態になるか**を測る。
+ *
+ * ローカルにバンドルを抱えるアプリでは転送量はほぼ関係ない。
+ * 効くのは「パースと実行」と「IndexedDB を開いて最初の描画に至るまで」。
+ */
+async function perf() {
+  const s = await open();
+  const { page } = s;
+
+  // 実データに近い状態を作る(4日 × 20件)
+  await reset(page);
+  await seed(page, { places: [] });
+  const names = [
+    '東京駅', '二条城', '本家第一旭', '清水寺', '錦市場',
+    '京都タワーホテル', '% ARABICA 京都東山', '伏見稲荷大社', '嵐山 竹林の小径', '天龍寺',
+  ];
+  await seed2(page, names);
+  await page.locator('.daytab').nth(1).click();
+  await page.waitForTimeout(200);
+  await seed2(page, names);
+  console.log('  仕込み: 2日 × 10件');
+
+  const runs = [];
+  for (let i = 0; i < 5; i += 1) {
+    await page.goto(URL, { waitUntil: 'commit' });
+    // タイムラインの1行目が見えた = 使える状態
+    await page.waitForSelector('.ev', { timeout: 10000 });
+    const m = await page.evaluate(() => {
+      const nav = performance.getEntriesByType('navigation')[0];
+      const paint = performance.getEntriesByType('paint');
+      const fcp = paint.find((p) => p.name === 'first-contentful-paint');
+      const scripts = performance
+        .getEntriesByType('resource')
+        .filter((r) => r.name.split('?')[0].endsWith('.js'));
+      return {
+        domContentLoaded: Math.round(nav.domContentLoadedEventEnd),
+        fcp: fcp ? Math.round(fcp.startTime) : null,
+        now: Math.round(performance.now()),
+        jsBytes: scripts.reduce((a, r) => a + (r.decodedBodySize || 0), 0),
+        jsCount: scripts.length,
+      };
+    });
+    runs.push(m);
+  }
+
+  const med = (k) => {
+    const v = runs.map((r) => r[k]).filter((x) => x !== null).sort((a, b) => a - b);
+    return v[Math.floor(v.length / 2)];
+  };
+
+  console.log('\n── 起動(5回の中央値)──');
+  console.log(`  DOMContentLoaded      ${med('domContentLoaded')} ms`);
+  console.log(`  First Contentful Paint ${med('fcp')} ms`);
+  console.log(`  タイムラインが見えるまで ${med('now')} ms   ← これが本命`);
+  console.log(`  JS ${(runs[0].jsBytes / 1024).toFixed(0)} KB / ${runs[0].jsCount} ファイル`);
+
+  await close(s, 'perf');
+}
+
 /* ───────────────── repl: 好きに触る ───────────────── */
 
 const HELP = `
@@ -536,7 +619,8 @@ async function repl() {
 const mode = process.argv[2] ?? 'smoke';
 if (mode === 'smoke') await smoke();
 else if (mode === 'repl') await repl();
+else if (mode === 'perf') await perf();
 else {
-  console.error(`使い方: node driver.mjs [smoke|repl]\n${HELP}`);
+  console.error(`使い方: node driver.mjs [smoke|repl|perf]\n${HELP}`);
   process.exit(2);
 }

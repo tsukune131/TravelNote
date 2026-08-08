@@ -121,7 +121,12 @@ Sign in with Apple も入れない(入れた瞬間に同じ要件が復活する
 - Lint: `npm run lint`(oxlint)
 - React プラグインは `@vitejs/plugin-react-swc`
 - Capacitorプラグインは**静的import**(動的importで実機が固まった前例あり)
-- コード分割(React.lazy)は自前コードのみ可
+- コード分割(React.lazy)は自前コードのみ可。ただし**現状は分割していない** ──
+  バンドルの86%が React と Dexie で、どちらも起動時に必要だから(A-4 で実測)
+- **バンドルの上限は `npm run size`**(CI で回る)。上限に当たったら、
+  まず本当に起動時から要るか問う。数字を上げるなら理由をコミットに書く
+- **スプラッシュは固定秒数で待たせない。** 描画が済んだら `hideSplash()` で閉じる
+  (`launchShowDuration` は JS が動かなかったときの保険)
 - ストレージ: Dexie(IndexedDB)。バックアップはiCloudのアプリコンテナ復元に委ねる
 - TestFlight配布: Actions → iOS TestFlight → lane=beta(手順は docs/ios-release-setup.md)
 - Capability変更時は lane=refresh_profiles を先に実行

@@ -32,6 +32,9 @@ jobs:
       # 各プロジェクトは noEmit: true なので出力は出ない
       - run: npx tsc -b
       - run: npm run lint
+      # 気づかないうちにバンドルが倍にならないための門(scripts/size-budget.mjs)
+      - run: npm run build
+      - run: npm run size
 
       # 法務ページはアプリに同梱しているものと同じ実体を配る(二重管理を避ける)
       - name: Assemble site
