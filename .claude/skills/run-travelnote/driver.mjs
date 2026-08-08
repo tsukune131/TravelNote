@@ -216,7 +216,13 @@ async function reset(page) {
  *    素の空状態のスクリーンショットを撮る。
  */
 async function seed(page, { title = '京都・大阪 3泊4日', places = [], offsetStart = -1, offsetEnd = 2 } = {}) {
-  const iso = (d) => d.toISOString().slice(0, 10);
+  // reset 直後はようこそ画面が出ている。旅を作るには先に抜ける必要がある
+  await skipWelcome(page);
+  // ⚠️ toISOString() は UTC。深夜に走らせるとアプリのローカル日付と1日ずれ、
+  //    「今日の Day」の検証が黙って無意味になる(実際に踏んだ)。
+  //    アプリ側の toPlainDate と同じくローカルの年月日で組む
+  const iso = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const base = new Date();
   const s = new Date(base);
   s.setDate(s.getDate() + offsetStart);
@@ -238,6 +244,28 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
     await page.waitForTimeout(120);
   }
   console.log(`  seed: 「${title}」に ${places.length} 件`);
+}
+
+/** すでに開いている旅の、いま見ている Day に予定を足す */
+async function seed2(page, places) {
+  const input = page.getByPlaceholder('場所の名前');
+  for (const name of places) {
+    await input.fill(name);
+    await input.press('Enter');
+    await page.waitForTimeout(120);
+  }
+  console.log(`  追加: ${places.length} 件`);
+}
+
+/**
+ * ようこそ画面が出ていたら抜ける。
+ * 初回起動でしか出ないが、`reset` のたびに戻ってくる。
+ */
+async function skipWelcome(page) {
+  if ((await page.locator('.welcome').count()) === 0) return false;
+  await page.locator('.welcome .btn').click();
+  await page.waitForTimeout(300);
+  return true;
 }
 
 /**
@@ -313,16 +341,22 @@ async function smoke() {
   const { page } = s;
   const step = (m) => console.log(`\n▶ ${m}`);
 
-  step('起動 → 旅一覧');
+  step('初回起動 → ようこそ');
   await reset(page);
+  await page.waitForSelector('.welcome');
+  console.log('  見出し:', await page.locator('.welcome-body h1').textContent());
+  await shot(page, 'smoke-00-welcome');
+  await skipWelcome(page);
+
+  step('旅一覧(空)');
   await page.waitForSelector('text=旅の一覧');
   console.log('  空状態:', await page.locator('.empty b').textContent());
   await shot(page, 'smoke-01-empty');
 
-  step('旅をつくる → 予定を連続で追加');
-  await seed(page, {
-    places: ['東京駅', '二条城', '本家第一旭 たかばし本店', '清水寺', '% ARABICA 京都東山'],
-  });
+  step('旅をつくる → 空状態のチップ → 予定を連続で追加');
+  await seed(page, { places: [] });
+  console.log('  空状態のチップ:', (await page.locator('.seed').allTextContents()).join(' '));
+  await seed2(page, ['東京駅', '二条城', '本家第一旭 たかばし本店', '清水寺', '% ARABICA 京都東山']);
   console.log('  Day タブ:', await page.locator('.daytab').count());
   console.log('  予定:', await page.locator('.ev').count());
   const pins = await page
@@ -346,6 +380,7 @@ async function smoke() {
   await page.locator('.sheet-head .iconbtn').last().click();
   await page.waitForTimeout(250);
 
+  // seed は「昨日〜3日後」で作るので、今日は必ず Day 2(index 1)
   step('今日の Day に現在時刻ライン');
   await page.locator('.daytab').nth(1).click();
   await page.waitForTimeout(200);

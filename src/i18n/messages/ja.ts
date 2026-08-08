@@ -11,6 +11,31 @@ export const ja = {
     name: 'たびのしおり',
   },
 
+  welcome: {
+    tagline: '同行者と一緒に作って、\n旅行中に片手で見る。',
+    point1: '登録も、パスワードも要りません',
+    point2: '旅程はこの端末の中だけに保存されます',
+    point3: '時刻は決めなくて大丈夫。あとから足せます',
+    start: 'はじめる',
+  },
+
+  seed: {
+    label: 'タップして骨組みから',
+    depart: '出発',
+    checkIn: 'チェックイン',
+    checkOut: 'チェックアウト',
+    breakfast: '朝食',
+    lunch: '昼食',
+    dinner: '夕食',
+    souvenir: 'お土産',
+    trainHome: '帰りの新幹線',
+  },
+
+  hint: {
+    longPress: '予定を長押しすると、まとめてずらす・別の日へ移す・複製ができます',
+    gotIt: 'わかった',
+  },
+
   tripList: {
     title: '旅の一覧',
     empty: 'まだ旅がありません',

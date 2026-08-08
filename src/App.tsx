@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { I18nProvider } from './i18n/react';
 import { TripList } from './ui/TripList';
 import { TripScreen } from './ui/TripScreen';
+import { Welcome } from './ui/Welcome';
 import { findLandingPoint } from './db/repo';
+import { FLAGS, getFlag, setFlag } from './db/settings';
 import { today } from './lib/plainDate';
 
-type Route = { screen: 'list' } | { screen: 'trip'; tripId: string; dayIndex: number };
+type Route =
+  | { screen: 'welcome' }
+  | { screen: 'list' }
+  | { screen: 'trip'; tripId: string; dayIndex: number };
 
 export default function App() {
   const [route, setRoute] = useState<Route | null>(null);
@@ -15,15 +20,17 @@ export default function App() {
    * **進行中の旅があれば、一覧を経由せずその旅の「今日」を直接開く。**
    * 旅行中に「一覧 → 旅を選ぶ → 今日を探す」を毎回やらせない
    * (docs/ux-design.md §2.2)。
+   *
+   * ようこそ画面はその手前。初回だけで、旅が1つでもあれば二度と出さない。
    */
   useEffect(() => {
     void (async () => {
       const landing = await findLandingPoint(today());
-      setRoute(
-        landing
-          ? { screen: 'trip', tripId: landing.tripId, dayIndex: landing.dayIndex }
-          : { screen: 'list' },
-      );
+      if (landing) {
+        setRoute({ screen: 'trip', tripId: landing.tripId, dayIndex: landing.dayIndex });
+        return;
+      }
+      setRoute((await getFlag(FLAGS.onboarded)) ? { screen: 'list' } : { screen: 'welcome' });
     })();
   }, []);
 
@@ -32,7 +39,14 @@ export default function App() {
 
   return (
     <I18nProvider>
-      {route.screen === 'list' ? (
+      {route.screen === 'welcome' ? (
+        <Welcome
+          onStart={() => {
+            void setFlag(FLAGS.onboarded);
+            setRoute({ screen: 'list' });
+          }}
+        />
+      ) : route.screen === 'list' ? (
         <TripList
           onOpen={(tripId, dayIndex) => setRoute({ screen: 'trip', tripId, dayIndex })}
         />

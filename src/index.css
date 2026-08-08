@@ -252,16 +252,96 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-top: 0.2rem;
+  margin-top: 0.4rem;
 }
 
 .seed {
   border: 1px solid var(--rule);
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.85rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.88rem;
   color: var(--ink);
   background: var(--surface);
+  min-height: 2.75rem;
+}
+
+/* ───────── ようこそ ───────── */
+
+.welcome-body {
+  padding: clamp(3rem, 14vh, 7rem) 1.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.welcome-body h1 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.welcome-tagline {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--indigo);
+  margin: 0;
+  /* 文言側の改行を活かす(言語ごとに切れ目が違う) */
+  white-space: pre-line;
+}
+
+.welcome-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+}
+
+.welcome-points li {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.welcome-points li::before {
+  content: '✓';
+  color: var(--cat-nature);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+/* ───────── その場で出すヒント ───────── */
+
+.hintbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.8rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--indigo);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  font-size: 0.82rem;
+  color: var(--ink-2);
+}
+
+.hintbar span {
+  flex: 1;
+  min-width: 0;
+}
+
+.hintbar button {
+  flex: 0 0 auto;
+  color: var(--indigo);
+  font-weight: 700;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
 }
 
 /* ───────── Day タブ ───────── */

@@ -25,3 +25,29 @@ export async function getDisplayName(): Promise<string> {
 export async function setDisplayName(name: string): Promise<void> {
   await setSetting(DISPLAY_NAME_KEY, name.trim());
 }
+
+/* ────────── 一度きりのフラグ ────────── */
+
+/**
+ * 「もう見せた」を覚えるための印。
+ *
+ * ヒントは**必要な場面で1回だけ**出す。上前のカルーセルにしないのは、
+ * 読まれないうえに、このアプリの非自明な価値(時刻を決めなくていい・
+ * 長押しでまとめてずらせる)は**その場面が来たときに教えるほうが効く**から。
+ */
+export const FLAGS = {
+  /** ようこそ画面を見終わった */
+  onboarded: 'flag.onboarded',
+  /** 長押しでアクションメニューが出ることを知っている */
+  knowsLongPress: 'flag.knowsLongPress',
+} as const;
+
+export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
+
+export async function getFlag(key: FlagKey): Promise<boolean> {
+  return (await getSetting(key)) === '1';
+}
+
+export async function setFlag(key: FlagKey): Promise<void> {
+  await setSetting(key, '1');
+}

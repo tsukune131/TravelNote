@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/context';
 import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
 import { addEvent, listEventsOfDay } from '../db/repo';
-import { getMapProvider, setMapProvider } from '../db/settings';
+import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
 import { guessCategory } from '../lib/category';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
 import { openMap } from '../lib/openExternal';
@@ -39,6 +39,7 @@ export function TripScreen({
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
+  const [knowsLongPress, setKnowsLongPress] = useState(true); // 読み込むまでは出さない
   const inputRef = useRef<HTMLInputElement>(null);
 
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
@@ -46,7 +47,21 @@ export function TripScreen({
 
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
+    void getFlag(FLAGS.knowsLongPress).then((v) => setKnowsLongPress(v));
   }, []);
+
+  /**
+   * 長押しヒントは**必要な場面でだけ**出す。
+   * 時刻の入った予定が2件以上ある日 ── つまり「ずらす」が意味を持つ状態になって
+   * はじめて見せる。空の日や1件だけの日に出しても邪魔なだけ。
+   */
+  const showHint =
+    !knowsLongPress && (events?.filter((e) => e.startMinutes !== null).length ?? 0) >= 2;
+
+  function dismissHint() {
+    void setFlag(FLAGS.knowsLongPress);
+    setKnowsLongPress(true);
+  }
 
   // 「元に戻す」は数秒で消える。押さなければそのまま確定
   useEffect(() => {
@@ -132,6 +147,7 @@ export function TripScreen({
         <div className="pad">
           {events && (
             <Timeline
+              tripId={tripId}
               events={events}
               dayIndex={dayIndex}
               isToday={dayDate === todayDate}
@@ -139,8 +155,21 @@ export function TripScreen({
               mapProvider={mapProvider}
               onOpen={(e) => setOpenEventId(e.id)}
               onOpenMap={(e) => void handleOpenMap(e)}
-              onLongPress={(e) => setActionEventId(e.id)}
+              onLongPress={(e) => {
+                // 使えたなら、もう教える必要はない
+                dismissHint();
+                setActionEventId(e.id);
+              }}
             />
+          )}
+
+          {showHint && (
+            <div className="hintbar" role="note">
+              <span>💡 {t('hint.longPress')}</span>
+              <button type="button" onClick={dismissHint}>
+                {t('hint.gotIt')}
+              </button>
+            </div>
           )}
         </div>
       </div>

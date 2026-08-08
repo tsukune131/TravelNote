@@ -11,6 +11,31 @@ export const en: DeepPartial<Messages> = {
     name: 'Tabi no Shiori',
   },
 
+  welcome: {
+    tagline: 'Plan it together.\nCarry it in one hand.',
+    point1: 'No sign-up, no password',
+    point2: 'Your itinerary stays on this device',
+    point3: "Times are optional — you can fill them in later",
+    start: 'Get started',
+  },
+
+  seed: {
+    label: 'Tap to start from a skeleton',
+    depart: 'Leave home',
+    checkIn: 'Check in',
+    checkOut: 'Check out',
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    souvenir: 'Souvenirs',
+    trainHome: 'Train home',
+  },
+
+  hint: {
+    longPress: 'Press and hold a stop to push the schedule, move it to another day, or duplicate it',
+    gotIt: 'Got it',
+  },
+
   tripList: {
     title: 'Trips',
     empty: 'No trips yet',

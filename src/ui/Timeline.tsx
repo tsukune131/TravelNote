@@ -3,6 +3,7 @@ import { CATEGORIES } from '../lib/category';
 import { nowMinutes } from '../lib/plainDate';
 import { deleteEvent, toggleDone } from '../db/repo';
 import { Connector } from './Connector';
+import { SeedChips } from './SeedChips';
 import { SwipeRow } from './SwipeRow';
 import type { MapProvider } from '../lib/maps';
 import type { TripEvent } from '../db/types';
@@ -18,6 +19,7 @@ import type { TripEvent } from '../db/types';
  * 予定と予定のあいだには Connector が入る ── ここがこの製品の核。
  */
 export function Timeline({
+  tripId,
   events,
   dayIndex,
   isToday,
@@ -27,6 +29,7 @@ export function Timeline({
   onOpenMap,
   onLongPress,
 }: {
+  tripId: string;
   events: TripEvent[];
   dayIndex: number;
   isToday: boolean;
@@ -43,6 +46,13 @@ export function Timeline({
       <div className="empty">
         <b>{t('timeline.empty', { n: dayIndex + 1 })}</b>
         <p>{isLastDay ? t('timeline.emptyHintLast') : t('timeline.emptyHintFirst')}</p>
+        {/* 文章だけでは手が動かない。1タップで骨組みが立つようにする */}
+        <SeedChips
+          tripId={tripId}
+          dayIndex={dayIndex}
+          isFirstDay={dayIndex === 0}
+          isLastDay={isLastDay}
+        />
       </div>
     );
   }
