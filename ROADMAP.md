@@ -95,7 +95,7 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
       実装を変えたら必ずここへ戻る。設定・購入画面・ようこそ画面からリンク済み
 - [x] B-3 GitHub Pages の中身(紹介ページ + 法務2枚 + 共通CSS)。
       CI と同じ手順で組んでブラウザで確認済み(リンク切れ・404 なし)
-- [ ] B-3b **GitHub リポジトリ `tsukune131/TravelNote` を Public で作成して push**
+- [x] B-3b **GitHub リポジトリ `tsukune131/TravelNote` を Public で作成して push**
       ── ここだけユーザー作業。push すると Actions の
       「Deploy to GitHub Pages」が走り、
       https://tsukune131.github.io/TravelNote/ が公開される。
@@ -289,5 +289,13 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   利用規約には 3.1.2 が要求するサブスク条項(期間・価格・自動更新・解約方法・
   解約後も既存の旅は編集でき共有済みの旅は送り続けられること)を明記。
   紹介ページも作り、CI と同じ手順で組んでブラウザで確認(リンク切れ・404 なし)。
-  **→ 残るは B-3b(GitHub に Public リポジトリを作って push)のみ。ユーザー作業。**
-  **→ そのあとチェックポイントB(Apple Developer 年99ドルの判断)。**
+- 2026-08-09 **フェーズB 完了。公開まで到達。**
+  `tsukune131/TravelNote` を Public で作成して push。
+  **https://tsukune131.github.io/TravelNote/ が生きている**
+  (紹介ページ・プライバシーポリシー・利用規約 すべて 200)。
+  ── App Store Connect が要求するプライバシーポリシーURLが用意できた。
+  Pages の有効化は GITHUB_TOKEN では作成できず、一度だけ API で有効化した
+  (`gh api -X POST repos/.../pages -f build_type=workflow`)。
+  初回の CI は **@capacitor/browser の宣言漏れ**で落ちた ── 手元の node_modules に
+  残っていて、ローカルだけ通っていた。`npm run deps` の門を足して塞いだ。
+  **→ チェックポイントB(Apple Developer 年99ドルの判断)。**
