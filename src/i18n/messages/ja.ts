@@ -65,7 +65,8 @@ export const ja = {
     /** 決めた日付を年つきで返す。来年の旅を今年で作ってしまわないように */
     range: '{start} 〜 {end}・{length}',
     album: '写真アルバム',
-    albumHint: 'LINEアルバムやGoogleフォトのリンクを貼ると、旅の一覧から開けます。写真はこのアプリに取り込みません。',
+    /** LINEアルバムはリンクを作れないので案内しない(探しても見つからない) */
+    albumHint: 'Googleフォトや iCloud共有アルバムのリンクを貼ると、旅の一覧から開けます。写真はこのアプリに取り込みません。',
     albumPlaceholder: 'アルバムのリンク',
     create: 'つくる',
     rangeError: '帰る日は出発日より後にしてください',

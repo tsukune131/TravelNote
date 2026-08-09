@@ -64,7 +64,7 @@ export const en: DeepPartial<Messages> = {
     endDate: 'Coming home',
     range: '{start} – {end} · {length}',
     album: 'Photo album',
-    albumHint: 'Paste a LINE album or Google Photos link and open it straight from the trip list. Photos are not copied into this app.',
+    albumHint: 'Paste a Google Photos or iCloud shared album link and open it straight from the trip list. Photos are not copied into this app.',
     albumPlaceholder: 'Link to the album',
     create: 'Create',
     rangeError: 'The return date has to come after the departure date',
