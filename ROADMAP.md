@@ -131,9 +131,14 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 - [x] C-1 Apple Developer Program 登録 — 済み(2026-08-09 時点)
 - [ ] C-2 TestFlight自動配布パイプライン(手順: docs/ios-release-setup.md §0)
   - [x] ワークフロー / fastlane 3レーン / 共有スキーム / 相対パスビルド
-  - [x] 証明書リポジトリ `tsukune131/TravelNote-certificates`(**Private**)を作成
-  - [ ] **Apple 側の設定**(App ID / アプリ登録 / API キー **Admin権限** / Team ID)
-  - [ ] **Fine-grained PAT**(証明書リポジトリのみ・Contents 読み書き)
+  - [x] **証明書リポジトリは `VitaNote-certificates` を共用**する決定。
+        Apple の配布用証明書は2枚まで。別リポジトリにすると match が
+        2枚目を作り、期限切れ時の乗り換え枠が無くなる(→ docs §0-0)。
+        `TravelNote-certificates` は不要になったので削除する
+  - [ ] **Apple 側の設定**(App ID / アプリ登録)。API キーと Team ID は
+        **VitaNote のものを流用**(チーム単位のため)。Admin 権限かだけ要確認
+  - [ ] **PAT を作り直す**(旧 PAT は 2026-08-09 に露出させたため失効)。
+        対象は `VitaNote-certificates`・Contents 読み書き
   - [ ] **GitHub Secrets 7つ**を登録(コマンドは docs §0-F)
   - [ ] lane=certificates を1回 → lane=beta
 - [ ] C-3 ネイティブ機能(/ios-native-features: 予定リマインド通知・触覚)
