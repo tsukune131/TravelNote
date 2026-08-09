@@ -96,14 +96,28 @@ export function TripScreen({
   const todayDate = today();
   const dayDate = dateOfDay(trip.startDate, dayIndex);
 
-  async function handleOpenMap(event: TripEvent) {
-    const provider = await getMapProvider();
-    if (!provider) {
-      // 初回だけ聞く。以後は設定から変えられる
-      setPendingMapFor(event);
+  /**
+   * 地図を開く。
+   *
+   * **設定の読み出しで await を挟まない。** 起動時に読んだ state を使う ──
+   * DB 往復を挟むとユーザー操作との連続性が切れて、WKWebView が遷移を落とす
+   * (詳しくは lib/openExternal.ts)。state がまだ空のときだけ DB に聞きに行く。
+   */
+  function handleOpenMap(event: TripEvent) {
+    const place = { name: event.name, lat: event.lat, lng: event.lng };
+    if (mapProvider) {
+      openMap(mapProvider, place);
       return;
     }
-    openMap(provider, { name: event.name, lat: event.lat, lng: event.lng });
+    void getMapProvider().then((provider) => {
+      if (provider) {
+        setMapProviderState(provider);
+        openMap(provider, place);
+      } else {
+        // 初回だけ聞く。以後は設定から変えられる
+        setPendingMapFor(event);
+      }
+    });
   }
 
   function pickedMapProvider(provider: MapProvider) {
@@ -190,7 +204,7 @@ export function TripScreen({
               isLastDay={dayIndex === total - 1}
               mapProvider={mapProvider}
               onOpen={(e) => setOpenEventId(e.id)}
-              onOpenMap={(e) => void handleOpenMap(e)}
+              onOpenMap={handleOpenMap}
               onLongPress={(e) => {
                 // 使えたなら、もう教える必要はない
                 dismissHint();
@@ -230,7 +244,7 @@ export function TripScreen({
 
       {draft.trim().length > 0 && (
         <p
-          className="guess"
+          className="guess addbar-hint"
           style={{
             position: 'fixed',
             left: '0.9rem',
@@ -278,7 +292,7 @@ export function TripScreen({
         <EventSheet
           event={openEvent}
           onClose={() => setOpenEventId(null)}
-          onOpenMap={(e) => void handleOpenMap(e)}
+          onOpenMap={handleOpenMap}
         />
       )}
 

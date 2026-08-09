@@ -73,6 +73,7 @@ export const en: DeepPartial<Messages> = {
   timeline: {
     unscheduled: 'No time set',
     noTime: '—',
+    setTime: '+ Time',
     now: 'Now {time}',
     gap: '{duration} free',
     addEvent: 'Add a stop',

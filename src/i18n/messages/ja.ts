@@ -73,6 +73,8 @@ export const ja = {
   timeline: {
     unscheduled: '時刻未定',
     noTime: '—',
+    /** 時刻が空の行に出す。押せることが伝わる短さで */
+    setTime: '＋ 時刻',
     now: '今 {time}',
     gap: '{duration}の空き',
     addEvent: '予定を追加',

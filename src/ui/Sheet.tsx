@@ -4,6 +4,13 @@ import { useI18n } from '../i18n/context';
 import { IconClose } from './Icon';
 
 /**
+ * いま開いているシートの枚数。
+ * シートの上にシートが出る場面(移動時間 → 地図アプリの選択)があるので、
+ * 真偽値ではなく数える。最後の1枚が閉じたときだけ下地を戻す。
+ */
+let openSheets = 0;
+
+/**
  * 下から出るシート。詳細の編集も追加も、画面遷移させずにここで済ませる
  * (旅程を見失わないため)。
  */
@@ -29,6 +36,16 @@ export function Sheet({
     panel.current?.focus();
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // 開いているあいだは下端の追加バーを引っ込める(index.css の body.sheet-open)
+  useEffect(() => {
+    openSheets += 1;
+    document.body.classList.add('sheet-open');
+    return () => {
+      openSheets -= 1;
+      if (openSheets === 0) document.body.classList.remove('sheet-open');
+    };
+  }, []);
 
   return (
     <div

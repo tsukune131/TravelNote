@@ -591,10 +591,15 @@ button {
 /*
  * 時刻はここで直接入れる。シートを開かせない。
  * 見た目は文字のままだが、押すと OS の時刻ピッカーが出る。
- * 空のときは --:-- が出て、それが「押せる」ことを伝える。
  */
+.timeslot {
+  position: relative;
+  display: block;
+}
+
 .timefield {
   width: 100%;
+  min-width: 0;
   border: 0;
   background: none;
   padding: 0;
@@ -602,19 +607,51 @@ button {
   font-variant-numeric: tabular-nums;
   color: inherit;
   text-align: right;
-  min-height: 1.4rem;
+  min-height: 1.5rem;
 }
 
 .timefield::-webkit-calendar-picker-indicator {
   display: none;
 }
 
-.timefield:not(:focus):invalid,
-.timefield[value=''] {
+.timefield:not(:focus):invalid {
   color: var(--ink-3);
 }
 
+/*
+ * 空のときの代役。
+ *
+ * iOS の WKWebView は value が空の time 入力を**完全な空白**として描く
+ * (`--:--` は出ない)。左の列に何も無いので、そこが押せることが伝わらなかった。
+ * 破線のチップを重ねて「ここを押すと時刻が入る」を見せる。
+ * pointer-events を切ってあるので、タップは下の input に素通りする。
+ */
+.timeghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.timeghost span {
+  border: 1px dashed var(--primary);
+  border-radius: 999px;
+  padding: 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 .ev.done .timefield {
+  color: var(--ink-3);
+}
+
+.ev.done .timeghost span {
+  border-color: var(--rule);
   color: var(--ink-3);
 }
 
@@ -798,8 +835,15 @@ button {
   cursor: grab;
 }
 
-.ev.drag {
-  opacity: 0.45;
+/*
+ * 掴んでいる行は**薄くしない。持ち上げる。**
+ * 指についてくるものが薄いと、動かしている実感が消える。
+ * 影を強くして少しだけ大きくすると、紙が浮いて見える。
+ */
+.ev.drag .ev-body {
+  border-color: var(--primary);
+  box-shadow: 0 6px 22px rgba(190, 120, 140, 0.4);
+  transform: scale(1.015);
 }
 
 .ev.drag .ev-drag {
@@ -807,9 +851,25 @@ button {
   cursor: grabbing;
 }
 
-/* ドラッグ中は、落とす場所が読めるように行の境目を見せる */
-.dragging [data-row] {
-  border-top: 1px dashed var(--rule-soft);
+/* 掴んだ行は最前面。よけた行の上を通る */
+.tl-row.held {
+  position: relative;
+  z-index: 4;
+}
+
+/* 変えるのは transform だけ。合成だけで済むので指に遅れない */
+.tl-row {
+  will-change: transform;
+}
+
+/*
+ * 並べ替えているあいだ、予定と予定の「あいだ」は黙らせる。
+ * 行と一緒に動くので、その場の移動時間としては嘘になる。
+ */
+.dragging .conn,
+.dragging .hintbar {
+  opacity: 0.25;
+  transition: opacity 0.15s;
 }
 
 /* ───────── 予定と予定のあいだ ───────── */
@@ -1007,6 +1067,7 @@ button {
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 5;
   padding: 0.55rem 0.9rem calc(var(--safe-bottom) + 0.55rem);
   background: color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter: blur(12px);
@@ -1029,6 +1090,19 @@ button {
 .addbar input:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+/*
+ * シートが開いているあいだは追加バーを引っ込める。
+ *
+ * position:fixed + backdrop-filter は WebKit でスクリムより手前に描かれることがあり、
+ * 移動時間シートの下に「場所の名前」と「追加」が残って、そちらに入力できてしまっていた。
+ * z-index を下げるだけでは合成の都合で消えないので、開いているあいだは出さない。
+ * クラスは Sheet が付け外しする(入れ子で開いても最後の1枚が閉じるまで維持)。
+ */
+body.sheet-open .addbar,
+body.sheet-open .addbar-hint {
+  display: none;
 }
 
 .btn {
@@ -1092,6 +1166,9 @@ button {
 
 .sheet {
   width: 100%;
+  /* 中身が縮まないと横にはみ出し、シートごと横に動く。ここで止める */
+  max-width: 100%;
+  overflow-x: hidden;
   max-height: 88%;
   background: var(--paper);
   border-radius: 1.4rem 1.4rem 0 0;
@@ -1128,6 +1205,7 @@ button {
 
 .sheet-body {
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.9rem 0.9rem calc(var(--safe-bottom) + 1.2rem);
   display: flex;
   flex-direction: column;
@@ -1158,7 +1236,19 @@ button {
   padding: 0.6rem 0.7rem;
   font-size: 1rem;
   width: 100%;
+  min-width: 0;
   min-height: 2.75rem;
+}
+
+/*
+ * iOS の date / time 入力は**内在幅を持っていて width:100% では縮まない**。
+ * 枠だけが親からはみ出し、隣の枠と重なって見えていた(出発日と帰る日、
+ * 時刻と所要時間)。ネイティブ描画をやめさせて、枠の幅に従わせる。
+ */
+.field input[type='date'],
+.field input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .field textarea {
@@ -1182,6 +1272,26 @@ button {
 .row > * {
   flex: 1;
   min-width: 0;
+}
+
+/*
+ * 2枠を横に並べる行(出発日と帰る日 / 時刻と所要時間)。
+ *
+ * flex で 1fr ずつにすると、日付と時刻の入力が縮みきらずに隣と重なる。
+ * auto-fit + minmax なら、2つ入る幅がないときは自動で縦に積む ──
+ * 重なるくらいなら積んだほうが読める。
+ */
+.row.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+/* 2つ並ぶときは左右の余白を削って、日付の桁が入る幅を稼ぐ */
+.row.pair input[type='date'],
+.row.pair input[type='time'] {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .inline-toggle {

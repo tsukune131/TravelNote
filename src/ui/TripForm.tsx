@@ -56,7 +56,7 @@ export function TripForm({
         />
       </div>
 
-      <div className="row">
+      <div className="row pair">
         <div className="field">
           <label htmlFor="trip-start">{t('tripForm.startDate')}</label>
           <input

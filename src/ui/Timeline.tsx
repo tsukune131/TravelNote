@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { useI18n } from '../i18n/context';
 import { CATEGORIES } from '../lib/category';
 import { nowLineIndex } from '../lib/ordering';
@@ -46,7 +46,7 @@ export function Timeline({
 }) {
   const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
+  const drag = useDragReorder(events, listRef);
 
   if (events.length === 0) {
     return (
@@ -63,66 +63,182 @@ export function Timeline({
     );
   }
 
+  const shown = drag.shown;
   const now = nowMinutes();
-  const nowAt = isToday ? nowLineIndex(events, now) : null;
+  const nowAt = isToday ? nowLineIndex(shown, now) : null;
 
   return (
-    <div ref={listRef} className={dragId ? 'dragging' : undefined}>
-      {events.map((event, i) => (
-        <div key={event.id} data-row={event.id}>
-          {nowAt === i && <NowLine now={now} />}
+    <div ref={listRef} className={drag.active ? 'dragging' : undefined}>
+      {shown.map((event, i) => (
+        <div
+          key={event.id}
+          data-row={event.id}
+          className={`tl-row${drag.isHeld(event.id) ? ' held' : ''}`}
+          style={drag.styleFor(i, event.id)}
+        >
+          {/* 掴んでいるあいだは現在時刻ラインを出さない。行と一緒に動いて嘘になる */}
+          {nowAt === i && !drag.active && <NowLine now={now} />}
           <Row
             event={event}
-            dragging={dragId === event.id}
+            dragging={drag.isHeld(event.id)}
             onOpen={onOpen}
             onOpenMap={onOpenMap}
             onLongPress={onLongPress}
             onPickCategory={onPickCategory}
-            onDragStart={() => setDragId(event.id)}
-            onDragEnd={(clientY) => {
-              setDragId(null);
-              void dropAt(events, event, clientY, listRef.current);
-            }}
+            onDragStart={(clientY) => drag.begin(i, clientY)}
+            onDragMove={drag.move}
+            onDragEnd={drag.end}
           />
-          {events[i + 1] && (
-            <Connector prev={event} next={events[i + 1]} mapProvider={mapProvider} />
+          {shown[i + 1] && (
+            <Connector prev={event} next={shown[i + 1]} mapProvider={mapProvider} />
           )}
         </div>
       ))}
-      {nowAt === events.length && <NowLine now={now} />}
+      {nowAt === shown.length && !drag.active && <NowLine now={now} />}
     </div>
   );
 }
 
-/** 指を離した位置から、どの予定の間に落とすかを決めて order を書き換える */
-async function dropAt(
-  events: TripEvent[],
-  moved: TripEvent,
-  clientY: number,
-  root: HTMLElement | null,
-): Promise<void> {
-  if (!root) return;
-  const rows = events.map((e) => ({
-    event: e,
-    rect: root.querySelector(`[data-row="${e.id}"]`)?.getBoundingClientRect(),
-  }));
+/** 落ち着くまでの時間。掴んでいた行が落ちる先まで滑る長さ */
+const SETTLE_MS = 190;
 
-  // 落とした位置より上にある行のうち、いちばん下のもの
-  let before: TripEvent | null = null;
-  let after: TripEvent | null = null;
-  for (const { event, rect } of rows) {
-    if (!rect || event.id === moved.id) continue;
-    const middle = rect.top + rect.height / 2;
-    if (clientY > middle) before = event;
-    else if (after === null) after = event;
+type Held = {
+  id: string;
+  /** 掴んだときの位置 */
+  from: number;
+  /** いま指を離したら入る位置 */
+  to: number;
+  /** 指の移動量。掴んだ行はこれだけ動く */
+  dy: number;
+  /** よけるほうの行がずれる量(掴んだ行の高さ) */
+  shift: number;
+  /** 掴んだ時点の各行の中心。指が動くたびに測り直さない(測り直すと自分の transform を拾う) */
+  centers: number[];
+  startY: number;
+  /** 指を離したあと、落ちる先へ滑っている最中 */
+  settling: boolean;
+};
+
+/**
+ * 指についてくる並べ替え。
+ *
+ * 以前は掴んでも**何も動かず**、指を離してはじめて並びが変わっていた。
+ * どこへ入るのか分からないので「移動がわかりにくい」になっていた。
+ *
+ * ここでやっていること:
+ * - 掴んだ行は指と1:1で動く(transition なし。遅れると重く感じる)
+ * - よける行は同じ量だけ滑ってすき間を空ける(transition あり)。
+ *   落ちる先が**すき間そのもの**で分かるので、別の指示線は要らない
+ * - 位置の計算は**掴んだ瞬間に測った中心**だけを使う。動いている最中に
+ *   測り直すと、自分でかけた transform を読んでしまって暴れる
+ * - 指を離したら、まず落ちる先まで滑らせて、それから保存する。
+ *   先に保存すると再描画で行が入れ替わり、滑っている途中で瞬間移動する
+ */
+function useDragReorder(events: TripEvent[], listRef: React.RefObject<HTMLDivElement | null>) {
+  const [held, setHeld] = useState<Held | null>(null);
+  /** 保存が返ってくるまでのあいだ見せる並び。ここが無いと一瞬だけ元の並びに戻る */
+  const [optimistic, setOptimistic] = useState<TripEvent[] | null>(null);
+  const commit = useRef<(() => void) | null>(null);
+
+  // 本物が届いたら先取りした並びは捨てる
+  useEffect(() => setOptimistic(null), [events]);
+
+  // 滑っている最中に画面を離れても、保存は取りこぼさない
+  useEffect(() => () => commit.current?.(), []);
+
+  const shown = optimistic ?? events;
+
+  function begin(index: number, clientY: number) {
+    const root = listRef.current;
+    if (!root) return;
+    const boxes = shown.map((e) =>
+      root.querySelector(`[data-row="${e.id}"]`)?.getBoundingClientRect(),
+    );
+    if (boxes.some((b) => b === undefined)) return;
+    const rects = boxes as DOMRect[];
+    setHeld({
+      id: shown[index].id,
+      from: index,
+      to: index,
+      dy: 0,
+      shift: rects[index].height,
+      centers: rects.map((r) => r.top + r.height / 2),
+      startY: clientY,
+      settling: false,
+    });
   }
-  if (before?.id === moved.id) return;
 
-  const current = events.findIndex((e) => e.id === moved.id);
-  const currentBefore = current > 0 ? events[current - 1] : null;
-  if ((currentBefore?.id ?? null) === (before?.id ?? null)) return; // 動いていない
+  function move(clientY: number) {
+    setHeld((d) => {
+      if (!d || d.settling) return d;
+      const dy = clientY - d.startY;
+      const center = d.centers[d.from] + dy;
+      // 自分より上に中心がある行の数 = そこへ入ったときの位置
+      let to = 0;
+      for (let i = 0; i < d.centers.length; i++) {
+        if (i !== d.from && d.centers[i] < center) to++;
+      }
+      return { ...d, dy, to };
+    });
+  }
 
-  await moveEvent(moved.id, moved.dayIndex, before, after);
+  function end() {
+    const d = held;
+    if (!d || d.settling) return;
+    if (d.to === d.from) {
+      setHeld(null);
+      return;
+    }
+
+    const rest = shown.filter((e) => e.id !== d.id);
+    const moved = shown[d.from];
+    const before = rest[d.to - 1] ?? null;
+    const after = rest[d.to] ?? null;
+
+    // まず落ちる先まで滑らせる
+    setHeld({ ...d, dy: d.centers[d.to] - d.centers[d.from], settling: true });
+
+    commit.current = () => {
+      commit.current = null;
+      rest.splice(d.to, 0, moved);
+      setOptimistic(rest);
+      setHeld(null);
+      void moveEvent(d.id, moved.dayIndex, before, after);
+    };
+    window.setTimeout(() => commit.current?.(), SETTLE_MS);
+  }
+
+  /** よける行がどれだけずれるか */
+  function offsetOf(i: number): number {
+    if (!held) return 0;
+    if (i === held.from) return held.dy;
+    if (held.to > held.from && i > held.from && i <= held.to) return -held.shift;
+    if (held.to < held.from && i >= held.to && i < held.from) return held.shift;
+    return 0;
+  }
+
+  function styleFor(i: number, id: string): CSSProperties | undefined {
+    if (!held) return undefined;
+    const isHeld = held.id === id;
+    return {
+      transform: `translateY(${offsetOf(i)}px)`,
+      // 掴んだ行は指に遅れず、よける行だけ滑らせる
+      transition:
+        isHeld && !held.settling
+          ? 'none'
+          : `transform ${isHeld ? SETTLE_MS : 180}ms cubic-bezier(.2,.8,.3,1)`,
+    };
+  }
+
+  return {
+    shown,
+    active: held !== null,
+    isHeld: (id: string) => held?.id === id && !held.settling,
+    begin,
+    move,
+    end,
+    styleFor,
+  };
 }
 
 function NowLine({ now }: { now: number }) {
@@ -143,6 +259,7 @@ function Row({
   onLongPress,
   onPickCategory,
   onDragStart,
+  onDragMove,
   onDragEnd,
 }: {
   event: TripEvent;
@@ -151,8 +268,9 @@ function Row({
   onOpenMap: (event: TripEvent) => void;
   onLongPress: (event: TripEvent) => void;
   onPickCategory: (event: TripEvent) => void;
-  onDragStart: () => void;
-  onDragEnd: (clientY: number) => void;
+  onDragStart: (clientY: number) => void;
+  onDragMove: (clientY: number) => void;
+  onDragEnd: () => void;
 }) {
   const { t } = useI18n();
   return (
@@ -171,6 +289,7 @@ function Row({
         onOpenMap={onOpenMap}
         onPickCategory={onPickCategory}
         onDragStart={onDragStart}
+        onDragMove={onDragMove}
         onDragEnd={onDragEnd}
       />
     </SwipeRow>
@@ -184,6 +303,7 @@ function EventRow({
   onOpenMap,
   onPickCategory,
   onDragStart,
+  onDragMove,
   onDragEnd,
 }: {
   event: TripEvent;
@@ -191,8 +311,9 @@ function EventRow({
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
   onPickCategory: (event: TripEvent) => void;
-  onDragStart: () => void;
-  onDragEnd: (clientY: number) => void;
+  onDragStart: (clientY: number) => void;
+  onDragMove: (clientY: number) => void;
+  onDragEnd: () => void;
 }) {
   const { t, duration } = useI18n();
   const category = CATEGORIES[event.category];
@@ -202,18 +323,30 @@ function EventRow({
       {/*
         時刻はここで直接入れる。**シートを開かせない** ──
         「時刻入力が面倒」がいちばん強いフィードバックだった。
-        空のときは --:-- が出て、それ自体が「押せる」ことを伝える。
+
+        空のとき、iOS の time 入力は何も描かない。左の列が真っ白で
+        「ここで時刻を入れられる」が伝わらなかったので、破線のチップを重ねる。
       */}
       <div className="ev-time">
-        <input
-          type="time"
-          className="timefield"
-          value={event.startMinutes === null ? '' : toTimeValue(event.startMinutes)}
-          onChange={(e) =>
-            void setEventTime(event.id, e.target.value === '' ? null : fromTimeValue(e.target.value))
-          }
-          aria-label={`${event.name} — ${t('event.time')}`}
-        />
+        <span className="timeslot">
+          <input
+            type="time"
+            className="timefield"
+            value={event.startMinutes === null ? '' : toTimeValue(event.startMinutes)}
+            onChange={(e) =>
+              void setEventTime(
+                event.id,
+                e.target.value === '' ? null : fromTimeValue(e.target.value),
+              )
+            }
+            aria-label={`${event.name} — ${t('event.time')}`}
+          />
+          {event.startMinutes === null && (
+            <span className="timeghost" aria-hidden="true">
+              <span>{t('timeline.setTime')}</span>
+            </span>
+          )}
+        </span>
         {event.durationMinutes !== null && <small>{duration(event.durationMinutes)}</small>}
       </div>
 
@@ -254,7 +387,12 @@ function EventRow({
           <IconMap size={20} />
         </button>
 
-        <DragHandle name={event.name} onStart={onDragStart} onEnd={onDragEnd} />
+        <DragHandle
+          name={event.name}
+          onStart={onDragStart}
+          onMove={onDragMove}
+          onEnd={onDragEnd}
+        />
       </div>
     </div>
   );
@@ -269,27 +407,37 @@ function EventRow({
 function DragHandle({
   name,
   onStart,
+  onMove,
   onEnd,
 }: {
   name: string;
-  onStart: () => void;
-  onEnd: (clientY: number) => void;
+  onStart: (clientY: number) => void;
+  onMove: (clientY: number) => void;
+  onEnd: () => void;
 }) {
   const { t } = useI18n();
   const active = useRef(false);
 
   function down(e: ReactPointerEvent<HTMLButtonElement>) {
     e.stopPropagation();
+    // つまみで捕まえる。以後 pointermove はこのボタンに届くので、
+    // 指がどこへ行ってもレールを外さない
     e.currentTarget.setPointerCapture(e.pointerId);
     active.current = true;
-    onStart();
+    onStart(e.clientY);
+  }
+
+  function move(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (!active.current) return;
+    e.stopPropagation();
+    onMove(e.clientY);
   }
 
   function up(e: ReactPointerEvent<HTMLButtonElement>) {
     if (!active.current) return;
     active.current = false;
     e.stopPropagation();
-    onEnd(e.clientY);
+    onEnd();
   }
 
   return (
@@ -298,6 +446,7 @@ function DragHandle({
       className="ev-drag"
       aria-label={`${name} — ${t('actions.reorder')}`}
       onPointerDown={down}
+      onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={up}
       onClick={(e) => e.stopPropagation()}

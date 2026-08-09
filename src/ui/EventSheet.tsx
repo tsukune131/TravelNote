@@ -55,7 +55,7 @@ export function EventSheet({
         時刻は空にできる。チェックボックスで切り替えていたのをやめた ──
         時刻欄そのものを空にすれば済むし、そのほうが操作が1つ減る
       */}
-      <div className="row">
+      <div className="row pair">
         <div className="field">
           <label htmlFor="ev-time">{t('event.time')}</label>
           <input
