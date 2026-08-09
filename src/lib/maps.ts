@@ -17,14 +17,70 @@ export type MapPlace = {
   name?: string;
   lat?: number;
   lng?: number;
+  /** ユーザーが貼った地図リンク。名前より優先する */
+  url?: string;
 };
 
-/** 座標があれば座標を優先する(同名の店が各地にあるため) */
+/**
+ * 地図リンクから座標を拾う。
+ *
+ * **貼られたリンクは「その店そのもの」を指している。**名前で検索すると
+ * 同名の別の店に飛ぶ(「一蘭」「スターバックス」で経路が出せないのと同じ)。
+ * 場所検索APIは使わない方針なので、URL に書いてある座標だけを見る。
+ *
+ * 拾える形:
+ *   .../@34.9857,135.7588,17z        Google の場所ページ
+ *   !3d34.9857!4d135.7588            Google の data= の中
+ *   ?q= / ?query= / ?ll= / ?daddr=   数値が2つ並んでいるもの(Apple も同じ)
+ *
+ * 短縮 URL(maps.app.goo.gl)は開かないと分からない。**通信はしない**ので
+ * 諦めて、リンクそのものを開くか名前に落ちる。
+ */
+export function coordsFromMapUrl(url: string): { lat: number; lng: number } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  const at = /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/.exec(parsed.pathname + parsed.search);
+  if (at) return check(Number(at[1]), Number(at[2]));
+
+  const data = /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/.exec(parsed.pathname + parsed.search);
+  if (data) return check(Number(data[1]), Number(data[2]));
+
+  for (const key of ['q', 'query', 'll', 'daddr', 'sll', 'center']) {
+    const value = parsed.searchParams.get(key);
+    const pair = value && /^\s*(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/.exec(value);
+    if (pair) return check(Number(pair[1]), Number(pair[2]));
+  }
+  return null;
+
+  function check(lat: number, lng: number) {
+    const ok = Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    return ok ? { lat, lng } : null;
+  }
+}
+
+/**
+ * 地図に渡す文字列。**地図リンク → 座標 → 名前**の順。
+ * 名前を先に使うと、同名の別の場所へ案内してしまう。
+ */
 function query(place: MapPlace): string {
+  const fromLink = place.url ? coordsFromMapUrl(place.url) : null;
+  if (fromLink) return `${fromLink.lat},${fromLink.lng}`;
   if (place.lat !== undefined && place.lng !== undefined) {
     return `${place.lat},${place.lng}`;
   }
   return place.name?.trim() ?? '';
+}
+
+/** 予定に貼られたリンクのうち、地図のもの(最初の1本) */
+export function mapLinkOf(
+  links: readonly { url: string; label: LinkLabelId }[],
+): string | undefined {
+  return links.find((l) => l.label === 'map')?.url;
 }
 
 const APPLE_MODE: Record<TravelMode, string> = { walk: 'w', transit: 'r', drive: 'd' };
@@ -36,6 +92,16 @@ const GOOGLE_MODE: Record<TravelMode, string> = {
 
 /** 1地点を開く URL。`app` は端末にアプリが入っている前提の URL スキーム */
 export function placeUrl(provider: MapProvider, place: MapPlace): { app: string; web: string } {
+  /*
+   * 座標が読めない地図リンク(短縮 URL など)は、**そのリンクを開く。**
+   * 名前で引き直すより、ユーザーが貼ったものをそのまま開くほうが確実。
+   * 既定の地図アプリの設定より、貼られたリンクを優先する ──
+   * その1本を選んだのはユーザー自身なので。
+   */
+  if (place.url && coordsFromMapUrl(place.url) === null) {
+    return { app: place.url, web: place.url };
+  }
+
   const q = encodeURIComponent(query(place));
   const label = place.name ? encodeURIComponent(place.name) : '';
 

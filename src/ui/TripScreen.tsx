@@ -9,6 +9,7 @@ import { guessCategory } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
 import { openMap } from '../lib/openExternal';
+import { mapLinkOf } from '../lib/maps';
 import type { MapProvider } from '../lib/maps';
 import type { TripEvent } from '../db/types';
 import type { ReflowResult } from '../db/repo';
@@ -104,7 +105,13 @@ export function TripScreen({
    * (詳しくは lib/openExternal.ts)。state がまだ空のときだけ DB に聞きに行く。
    */
   function handleOpenMap(event: TripEvent) {
-    const place = { name: event.name, lat: event.lat, lng: event.lng };
+    // 貼られた地図リンクが最優先。名前は同名の別の場所に飛ぶ(lib/maps.ts)
+    const place = {
+      name: event.name,
+      lat: event.lat,
+      lng: event.lng,
+      url: mapLinkOf(event.links),
+    };
     if (mapProvider) {
       openMap(mapProvider, place);
       return;
@@ -320,6 +327,7 @@ export function TripScreen({
               name: pendingMapFor.name,
               lat: pendingMapFor.lat,
               lng: pendingMapFor.lng,
+              url: mapLinkOf(pendingMapFor.links),
             });
             setPendingMapFor(null);
           }}

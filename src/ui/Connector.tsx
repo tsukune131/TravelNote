@@ -5,6 +5,7 @@ import { Sheet } from './Sheet';
 import { setTravel } from '../db/repo';
 import { connectorBetween } from '../lib/connector';
 import { openDirections } from '../lib/openExternal';
+import { mapLinkOf } from '../lib/maps';
 import type { MapProvider, TravelMode } from '../lib/maps';
 import type { TripEvent } from '../db/types';
 
@@ -137,10 +138,11 @@ function TravelSheet({
         type="button"
         className="btn ghost wide"
         onClick={() =>
+          // 出発地・目的地とも、貼られた地図リンクが最優先(lib/maps.ts)
           openDirections(
             mapProvider ?? 'google',
-            { name: prev.name, lat: prev.lat, lng: prev.lng },
-            { name: next.name, lat: next.lat, lng: next.lng },
+            { name: prev.name, lat: prev.lat, lng: prev.lng, url: mapLinkOf(prev.links) },
+            { name: next.name, lat: next.lat, lng: next.lng, url: mapLinkOf(next.links) },
             mode,
           )
         }
