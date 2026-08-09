@@ -23,10 +23,61 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<!-- 「非適用(non-exempt)の暗号化は使っていない」の申告。
-	     Apple標準APIのHTTPS/TLS(広告SDKの通信を含む)は適用免除なので false のままでよい。
+	     本アプリは外部と通信しないため false。
 	     独自の暗号実装を積んだら申告し直すこと -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+
+	<!--
+	  しおりファイル(.tabishiori)を受け取れるようにする。
+	  これが無いと、LINE や AirDrop で送られたファイルの「共有」に
+	  たびのしおり が出てこない ── 共有機能そのものが片道になる。
+
+	  UTExportedTypeDeclarations: この形式は自分たちが定義したものだと宣言する
+	  CFBundleDocumentTypes:      その形式を開けるアプリだと宣言する
+
+	  中身は JSON なので public.json に適合させる。
+	  LSHandlerRank = Owner にして、自分の形式は自分が第一候補になるようにする。
+	-->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.tsukune.travelnote.shiori</string>
+			<key>UTTypeDescription</key>
+			<string>たびのしおり</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>tabishiori</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/json</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>たびのしおり</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.tsukune.travelnote.shiori</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

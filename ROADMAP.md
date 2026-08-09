@@ -128,14 +128,17 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 
 ## フェーズC: TestFlight配布(費用: 年99ドル)
 
-- [ ] C-1 Apple Developer Program 登録(ユーザー作業)
+- [x] C-1 Apple Developer Program 登録 — 済み(2026-08-09 時点)
 - [ ] C-2 TestFlight自動配布パイプライン(/ios-release-pipeline。
       手順: docs/ios-release-setup.md)
 - [ ] C-3 ネイティブ機能(/ios-native-features: 予定リマインド通知・触覚)
       ※ スプラッシュの閉じ方は A-4 で実装済み。**実機で3秒待たされないことの確認**だけ残る
 - [ ] C-4 **Share Extension**(Safari の共有シートから食べログ等を取り込む)
-- [ ] C-5 **書類タイプ(UTI)登録と、`.tabishiori` の受け取りを実機確認**
-      (Capacitor でのファイル受け取り配線は**未検証**。ここで潰す)
+- [ ] C-5 **`.tabishiori` の受け取りを実機で確認**
+  - [x] 書類タイプ(UTI `com.tsukune.travelnote.shiori`)を Info.plist に宣言
+  - [x] `appUrlOpen` の受け口を App に配線(**書いたまま呼んでいなかった**)
+  - [ ] **実機で確認**: LINE / AirDrop で送った .tabishiori をタップして
+        アプリが開き、取り込まれるか。Windows では確かめられない
 - [ ] C-6 実機確認(権限ダイアログ・前面復帰・機内モードでの編集)
 - [ ] C-7 TestFlightで家族・テスターに配布、**実際に1回旅行して使う**
 
