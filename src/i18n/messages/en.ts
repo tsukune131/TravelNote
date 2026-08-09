@@ -63,6 +63,9 @@ export const en: DeepPartial<Messages> = {
     startDate: 'Leaving',
     endDate: 'Coming home',
     range: '{start} – {end} · {length}',
+    album: 'Photo album',
+    albumHint: 'Paste a LINE album or Google Photos link and open it straight from the trip list. Photos are not copied into this app.',
+    albumPlaceholder: 'Link to the album',
     create: 'Create',
     rangeError: 'The return date has to come after the departure date',
     nameError: 'Give the trip a name',
@@ -103,18 +106,6 @@ export const en: DeepPartial<Messages> = {
     route: 'See the route in Maps',
     gapNote: 'You have {duration} between these',
     noGap: "One of these has no time set, so we can't tell if you'll make it",
-  },
-
-  meetup: {
-    toggle: 'Meet here',
-    hint: 'Add how long it takes each person to get here. We work back to when they should leave.',
-    needsTime: 'Set a time for the meetup and each person gets a "leave by" time.',
-    me: 'Me',
-    minutes: 'How long',
-    leaveAt: 'leave at {time}',
-    addCompanion: "Companion's name",
-    count: '{n} people',
-    earliest: 'first out {time}',
   },
 
   reflow: {
@@ -193,6 +184,7 @@ export const en: DeepPartial<Messages> = {
     official: 'Official',
     photo: 'Photos',
     map: 'Map',
+    album: 'Album',
     other: 'Link',
   },
 

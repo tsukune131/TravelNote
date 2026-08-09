@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { createTrip, updateTrip } from '../db/repo';
+import { LinkList } from './LinkList';
+import { addTripLink, createTrip, removeTripLink, updateTrip } from '../db/repo';
 import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 import type { Trip } from '../db/types';
@@ -118,6 +119,24 @@ export function TripForm({
         年が変わる旅(年末年始)は、終わりの日にも年を出す。
       */}
       {range !== null && <p className="guess">{range}</p>}
+
+      {/*
+        アルバムは**作るときには出さない。**まだ存在しないものを聞かれても困る。
+        旅の設定を開いたとき ── つまり旅が始まっているか、終わったあとにだけ。
+        日付の確認行より下に置くのは、その行が上の日付欄の説明だから。
+      */}
+      {trip && (
+        <div className="field">
+          <label>{t('tripForm.album')}</label>
+          <p className="guess">{t('tripForm.albumHint')}</p>
+          <LinkList
+            links={trip.links ?? []}
+            placeholder={t('tripForm.albumPlaceholder')}
+            onAdd={(link) => void addTripLink(trip.id, link)}
+            onRemove={(url) => void removeTripLink(trip.id, url)}
+          />
+        </div>
+      )}
 
       {error && <p className="err">{error}</p>}
 

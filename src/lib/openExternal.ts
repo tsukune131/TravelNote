@@ -1,6 +1,6 @@
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { directionsUrl, placeUrl } from './maps';
+import { directionsUrl, isAppLink, placeUrl } from './maps';
 import type { MapPlace, MapProvider, TravelMode } from './maps';
 
 /**
@@ -64,8 +64,17 @@ export const LEGAL_BASE = 'https://tsukune131.github.io/TravelNote/legal';
 /**
  * リンクは**アプリ内ブラウザ**で開く。
  * Safari に飛ばしてアプリを離れさせない(docs/ux-design.md §5.2)。
+ *
+ * **ただしアプリが持っているリンクは外に出す。**
+ * LINE アルバムや Googleフォトをアプリ内ブラウザで開くと Universal Link が
+ * 効かず、ログインを求める web 版が出るだけで写真にたどり着けない。
+ * 地図と同じ扱いにして、OS にアプリを開かせる。
  */
 export async function openLink(url: string): Promise<void> {
+  if (isAppLink(url)) {
+    openOutside(url);
+    return;
+  }
   try {
     await Browser.open({ url, presentationStyle: 'popover' });
   } catch {

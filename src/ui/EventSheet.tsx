@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
-import { categoryLabelKey, linkLabelKey } from '../i18n/keys';
+import { categoryLabelKey } from '../i18n/keys';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
-import { MeetupSection } from './Meetup';
+import { LinkList } from './LinkList';
 import { deleteEvent, renameEvent, setEventCategory, setEventTime, updateEvent } from '../db/repo';
-import { guessLinkLabel } from '../lib/maps';
-import { normalizeUrl, openLink } from '../lib/openExternal';
 import { clampMinutes } from '../lib/plainDate';
-import type { EventLink, TripEvent } from '../db/types';
+import type { TripEvent } from '../db/types';
 
 /** 所要時間はよく使う刻みだけ。分単位で自由入力させると入力が仕事になる */
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240];
@@ -24,7 +22,6 @@ export function EventSheet({
 }) {
   const { t, duration } = useI18n();
   const [name, setName] = useState(event.name);
-  const [linkDraft, setLinkDraft] = useState('');
 
   const hasTime = event.startMinutes !== null;
 
@@ -89,9 +86,6 @@ export function EventSheet({
         </div>
       </div>
 
-      {/* 集合はカテゴリより上。この日いちばん先に決まるのが集合だから */}
-      <MeetupSection event={event} />
-
       <CategoryPicker
         value={event.category}
         onChange={(next) => void setEventCategory(event.id, next)}
@@ -105,51 +99,14 @@ export function EventSheet({
 
       <div className="field">
         <label>{t('event.links')}</label>
-        {event.links.map((link, i) => (
-          <div className="linkrow" key={`${link.url}-${i}`}>
-            <span className="lbl">{t(linkLabelKey(link.label))}</span>
-            <button
-              type="button"
-              className="url"
-              style={{ textAlign: 'left' }}
-              onClick={() => void openLink(link.url)}
-            >
-              {link.url}
-            </button>
-            <button
-              type="button"
-              className="iconbtn plain"
-              aria-label={t('common.delete')}
-              onClick={() =>
-                void updateEvent(event.id, { links: event.links.filter((_, j) => j !== i) })
-              }
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        <div className="row">
-          <input
-            value={linkDraft}
-            placeholder="https://tabelog.com/..."
-            inputMode="url"
-            autoCapitalize="off"
-            autoCorrect="off"
-            onChange={(e) => setLinkDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addLink();
-            }}
-          />
-          <button
-            type="button"
-            className="btn ghost"
-            style={{ flex: '0 0 auto' }}
-            onClick={addLink}
-            disabled={linkDraft.trim().length === 0}
-          >
-            {t('common.add')}
-          </button>
-        </div>
+        <LinkList
+          links={event.links}
+          placeholder="https://tabelog.com/..."
+          onAdd={(link) => void updateEvent(event.id, { links: [...event.links, link] })}
+          onRemove={(url) =>
+            void updateEvent(event.id, { links: event.links.filter((l) => l.url !== url) })
+          }
+        />
       </div>
 
       <div className="field">
@@ -183,13 +140,6 @@ export function EventSheet({
     </Sheet>
   );
 
-  function addLink() {
-    const url = normalizeUrl(linkDraft);
-    if (!url) return;
-    const link: EventLink = { url, label: guessLinkLabel(url) };
-    void updateEvent(event.id, { links: [...event.links, link] });
-    setLinkDraft('');
-  }
 }
 
 function toTimeValue(minutes: number): string {

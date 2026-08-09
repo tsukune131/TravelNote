@@ -185,17 +185,52 @@ export function distanceKm(a: Required<Pick<MapPlace, 'lat' | 'lng'>>, b: Requir
 
 /* ────────── リンクのラベル自動判定 ────────── */
 
-export type LinkLabelId = 'tabelog' | 'booking' | 'official' | 'photo' | 'map' | 'other';
+export type LinkLabelId =
+  | 'tabelog'
+  | 'booking'
+  | 'official'
+  | 'photo'
+  | 'album'
+  | 'map'
+  | 'other';
 
+/**
+ * **並び順に意味がある。** 上から順に当てて、最初に当たったものを採る。
+ * アルバムを地図より先に置いてあるのは、`photos.google.com` が
+ * 地図の規則(`google.*`)にも当たってしまうため。
+ */
 const LINK_RULES: ReadonlyArray<{ test: RegExp; id: LinkLabelId }> = [
   { test: /(^|\.)tabelog\.com$/i, id: 'tabelog' },
   {
     test: /(^|\.)(jalan\.net|travel\.rakuten\.co\.jp|booking\.com|expedia\.|agoda\.com|ikyu\.com|jtb\.co\.jp|hotels\.com)$/i,
     id: 'booking',
   },
+  {
+    test: /(^|\.)(line\.me|lin\.ee|photos\.google\.com|photos\.app\.goo\.gl|icloud\.com|photos\.amazon\.)/i,
+    id: 'album',
+  },
   { test: /(^|\.)(instagram\.com|flickr\.com|pinterest\.)/i, id: 'photo' },
   { test: /(^|\.)(google\.[a-z.]+|maps\.apple\.com|goo\.gl)$/i, id: 'map' },
 ];
+
+/**
+ * その URL は**アプリが持っている**か(LINE・Googleフォト・iCloud写真)。
+ *
+ * アプリ内ブラウザ(SFSafariViewController)で開くと Universal Link が
+ * 効かず、**LINE アプリではなく web 版が出る**。アルバムを見るには
+ * アプリへ渡さないと意味がないので、ここだけは外に投げる
+ * (src/lib/openExternal.ts)。
+ */
+export function isAppLink(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return /(^|\.)(line\.me|lin\.ee|photos\.google\.com|photos\.app\.goo\.gl|icloud\.com)$/i.test(
+      host,
+    );
+  } catch {
+    return false;
+  }
+}
 
 /** URL からリンクの種別を推定する。UI 側で i18n の `linkLabel.*` に引く */
 export function guessLinkLabel(url: string): LinkLabelId {
@@ -209,4 +244,10 @@ export function guessLinkLabel(url: string): LinkLabelId {
     if (rule.test.test(host)) return rule.id;
   }
   return 'official';
+}
+
+/** 旅の一覧から1タップで開く先。アルバムがあればそれ、無ければ最初の1本 */
+export function primaryLink<T extends { label: LinkLabelId }>(links: readonly T[] | undefined): T | null {
+  if (!links || links.length === 0) return null;
+  return links.find((l) => l.label === 'album') ?? links[0];
 }

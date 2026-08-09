@@ -1,4 +1,4 @@
-import type { DayVariant, MeetupEntry, Member, Trip, TripEvent } from '../db/types';
+import type { DayVariant, Member, Trip, TripEvent } from '../db/types';
 import type { Snapshot } from './snapshot';
 
 /**
@@ -104,31 +104,14 @@ export function planMerge(input: MergeInput): MergePlan {
     const theyMoved = movedSince(theirs, base);
 
     if (theyMoved && iMoved) {
-      /*
-       * 集合の時間は**人ごとに混ぜてから**比べる。
-       *
-       * 3人で使えば全員が同じ日を触るので、ここを普通の変更として扱うと
-       * 集合を使うたびに Day が案に分かれてしまう。人ごとの欄は
-       * ぶつかりようがない(自分の行しか意味を持たない)ので、
-       * union して衝突から外す。
-       */
-      if (mine && theirs && sameContent(mine, theirs)) {
-        const meetup = mergeMeetup(mine, theirs, base);
-        if (meetup !== null) {
-          upsertEvents.push({ ...mine, meetup });
-          summary.updated += 1;
-          summary.changes.push({ kind: 'updated', dayIndex: mine.dayIndex, name: mine.name });
-        }
-        continue;
-      }
+      // 中身が同じなら、たまたま両方が同じ結論に達しただけ。衝突ではない
+      if (mine && theirs && sameContent(mine, theirs)) continue;
       conflictDays.add(mine?.dayIndex ?? theirs!.dayIndex);
       continue;
     }
 
     if (theyMoved && theirs) {
-      // 相手のを採るときも、自分が入れた集合の時間は落とさない
-      const meetup = mine ? mergeMeetup(mine, theirs, base) : null;
-      upsertEvents.push(meetup === null ? theirs : { ...theirs, meetup });
+      upsertEvents.push(theirs);
       const kind = theirs.deletedAt !== ALIVE ? 'removed' : mine ? 'updated' : 'added';
       summary[kind] += 1;
       summary.changes.push({ kind, dayIndex: theirs.dayIndex, name: theirs.name });
@@ -212,51 +195,7 @@ export function planMerge(input: MergeInput): MergePlan {
   };
 }
 
-/**
- * 集合の時間を**人ごとに**混ぜる。
- *
- *   片方にしか無い人   → そのまま採る(union)
- *   両方にある人       → その人の欄の新しいほう
- *   両方から消えた人   → baseline にあって双方に無いなら、消えたまま
- *
- * これが「3人で使うと必ず案に分かれる」を防いでいる。
- * 変わらなければ null を返す(何も書かないで済ませるため)。
- */
-function mergeMeetup(
-  mine: TripEvent,
-  theirs: TripEvent,
-  base: TripEvent | undefined,
-): MeetupEntry[] | null {
-  const a = mine.meetup ?? [];
-  const b = theirs.meetup ?? [];
-  if (a.length === 0 && b.length === 0) return null;
-
-  const merged = new Map<string, MeetupEntry>();
-  for (const entry of a) merged.set(entry.memberId, entry);
-  for (const entry of b) {
-    const existing = merged.get(entry.memberId);
-    if (!existing || entry.updatedAt > existing.updatedAt) merged.set(entry.memberId, entry);
-  }
-
-  // どちらかが「消した」人は消えたままにする(union だけだと消せなくなる)
-  for (const entry of base?.meetup ?? []) {
-    const inMine = a.some((m) => m.memberId === entry.memberId);
-    const inTheirs = b.some((m) => m.memberId === entry.memberId);
-    const kept = merged.get(entry.memberId);
-    if ((!inMine || !inTheirs) && kept && kept.updatedAt <= entry.updatedAt) {
-      merged.delete(entry.memberId);
-    }
-  }
-
-  const next = [...merged.values()].sort((x, y) => x.memberId.localeCompare(y.memberId));
-  const before = [...a].sort((x, y) => x.memberId.localeCompare(y.memberId));
-  return JSON.stringify(next) === JSON.stringify(before) ? null : next;
-}
-
-/**
- * 見た目に関わる中身が同じか。updatedAt / updatedBy は比べない。
- * **meetup はここで比べない** ── 人ごとに混ぜるので、差があっても衝突にしない
- */
+/** 見た目に関わる中身が同じか。updatedAt / updatedBy は比べない */
 function sameContent(a: TripEvent, b: TripEvent): boolean {
   return (
     a.name === b.name &&
@@ -269,7 +208,6 @@ function sameContent(a: TripEvent, b: TripEvent): boolean {
     a.lng === b.lng &&
     a.pinned === b.pinned &&
     a.done === b.done &&
-    (a.isMeetup ?? false) === (b.isMeetup ?? false) &&
     a.order === b.order &&
     (a.deletedAt === ALIVE) === (b.deletedAt === ALIVE) &&
     JSON.stringify(a.links) === JSON.stringify(b.links) &&

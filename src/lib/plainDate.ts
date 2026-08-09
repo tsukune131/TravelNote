@@ -69,19 +69,6 @@ export function nowMinutes(now: Date = new Date()): number {
   return now.getHours() * 60 + now.getMinutes();
 }
 
-/**
- * 集合時刻から所要時間を引いた「何時に出るか」。
- * **前日に食い込むなら出さない** ── 25:30 も -30分も嘘になるので null を返す。
- */
-export function departureTime(
-  startMinutes: number | null,
-  travelMinutes: number | undefined,
-): number | null {
-  if (startMinutes === null || travelMinutes === undefined) return null;
-  const at = startMinutes - travelMinutes;
-  return at < 0 ? null : at;
-}
-
 /** 24時をまたいでも壊れないように丸める(深夜の予定は翌0時台として扱う) */
 export function clampMinutes(minutes: number): number {
   if (minutes < 0) return 0;

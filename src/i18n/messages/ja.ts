@@ -64,6 +64,9 @@ export const ja = {
     endDate: '帰る日',
     /** 決めた日付を年つきで返す。来年の旅を今年で作ってしまわないように */
     range: '{start} 〜 {end}・{length}',
+    album: '写真アルバム',
+    albumHint: 'LINEアルバムやGoogleフォトのリンクを貼ると、旅の一覧から開けます。写真はこのアプリに取り込みません。',
+    albumPlaceholder: 'アルバムのリンク',
     create: 'つくる',
     rangeError: '帰る日は出発日より後にしてください',
     nameError: '名前を入れてください',
@@ -106,22 +109,6 @@ export const ja = {
     route: '経路を地図で見る',
     gapNote: 'この区間の空きは{duration}です',
     noGap: 'どちらかの時刻が未定なので、間に合うかは判定できません',
-  },
-
-  /**
-   * 集合。3人で行けば集合場所までの時間は人それぞれ ──
-   * 知りたいのは所要時間ではなく「何時に出るか」なので、文言もそちらを主にする。
-   */
-  meetup: {
-    toggle: 'ここで集合する',
-    hint: 'ひとりずつ、集合場所までの時間を入れてください。出る時刻を逆算します。',
-    needsTime: '集合の時刻を決めると、ひとりずつ「何時に出るか」が出ます。',
-    me: 'わたし',
-    minutes: 'かかる時間',
-    leaveAt: '{time} に出る',
-    addCompanion: '同行者の名前',
-    count: '{n}人',
-    earliest: '早い人は {time}',
   },
 
   reflow: {
@@ -200,6 +187,7 @@ export const ja = {
     official: '公式',
     photo: '写真',
     map: '地図',
+    album: 'アルバム',
     other: 'リンク',
   },
 

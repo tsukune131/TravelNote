@@ -311,6 +311,10 @@ button {
 
 /* ───────── 旅一覧 ───────── */
 
+.trip-row {
+  position: relative;
+}
+
 .trip-card {
   display: block;
   width: 100%;
@@ -321,6 +325,32 @@ button {
   padding: 0.9rem 1.05rem;
   margin-bottom: 0.7rem;
   box-shadow: var(--shadow);
+}
+
+/*
+ * 写真アルバムへの入口。カードの上に重ねる ── button の中に button は置けない。
+ * 旅の名前と重ならないよう、カードの右側に余白を作ってある。
+ */
+.trip-album {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+/*
+ * 名前がアルバムのボタンに重ならないよう、そのぶんだけ空ける。
+ * `:has()` は使わない ── Safari 15.4 からで、このアプリは iOS 15.0 まで動く。
+ * 付ける・付けないは React 側で決める。
+ */
+.trip-card.has-album h2 {
+  padding-right: 2.6rem;
 }
 
 .trip-card h2 {
@@ -1264,21 +1294,6 @@ body.sheet-open .addbar-hint {
   font-family: inherit;
 }
 
-/*
- * チェックボックスは文字の大きさに合わせる。
- * .field input の枠づけ(width:100% / min-height:2.75rem)がそのまま効くと、
- * 巨大な四角になってラベルが押し出されて折り返す。
- */
-.field input[type='checkbox'] {
-  width: 1.15rem;
-  height: 1.15rem;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  flex: 0 0 auto;
-  accent-color: var(--primary);
-}
-
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
@@ -1321,9 +1336,6 @@ body.sheet-open .addbar-hint {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  font-weight: 400;
-  /* .field > label の見出し用の字間を引き継がせない(語が間延びする) */
-  letter-spacing: normal;
   color: var(--ink-2);
   min-height: 2.75rem;
 }
@@ -1356,59 +1368,6 @@ body.sheet-open .addbar-hint {
 .catbtn[aria-pressed='true'] {
   border-color: var(--primary);
   border-width: 2px;
-  font-weight: 700;
-}
-
-/* ───────── 集合(人ごとの移動時間) ───────── */
-
-/*
- * 1人1行。名前 → 手段 → かかる時間 → **出る時刻**。
- * 答えは右端の「出る時刻」なので、そこだけ色と太さを上げる。
- */
-.meetrow {
-  display: grid;
-  grid-template-columns: minmax(3.5rem, 1fr) 2rem minmax(5rem, auto) auto 2rem;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0;
-}
-
-.meetrow .who {
-  font-size: 0.88rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.meetrow .modebtn {
-  font-size: 1rem;
-  min-height: 2.75rem;
-  text-align: center;
-}
-
-.meetrow .mins {
-  border: 1.5px solid var(--rule);
-  background: var(--surface);
-  border-radius: 0.7rem;
-  padding: 0.35rem 0.4rem;
-  font-size: 0.85rem;
-  min-height: 2.5rem;
-  min-width: 0;
-}
-
-.meetrow .leave {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--primary);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.badge.meet {
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: var(--primary);
   font-weight: 700;
 }
 

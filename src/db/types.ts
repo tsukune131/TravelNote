@@ -30,28 +30,6 @@ export type Booking = {
   reference?: string;
 };
 
-/**
- * 集合場所への、**その人ぶんの**移動時間。
- *
- * 3人で旅行するなら、集合場所まで45分の人と20分の人と1時間10分の人がいる。
- * 全員に同じ「移動時間」を1つ持たせても誰の役にも立たない。
- *
- * `updatedAt` を**1件ずつ持つ**理由がこの型のいちばん大事なところ:
- * 3人がそれぞれ自分の欄を入れると、必ず同じ日を全員が触る。
- * これを普通の変更として扱うと、この機能を使うたびに Day が「案」に分かれる
- * (docs/ux-design.md §6.3 の「衝突していないものまで分岐させない」に反する)。
- * そこで**人ごとに last-write-wins で混ぜて、衝突として数えない**
- * (src/share/merge.ts の mergeMeetup)。そのために1件ずつ時刻が要る。
- */
-export type MeetupEntry = {
-  /** Member.id。同行者はアプリを持っていないこともある(Member.deviceId が空) */
-  memberId: string;
-  /** 集合場所まで、その人がかかる時間(分) */
-  minutes: number;
-  mode: TravelMode | null;
-  updatedAt: number;
-};
-
 export type Trip = SyncFields & {
   id: string;
   title: string;
@@ -75,6 +53,18 @@ export type Trip = SyncFields & {
    * これが無いと A→B→A の往復が切れ、共有が片道になる。
    */
   imported: boolean;
+
+  /**
+   * 旅そのものに付くリンク。**写真アルバムがこれの本命。**
+   *
+   * 旅の写真は LINE アルバムや Googleフォトにあって、しおりの中にはない。
+   * 旅が終わったあとにしおりを開いても、いちばん見たいものへ行けなかった。
+   * URL を1本持つだけなので、写真をこのアプリに取り込むわけではない
+   * (端末の容量も、プライバシー申告も動かない)。
+   *
+   * 古い記録には無いので任意。読むときは `trip.links ?? []`。
+   */
+  links?: EventLink[];
 };
 
 /**
@@ -114,15 +104,6 @@ export type TripEvent = SyncFields & {
    */
   travelMinutes: number | null;
   travelMode: TravelMode | null;
-
-  /**
-   * **集合する予定**。ここに何時に集まるかを決め、各自がそこまでの時間を入れる。
-   * 出す場所を絞るのは、全予定に人ごとの行を並べると1日の全体像が消えるため
-   * (「所要時間をレールの長さで表さない」と同じ理由)。
-   */
-  isMeetup?: boolean;
-  /** 人ごとの移動時間。集合の予定にだけ入る */
-  meetup?: MeetupEntry[];
 
   /** リフローの対象外にする(宿のチェックイン時刻など) */
   pinned: boolean;
@@ -174,27 +155,15 @@ export type Baseline = {
 export type MemberRole = 'owner' | 'editor' | 'viewer';
 
 /**
- * 同行者。**アカウントではない**(App Store 5.1.1(v) を回避するため)。
+ * 共有の参加者。**アカウントではない**(App Store 5.1.1(v) を回避するため)。
  * 端末ごとに発行した匿名IDと、参加時に一度聞く表示名だけを持つ。
- *
- * **`deviceId` は空でよい。** アプリを持っていない同行者を、計画中に
- * 名前だけで足せるようにするため ── 集合時刻の逆算は、相手がアプリを
- * 入れる前から役に立つ。あとで実際にしおりを送って相手が参加したら、
- * そのとき deviceId が埋まる。
  */
 export type Member = SyncFields & {
   id: string;
   tripId: string;
-  /** 空文字 = まだこの旅にアプリで参加していない(名前だけの同行者) */
   deviceId: string;
   displayName: string;
   role: MemberRole;
-  /**
-   * 足した順に並べるためだけの時刻。**updatedAt では代用できない** ──
-   * 名前を直すたびに一覧の中で人が動いてしまう。
-   * 古い記録には無いので任意(そのときは updatedAt に落ちる)。
-   */
-  createdAt?: number;
 };
 
 /** 端末固有の設定。同期しない */

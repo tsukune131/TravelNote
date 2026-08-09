@@ -5,6 +5,8 @@ import { listTrips } from '../db/repo';
 import { dayCount, diffDays, toDate, today } from '../lib/plainDate';
 import type { Trip } from '../db/types';
 import { TripForm } from './TripForm';
+import { openLink } from '../lib/openExternal';
+import { primaryLink } from '../lib/maps';
 import { Settings } from './Settings';
 import { IconPlus, IconSettings } from './Icon';
 import { ImportButton } from './ImportButton';
@@ -50,11 +52,13 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             </div>
           )}
 
-          {trips?.map((trip) => (
+          {trips?.map((trip) => {
+            const album = primaryLink(trip.links);
+            return (
+            <div className="trip-row" key={trip.id}>
             <button
-              key={trip.id}
               type="button"
-              className="trip-card"
+              className={`trip-card${album ? ' has-album' : ''}`}
               onClick={() => onOpen(trip.id, currentDayIndex(trip, now))}
             >
               <h2>{trip.title}</h2>
@@ -83,7 +87,26 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
                 <Status trip={trip} now={now} />
               </div>
             </button>
-          ))}
+
+            {/*
+              アルバムへは**一覧から直接**。旅を開いて設定を開いて…では、
+              旅行が終わったあとに写真を見る道として遠すぎる。
+              カードの中に入れ子のボタンは置けないので(button の中に button)、
+              兄弟として重ねている。
+            */}
+            {album && (
+              <button
+                type="button"
+                className="trip-album"
+                aria-label={`${trip.title} — ${t('tripForm.album')}`}
+                onClick={() => void openLink(album.url)}
+              >
+                📷
+              </button>
+            )}
+            </div>
+            );
+          })}
         </div>
       </div>
 
