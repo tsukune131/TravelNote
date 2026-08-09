@@ -17,7 +17,13 @@ const config: CapacitorConfig = {
        */
       launchAutoHide: true,
       launchShowDuration: 1500,
-      backgroundColor: '#eceee9',
+      /**
+       * index.css の --paper。**起動画像の地と同じ値**にしておくこと
+       * (store/make-icon.mjs の PAPER)。ずれていると、画像が出るまでの
+       * 一瞬だけ違う色が見える。2026-08-09 の配色変更のとき、
+       * ここだけ前の生成り色 #eceee9 が残っていた
+       */
+      backgroundColor: '#fff7f5',
     },
   },
 };

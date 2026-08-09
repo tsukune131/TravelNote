@@ -1,0 +1,56 @@
+<!--
+  たびのしおり のアイコン。
+
+  この製品は「冊子(しおり)」の比喩でできている ── インデックスタブ、紙、
+  その上に並ぶ予定。アイコンもそれをそのまま描く。
+
+  ・地は差し色のグラデーション(index.css の --sunset と同じ3色)。
+    App Store の一覧は白背景なので、地が濃いほうが見つかる
+  ・白い紙に**タブが1枚**。これがアプリを開いたときの Day タブと同じ形
+  ・中は時系列。点と線と行が3つ。40px でも「並んでいる」が読める最小限
+  ・角は丸めない・透明を含めない(iOS が自分で角を落とす。
+    透明が1pxでもあると App Store Connect に弾かれる)
+
+  1024x1024 の PNG に焼くには: node store/make-icon.mjs
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sunset" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9a76"/>
+      <stop offset="0.55" stop-color="#e35d8b"/>
+      <stop offset="1" stop-color="#d05a9e"/>
+    </linearGradient>
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#7d2044" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#sunset)"/>
+
+  <!--
+    インデックスタブ。紙より先に描いて、紙から生えているように見せる。
+    紙と同じ白にすると「後ろにもう1枚」に見えてタブに読めないので、
+    桜色を1段濃くして差をつける。左端は紙の左端から内側に寄せる ──
+    端が揃っていると、これもまた「重なった紙」になる。
+  -->
+  <path d="M304 152h216a48 48 0 0 1 48 48v128H256V200a48 48 0 0 1 48-48z" fill="#f7ccd4"/>
+
+  <!-- しおりの紙 -->
+  <g filter="url(#lift)">
+    <rect x="216" y="264" width="592" height="600" rx="80" fill="#fffaf8"/>
+  </g>
+
+  <!-- 時系列。点をつなぐ線は点の下に敷く -->
+  <rect x="349" y="416" width="16" height="296" rx="8" fill="#f0c9d1"/>
+
+  <g>
+    <circle cx="357" cy="416" r="48" fill="#ff9a76"/>
+    <rect x="444" y="392" width="264" height="48" rx="24" fill="#f0cfd5"/>
+
+    <circle cx="357" cy="564" r="48" fill="#e35d8b"/>
+    <rect x="444" y="540" width="200" height="48" rx="24" fill="#f0cfd5"/>
+
+    <circle cx="357" cy="712" r="48" fill="#d05a9e"/>
+    <rect x="444" y="688" width="236" height="48" rx="24" fill="#f0cfd5"/>
+  </g>
+</svg>
