@@ -62,6 +62,8 @@ export const ja = {
     namePlaceholder: '京都・大阪 3泊4日',
     startDate: '出発日',
     endDate: '帰る日',
+    /** 決めた日付を年つきで返す。来年の旅を今年で作ってしまわないように */
+    range: '{start} 〜 {end}・{length}',
     create: 'つくる',
     rangeError: '帰る日は出発日より後にしてください',
     nameError: '名前を入れてください',

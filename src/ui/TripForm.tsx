@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { createTrip, updateTrip } from '../db/repo';
-import { addDays, dayCount, isPlainDate, today } from '../lib/plainDate';
+import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 import type { Trip } from '../db/types';
 
 const MAX_DAYS = 60;
+
+/** 'YYYY-MM-DD' の頭4桁 */
+function yearOf(date: PlainDate): string {
+  return date.slice(0, 4);
+}
 
 export function TripForm({
   trip,
@@ -17,7 +22,7 @@ export function TripForm({
   onClose: () => void;
   onCreated?: (tripId: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, date } = useI18n();
   const [title, setTitle] = useState(trip?.title ?? '');
   const [startDate, setStartDate] = useState<PlainDate>(trip?.startDate ?? today());
   const [endDate, setEndDate] = useState<PlainDate>(trip?.endDate ?? addDays(today(), 2));
@@ -38,6 +43,25 @@ export function TripForm({
       const created = await createTrip({ title: title.trim(), startDate, endDate });
       onCreated?.(created.id);
     }
+  }
+
+  const range = describeRange();
+
+  /** 「2026年8月8日(土) 〜 8月11日(火)・3泊4日」。日付が壊れているときは出さない */
+  function describeRange(): string | null {
+    if (!isPlainDate(startDate) || !isPlainDate(endDate) || endDate < startDate) return null;
+    const days = dayCount(startDate, endDate);
+    if (days > MAX_DAYS) return null;
+    const withYear = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' } as const;
+    const sameYear = yearOf(startDate) === yearOf(endDate);
+    return t('tripForm.range', {
+      start: date(toDate(startDate), withYear),
+      end: date(
+        toDate(endDate),
+        sameYear ? { month: 'long', day: 'numeric', weekday: 'short' } : withYear,
+      ),
+      length: days <= 1 ? t('tripList.dayTrip') : t('tripList.nights', { n: days - 1, m: days }),
+    });
   }
 
   return (
@@ -86,6 +110,14 @@ export function TripForm({
           />
         </div>
       </div>
+
+      {/*
+        決めた日付を**年つきの言葉で**返す。
+        日付欄は OS の表記なので月日しか目に入らず、来年の旅を今年で作ってしまう。
+        泊数も一緒に出す ── 数え間違いはここで気づけたほうがいい。
+        年が変わる旅(年末年始)は、終わりの日にも年を出す。
+      */}
+      {range !== null && <p className="guess">{range}</p>}
 
       {error && <p className="err">{error}</p>}
 

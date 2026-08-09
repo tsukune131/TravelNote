@@ -59,10 +59,25 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             >
               <h2>{trip.title}</h2>
               <div className="trip-meta">
+                {/*
+                  年は**始まりの日にだけ**。来年の旅と今年の旅が並ぶので年は要るが、
+                  両方に付けると「2026/8/8 – 2026/8/11」となって読む量が倍になる。
+                  年をまたぐ旅(年末年始)のときだけ、終わりの日にも付ける。
+                */}
                 <span>
-                  {date(toDate(trip.startDate), { month: 'numeric', day: 'numeric' })}
+                  {date(toDate(trip.startDate), {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                  })}
                   {' – '}
-                  {date(toDate(trip.endDate), { month: 'numeric', day: 'numeric' })}
+                  {date(toDate(trip.endDate), {
+                    ...(trip.startDate.slice(0, 4) === trip.endDate.slice(0, 4)
+                      ? {}
+                      : { year: 'numeric' }),
+                    month: 'numeric',
+                    day: 'numeric',
+                  })}
                 </span>
                 <span>{lengthLabel(trip, t)}</span>
                 <Status trip={trip} now={now} />

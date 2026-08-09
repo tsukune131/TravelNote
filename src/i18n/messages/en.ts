@@ -62,6 +62,7 @@ export const en: DeepPartial<Messages> = {
     namePlaceholder: 'Kyoto & Osaka, 4 days',
     startDate: 'Leaving',
     endDate: 'Coming home',
+    range: '{start} – {end} · {length}',
     create: 'Create',
     rangeError: 'The return date has to come after the departure date',
     nameError: 'Give the trip a name',
