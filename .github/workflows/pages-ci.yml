@@ -28,6 +28,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # 手元の node_modules に残っているだけの依存を早い段階で炙り出す
+      # (@capacitor/browser で実際に踏んだ。tsc より前に、原因が分かる形で落とす)
+      - run: npm run deps
       # tsconfig.json はソリューション形式(references)なので -b で型チェックする。
       # 各プロジェクトは noEmit: true なので出力は出ない
       - run: npx tsc -b

@@ -8,10 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "size": "node scripts/size-budget.mjs"
+    "size": "node scripts/size-budget.mjs",
+    "deps": "node scripts/check-imports.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",

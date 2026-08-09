@@ -35,6 +35,7 @@ npm install
 npx tsc -b --force     # tsconfig.json は references のソリューション形式。--noEmit は使えない
 npm run build          # tsc -b && vite build。base: './' の相対パスビルド
 npm run lint           # oxlint
+npm run deps           # src の import が package.json に宣言されているか
 npm run size           # バンドルの上限。build のあとに走らせる(CI でも回る)
 npx cap sync ios       # dist/ を iOS プロジェクトへ反映
 ```
@@ -168,6 +169,12 @@ npm run dev    # → http://localhost:5173 。Ctrl-C で止める
   アプリのローカル日付と1日ずれる。「今日の Day」を見ているつもりで昨日を見ていて、
   現在時刻ラインの検証が黙って無意味になっていた(実際に踏んだ)。
   ローカルの年月日で組むこと
+- **手元で通っても CI で落ちることがある。** `npm install` を繰り返すうちに
+  package.json から消えた依存が node_modules に残り、手元のビルドだけ通る。
+  `npm run deps` がこれを見る。**大きな変更のあとは
+  `rm -rf node_modules && npm ci` で一度まっさらから通すのが確実**
+- **`/tmp` は node からは `C:\tmp` に見える。** Git Bash のシェルとは別物なので、
+  一時ファイルをシェルで作って node で読む、をやると落ちる
 - **Git Bash は POSIX パスを勝手に Windows パスへ変換する。** `TN_BROWSER=/nope/nope` が
   `C:/Program Files/Git/nope/nope` になる。Windows のパスをそのまま渡すこと
   (シングルクォートで囲む)
