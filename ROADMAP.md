@@ -129,18 +129,19 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 ## フェーズC: TestFlight配布(費用: 年99ドル)
 
 - [x] C-1 Apple Developer Program 登録 — 済み(2026-08-09 時点)
-- [ ] C-2 TestFlight自動配布パイプライン(手順: docs/ios-release-setup.md §0)
+- [x] C-2 TestFlight自動配布パイプライン(手順: docs/ios-release-setup.md §0)
   - [x] ワークフロー / fastlane 3レーン / 共有スキーム / 相対パスビルド
   - [x] **証明書リポジトリは `VitaNote-certificates` を共用**する決定。
         Apple の配布用証明書は2枚まで。別リポジトリにすると match が
         2枚目を作り、期限切れ時の乗り換え枠が無くなる(→ docs §0-0)。
         `TravelNote-certificates` は不要になったので削除する
-  - [ ] **Apple 側の設定**(App ID / アプリ登録)。API キーと Team ID は
-        **VitaNote のものを流用**(チーム単位のため)。Admin 権限かだけ要確認
-  - [ ] **PAT を作り直す**(旧 PAT は 2026-08-09 に露出させたため失効)。
+  - [x] **Apple 側の設定**(App ID / アプリ登録 6799566207)。API キーと Team ID は
+        **VitaNote のものを流用**(チーム単位のため)
+  - [x] **PAT を作り直す**(旧 PAT は 2026-08-09 に露出させたため失効)。
         対象は `VitaNote-certificates`・Contents 読み書き
-  - [ ] **GitHub Secrets 7つ**を登録(コマンドは docs §0-F)
-  - [ ] lane=certificates を1回 → lane=beta
+  - [x] **GitHub Secrets 7つ**を登録
+  - [x] lane=certificates → lane=beta。**TestFlight へのアップロード成功**
+        (配布用証明書は1枚のまま。共用リポジトリにプロファイルが1つ増えただけ)
 - [ ] C-3 ネイティブ機能(/ios-native-features: 予定リマインド通知・触覚)
       ※ スプラッシュの閉じ方は A-4 で実装済み。**実機で3秒待たされないことの確認**だけ残る
 - [ ] C-4 **Share Extension**(Safari の共有シートから食べログ等を取り込む)
@@ -319,3 +320,10 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   ── **書いたまま呼んでいなかった**ので、受け取っても何も起きない状態だった。
   証明書リポジトリを Private で作成。
   **残るは Apple 側の設定と Secrets の登録(ユーザー作業。docs/ios-release-setup.md §0)。**
+- 2026-08-09 **C-2 完了。TestFlight へのアップロードに成功**(App 6799566207)。
+  途中 `Repository not found` で2回落ちた。原因は **MATCH_GIT_URL が
+  古い `TravelNote-certificates` を指していたこと** ── 共用への変更で
+  手順書の §0 だけ直し、テンプレート由来の §4〜§6 を直し忘れていた。
+  Private リポジトリの 404 は「無い」ではなく「そのトークンから見えない」の意味。
+  切り分け用に `scripts/check-match-auth.sh` / `.ps1` を追加した。
+  **証明書は1枚のまま**で、共用リポジトリに TravelNote のプロファイルが増えただけ。
