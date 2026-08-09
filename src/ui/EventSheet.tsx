@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/context';
 import { categoryLabelKey, linkLabelKey } from '../i18n/keys';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
+import { MeetupSection } from './Meetup';
 import { deleteEvent, renameEvent, setEventCategory, setEventTime, updateEvent } from '../db/repo';
 import { guessLinkLabel } from '../lib/maps';
 import { normalizeUrl, openLink } from '../lib/openExternal';
@@ -87,6 +88,9 @@ export function EventSheet({
           </select>
         </div>
       </div>
+
+      {/* 集合はカテゴリより上。この日いちばん先に決まるのが集合だから */}
+      <MeetupSection event={event} />
 
       <CategoryPicker
         value={event.category}

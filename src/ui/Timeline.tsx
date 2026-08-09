@@ -3,8 +3,9 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { useI18n } from '../i18n/context';
 import { CATEGORIES } from '../lib/category';
 import { nowLineIndex } from '../lib/ordering';
-import { nowMinutes } from '../lib/plainDate';
-import { deleteEvent, moveEvent, setEventTime, toggleDone } from '../db/repo';
+import { departureTime, nowMinutes } from '../lib/plainDate';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { deleteEvent, listMembers, moveEvent, setEventTime, toggleDone } from '../db/repo';
 import { Connector } from './Connector';
 import { IconDrag, IconMap } from './Icon';
 import { SeedChips } from './SeedChips';
@@ -370,6 +371,12 @@ function EventRow({
             <span className="ev-label">{event.name}</span>
           </div>
           <div className="ev-sub">
+            {/*
+              集合は畳んで1行。人ごとの行を旅程に並べると、1日の全体像が消える。
+              出すのは**いちばん早く出る人**の時刻 ── 全員が間に合う出発時刻で、
+              集合を決めた人がまず知りたい数字がこれ。
+            */}
+            {event.isMeetup && <MeetupBadge event={event} />}
             {event.note && <span>{firstLine(event.note)}</span>}
             {event.pinned && <span className="badge">📌 {t('timeline.pinned')}</span>}
             {event.booking?.booked && <span className="badge book">🎫 {t('event.booked')}</span>}
@@ -453,6 +460,27 @@ function DragHandle({
     >
       <IconDrag size={18} />
     </button>
+  );
+}
+
+/**
+ * 集合の要約。**何人で集まるか**と、いちばん早く出る人の時刻。
+ *
+ * 人数は「時間を入れた人の数」ではなく**同行者の数**。
+ * 入力済みの数を出すと、まだ入れていない人がいるときに人数が減って見える。
+ */
+function MeetupBadge({ event }: { event: TripEvent }) {
+  const { t, time } = useI18n();
+  // 集合の予定は1日に1〜2件しかないので、ここで引いても安い(props を通さない)
+  const members = useLiveQuery(() => listMembers(event.tripId), [event.tripId]);
+  const longest = (event.meetup ?? []).reduce((max, e) => Math.max(max, e.minutes), 0);
+  const leaveAt = departureTime(event.startMinutes, longest > 0 ? longest : undefined);
+
+  return (
+    <span className="badge meet">
+      👥 {t('meetup.count', { n: members?.length ?? 0 })}
+      {leaveAt !== null && ` ・ ${t('meetup.earliest', { time: time(leaveAt) })}`}
+    </span>
   );
 }
 

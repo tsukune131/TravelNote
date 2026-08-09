@@ -105,6 +105,18 @@ export const en: DeepPartial<Messages> = {
     noGap: "One of these has no time set, so we can't tell if you'll make it",
   },
 
+  meetup: {
+    toggle: 'Meet here',
+    hint: 'Add how long it takes each person to get here. We work back to when they should leave.',
+    needsTime: 'Set a time for the meetup and each person gets a "leave by" time.',
+    me: 'Me',
+    minutes: 'How long',
+    leaveAt: 'leave at {time}',
+    addCompanion: "Companion's name",
+    count: '{n} people',
+    earliest: 'first out {time}',
+  },
+
   reflow: {
     action: 'Push this and everything after',
     by: '{n} min',

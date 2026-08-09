@@ -421,9 +421,23 @@ export async function applyUndo(undo: ReflowResult['undo']): Promise<void> {
 
 /* ────────── 参加者 ────────── */
 
+/**
+ * 参加者。**並びを固定する。**
+ * Dexie が返す順は索引の都合で決まるので、人を足すたびに一覧の中で行が入れ替わり、
+ * 入れようとした欄が別人の欄になる(実際に踏んだ)。
+ * 自分を先頭に、あとは足した順。
+ */
 export async function listMembers(tripId: string): Promise<Member[]> {
   const rows = await db.members.where('tripId').equals(tripId).toArray();
-  return rows.filter((m) => m.deletedAt === ALIVE);
+  const deviceId = await getDeviceId();
+  return rows
+    .filter((m) => m.deletedAt === ALIVE)
+    .sort((a, b) => {
+      const mine = (m: Member) => (m.deviceId !== '' && m.deviceId === deviceId ? 0 : 1);
+      if (mine(a) !== mine(b)) return mine(a) - mine(b);
+      const at = (m: Member) => m.createdAt ?? m.updatedAt;
+      return at(a) - at(b) || a.id.localeCompare(b.id);
+    });
 }
 
 /** 旅を作った端末を作成者として登録する。アカウント登録は求めない */
@@ -437,10 +451,78 @@ export async function ensureOwner(tripId: string, displayName: string): Promise<
     deviceId,
     displayName,
     role: 'owner',
+    createdAt: Date.now(),
     ...(await stamp()),
   };
   await db.members.add(member);
   return member;
+}
+
+/**
+ * 名前だけの同行者を足す。**相手がアプリを持っていなくてよい。**
+ * 集合時刻の逆算は、しおりを送る前から役に立つ(計画はたいてい送る前に決まる)。
+ */
+export async function addCompanion(tripId: string, displayName: string): Promise<Member> {
+  const member: Member = {
+    id: newId(),
+    tripId,
+    deviceId: '', // まだアプリで参加していない
+    displayName: displayName.trim(),
+    role: 'editor',
+    createdAt: Date.now(),
+    ...(await stamp()),
+  };
+  await db.members.add(member);
+  return member;
+}
+
+export async function renameMember(id: string, displayName: string): Promise<void> {
+  await db.members.update(id, { displayName: displayName.trim(), ...(await stamp()) });
+}
+
+/** 消しても、その人が入れた集合の時間は残す(消す操作を取り返せるように) */
+export async function removeMember(id: string): Promise<void> {
+  await db.members.update(id, { ...(await stamp()), deletedAt: Date.now() });
+}
+
+/* ────────── 集合 ────────── */
+
+/** その予定を「集合」にする / やめる */
+export async function setIsMeetup(id: string, isMeetup: boolean): Promise<void> {
+  await updateEvent(id, { isMeetup });
+}
+
+/**
+ * ある人の、集合場所までの移動時間。
+ *
+ * **他人の欄も入れられる。** 同行者はアプリを持っていないことがあり、
+ * 誰かが代わりに入れられないと3人ぶんが埋まらない。
+ * `updatedAt` を1件ずつ持たせているので、あとで本人が直せば新しいほうが残る
+ * (src/share/merge.ts)。
+ */
+export async function setMeetupEntry(
+  eventId: string,
+  memberId: string,
+  minutes: number | null,
+  mode: TravelMode | null,
+): Promise<void> {
+  /*
+   * **読んで・足して・書くを直列にする。**
+   * 3人ぶんを続けて入れると、素で書くと読み込みが重なって先の1件が消える
+   * (実際に踏んだ: 3件入れて最後の1件しか残らなかった)。
+   * 印は先に作る ── トランザクションの中で別のテーブル(設定)を読ませない。
+   */
+  const s = await stamp();
+  await db.transaction('rw', db.events, async () => {
+    const event = await db.events.get(eventId);
+    if (!event) return;
+    const rest = (event.meetup ?? []).filter((m) => m.memberId !== memberId);
+    const meetup =
+      minutes === null || minutes <= 0
+        ? rest
+        : [...rest, { memberId, minutes, mode, updatedAt: s.updatedAt }];
+    await db.events.update(eventId, { meetup, ...s });
+  });
 }
 
 /* ────────── 起動時の着地点 ────────── */
