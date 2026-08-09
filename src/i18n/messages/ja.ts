@@ -326,5 +326,6 @@ export const ja = {
     settings: '設定',
     none: 'なし',
     add: '追加',
+    paste: '貼り付け',
   },
 } as const;

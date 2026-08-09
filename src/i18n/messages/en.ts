@@ -303,5 +303,6 @@ export const en: DeepPartial<Messages> = {
     settings: 'Settings',
     none: 'None',
     add: 'Add',
+    paste: 'Paste',
   },
 };
