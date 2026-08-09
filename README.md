@@ -25,11 +25,9 @@ npx cap sync ios   # dist/ を iOS プロジェクトへ反映
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | 開発方針。守るべき制約はここが正 |
 | [ROADMAP.md](ROADMAP.md) | 関門付きフェーズ制の進行表。現在地もここ |
-| [docs/ux-design.md](docs/ux-design.md) | UI/UX の設計。**画面を作る前に必ず読む** |
-| [docs/pricing.md](docs/pricing.md) | 価格と、無料 / Pro の線引き |
-| [docs/competitive-landscape.md](docs/competitive-landscape.md) | 競合とポジショニングの根拠 |
-| [docs/ios-release-setup.md](docs/ios-release-setup.md) | TestFlight 自動配布の構築手順 |
 | [store/appstore-listing.md](store/appstore-listing.md) | ストア掲載テキストとプライバシーラベル |
+
+> `docs/` は git 管理外(競合分析と価格戦略が含まれるため)。開発機の手元にだけある。
 
 ## 配布
 

@@ -11,6 +11,19 @@ Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
 - 表示名「たびのしおり」は日本語。**ASCIIが要る箇所(ipa名・Artifact名・
   リポジトリ名)は `TravelNote` を使う**
 
+> ⚠️ **`docs/` は git 管理外**(`.gitignore`)。競合分析と価格戦略が含まれるため、
+> Public リポジトリには入れていない。**開発機の手元にだけある。**
+> 以下の `docs/...` へのリンクは、クローンした環境では開けない。
+> 設計の根拠が要るときは開発機の `TravelNote/docs/` を見ること。
+>
+> | ファイル | 中身 |
+> |---|---|
+> | `docs/ux-design.md` | UI/UX の正。画面を作る前に読む |
+> | `docs/pricing.md` | 価格と 無料 / Pro の線引き |
+> | `docs/competitive-landscape.md` | 競合とポジショニングの根拠 |
+> | `docs/ios-release-setup.md` | TestFlight 自動配布の構築手順 |
+> | `docs/appstore-paid-setup.md` | 有料App契約まわりの手順 |
+
 ## 方針
 
 - ターゲット: 複数人で旅行に行く人(家族・友人・カップル)
