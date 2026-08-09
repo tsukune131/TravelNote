@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/context';
 import { IconClose } from './Icon';
@@ -47,7 +48,14 @@ export function Sheet({
     };
   }, []);
 
-  return (
+  /*
+   * **body の直下に出す。**
+   * シートは行の中からも開く(移動時間は予定と予定のあいだのボタンから)。
+   * 途中の要素に transform / filter / will-change が載っていると、
+   * position:fixed の基準がそこになり、シートがその行の中に閉じ込められる。
+   * どこから呼ばれても画面全体を覆えるように、DOM 上は必ず外へ逃がす。
+   */
+  return createPortal(
     <div
       className="scrim"
       onPointerDown={(e) => {
@@ -71,6 +79,7 @@ export function Sheet({
         </div>
         <div className="sheet-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

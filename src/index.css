@@ -857,8 +857,15 @@ button {
   z-index: 4;
 }
 
-/* 変えるのは transform だけ。合成だけで済むので指に遅れない */
-.tl-row {
+/*
+ * 変えるのは transform だけ。合成だけで済むので指に遅れない。
+ *
+ * **掴んでいるあいだだけに限ること。** will-change や transform が載った要素は
+ * position:fixed の基準になる ── 常時かけていたら、行の中から開く
+ * 移動時間シートがその行に閉じ込められ、予定と予定のあいだに埋まった。
+ * (Sheet 側も body に逃がすようにしたので、これは二重の歯止め)
+ */
+.dragging .tl-row {
   will-change: transform;
 }
 
