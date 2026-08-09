@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { db, getDeviceId, newId } from './db';
-import type { DayVariant, EventLink, Member, Trip, TripEvent } from './types';
+import type { DayVariant, EventLink, Member, PackItem, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
@@ -74,6 +74,69 @@ export async function removeTripLink(id: string, url: string): Promise<void> {
   const trip = await db.trips.get(id);
   if (!trip) return;
   await updateTrip(id, { links: (trip.links ?? []).filter((l) => l.url !== url) });
+}
+
+/* ────────── 準備(持ち物・メモ) ────────── */
+
+/**
+ * 持ち物リストを書き換える。
+ *
+ * **読んで・変えて・書くを直列にする。** チェックは続けて何個も付くので、
+ * 素で書くと読み込みが重なって先の1件が消える(移動時間の欄で実際に踏んだ)。
+ * 印は先に作る ── トランザクションの中で別のテーブル(設定)を読ませない。
+ */
+async function editPacking(
+  id: string,
+  change: (items: PackItem[]) => PackItem[],
+): Promise<void> {
+  const s = await stamp();
+  await db.transaction('rw', db.trips, async () => {
+    const trip = await db.trips.get(id);
+    if (!trip) return;
+    await db.trips.update(id, { packing: change(trip.packing ?? []), ...s });
+  });
+}
+
+/** 同じ名前のものは足さない。テンプレを2回押しても増えないように */
+export async function addPackItems(id: string, texts: readonly string[]): Promise<void> {
+  await editPacking(id, (items) => {
+    const have = new Set(items.map((i) => i.text));
+    const add = texts
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0 && !have.has(t))
+      .map((text) => ({ id: newId(), text, checked: false }));
+    return [...items, ...add];
+  });
+}
+
+export async function togglePackItem(id: string, itemId: string): Promise<void> {
+  await editPacking(id, (items) =>
+    items.map((i) => (i.id === itemId ? { ...i, checked: !i.checked } : i)),
+  );
+}
+
+export async function removePackItem(id: string, itemId: string): Promise<void> {
+  await editPacking(id, (items) => items.filter((i) => i.id !== itemId));
+}
+
+/** チェック済みをまとめて片づける。旅が終わったあとの掃除用 */
+export async function clearCheckedPackItems(id: string): Promise<void> {
+  await editPacking(id, (items) => items.filter((i) => !i.checked));
+}
+
+export async function setTripNote(id: string, note: string): Promise<void> {
+  await updateTrip(id, { note: note.trim() || undefined });
+}
+
+/**
+ * 予約済にした予定を、旅ぜんぶから拾って日付順に返す。
+ * **空港で「予約番号どこ」を探さないため**(docs/ux-design.md §7.1)。
+ */
+export async function listBookedEvents(tripId: string): Promise<TripEvent[]> {
+  const rows = await db.events.where('tripId').equals(tripId).toArray();
+  return rows
+    .filter((e) => e.deletedAt === ALIVE && e.booking?.booked === true)
+    .sort((a, b) => a.dayIndex - b.dayIndex || compareOrder(a, b));
 }
 
 /**

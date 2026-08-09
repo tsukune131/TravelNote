@@ -76,6 +76,42 @@ export const ja = {
     deleteConfirm: '「{title}」を削除しますか? 中の予定もすべて消えます。',
   },
 
+  /** 準備画面(docs/ux-design.md §7.1)。旅程ではないが旅の前後で必ず要るもの */
+  prepare: {
+    title: '準備',
+    packing: '持ち物',
+    packingEmpty: 'タップして定番から。足りないものは下から足せます。',
+    addItem: '持ち物を足す',
+    clearChecked: 'チェックしたものを片づける',
+    bookings: '予約まとめ',
+    bookingsEmpty: '予定に🎫予約を付けると、ここに全部まとまります。',
+    note: '旅のメモ',
+    notePlaceholder: '集合場所、宿の電話番号、両替のことなど',
+    template: {
+      domestic: '国内',
+      overseas: '海外',
+      onsen: '温泉',
+    },
+    item: {
+      wallet: '財布',
+      phone: 'スマホ',
+      charger: '充電器',
+      battery: 'モバイルバッテリー',
+      meds: '常備薬',
+      clothes: '着替え',
+      toiletries: '洗面用具',
+      umbrella: '折りたたみ傘',
+      passport: 'パスポート',
+      card: 'クレジットカード',
+      plug: '変換プラグ',
+      esim: '海外用SIM・eSIM',
+      towel: 'タオル',
+      bathchange: '湯上がりの着替え',
+      hairtie: 'ヘアゴム',
+      skincare: '基礎化粧品',
+    },
+  },
+
   timeline: {
     unscheduled: '時刻未定',
     noTime: '—',
@@ -155,6 +191,8 @@ export const ja = {
     booking: '予約',
     booked: '予約済',
     partySize: '{n}名',
+    /** 入力欄の見出し。partySize は表示用の書式なので兼用できない */
+    party: '人数',
     bookingRef: '予約番号',
     cost: '費用',
   },

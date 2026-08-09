@@ -17,6 +17,7 @@ import { Timeline } from './Timeline';
 import { EventSheet } from './EventSheet';
 import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
+import { Prepare } from './Prepare';
 import { MapProviderPrompt } from './Settings';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
@@ -51,6 +52,8 @@ export function TripScreen({
   const [sharing, setSharing] = useState(false);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
@@ -166,7 +169,7 @@ export function TripScreen({
           <button
             type="button"
             className="iconbtn plain"
-            onClick={() => setEditingTrip(true)}
+            onClick={() => setMenuOpen(true)}
             aria-label={t('trip.menu')}
           >
             <IconMore />
@@ -316,7 +319,50 @@ export function TripScreen({
 
       {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
 
-      {editingTrip && <TripForm trip={trip} onClose={() => setEditingTrip(false)} />}
+      {/*
+        ⋯ は**メニュー**(docs/ux-design.md §2.1)。
+        以前は旅の設定へ直行していたが、準備の置き場所が無かった。
+        下タブは置かない方針なので、旅程以外はここに集める。
+      */}
+      {menuOpen && (
+        <Sheet title={t('trip.menu')} onClose={() => setMenuOpen(false)}>
+          <div>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                setMenuOpen(false);
+                setPreparing(true);
+              }}
+            >
+              🎒 {t('prepare.title')}
+              <span className="sub">›</span>
+            </button>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                setMenuOpen(false);
+                setEditingTrip(true);
+              }}
+            >
+              ⚙️ {t('tripForm.editTitle')}
+              <span className="sub">›</span>
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
+
+      {editingTrip && (
+        <TripForm
+          trip={trip}
+          onClose={() => setEditingTrip(false)}
+          // 消した旅の画面には留まれない
+          onDeleted={onBack}
+        />
+      )}
 
       {pendingMapFor && (
         <MapProviderPrompt

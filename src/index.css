@@ -1294,6 +1294,23 @@ body.sheet-open .addbar-hint {
   font-family: inherit;
 }
 
+/*
+ * `.field` の中のチェックボックス(予約など)は文字の大きさに合わせる。
+ * 上の `.field input` の枠づけ(width:100% / min-height:2.75rem)がそのまま効くと、
+ * **巨大な四角になってラベルが押し出されて折り返す。**
+ * 一度直したあと、そのとき唯一の該当箇所だった機能を消したときに
+ * このルールも巻き添えで消してしまい、同じ見た目が再発した。消さないこと。
+ */
+.field input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  flex: 0 0 auto;
+  accent-color: var(--primary);
+}
+
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
@@ -1336,6 +1353,9 @@ body.sheet-open .addbar-hint {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  font-weight: 400;
+  /* `.field > label` の見出し用の字間を引き継がせない(語が間延びする) */
+  letter-spacing: normal;
   color: var(--ink-2);
   min-height: 2.75rem;
 }
@@ -1398,6 +1418,67 @@ body.sheet-open .addbar-hint {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ───────── 準備(持ち物・予約まとめ) ───────── */
+
+.packrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.packrow .inline-toggle {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+}
+
+/* 済んだものは薄く。消さずに残すのは「持った」の記録でもあるから */
+.packrow .done {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+/*
+ * 予約の1行。**予約番号は選んでコピーできるようにする**ので、
+ * ボタンにも押せる見た目にもしない。
+ */
+.bookrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 0.88rem;
+}
+
+.bookrow .when {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.bookrow .what {
+  flex: 1;
+  min-width: 6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookrow .ref {
+  font-family: var(--font-data);
+  font-size: 0.85rem;
+  font-weight: 700;
+  /* 長い予約番号でも折り返して全部見せる。控えるより見えるほうが大事 */
+  word-break: break-all;
+  -webkit-user-select: all;
+  user-select: all;
 }
 
 /* ───────── 一覧メニュー(設定など) ───────── */

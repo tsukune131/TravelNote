@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { Paywall } from './Paywall';
 import { getDisplayName, setDisplayName } from '../db/settings';
+import { ensureOwner, listMembers } from '../db/repo';
 import { countUnsentChanges } from '../share/snapshot';
 import { exportSnapshotText, importSnapshotText } from '../share/apply';
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
@@ -37,6 +39,7 @@ export function ShareSheet({
   const [busy, setBusy] = useState(false);
   const [paywall, setPaywall] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const members = useLiveQuery(() => listMembers(trip.id), [trip.id]);
 
   useEffect(() => {
     void getDisplayName().then(setName);
@@ -51,7 +54,15 @@ export function ShareSheet({
     if (!gate.allowed && !force) return setPaywall(true);
     setBusy(true);
     try {
-      const { text } = await exportSnapshotText(trip.id, name.trim() || t('share.displayNameDefault'));
+      const myName = name.trim() || t('share.displayNameDefault');
+      /*
+       * 送る前に**自分を参加者として登録する。**
+       * これが抜けていたので、送っても参加者が0人のしおりが飛んでいた ──
+       * 受け取った側にも「誰から来たのか」が残らない。
+       * 一度作れば以後は同じレコードを使い回す。
+       */
+      await ensureOwner(trip.id, myName);
+      const { text } = await exportSnapshotText(trip.id, myName);
       const result = await sendSnapshot(trip, text);
       if (result === 'downloaded') setNote(t('share.downloaded'));
       setUnsent(await countUnsentChanges(trip.id));
@@ -119,6 +130,26 @@ export function ShareSheet({
           </button>
           <p className="guess">{t('share.receiveHint')}</p>
         </div>
+
+        {/*
+          誰と共有しているか。**まだ誰もいないうちは出さない**(ひとりで使う旅では
+          意味のない見出しになる)。役割は表示だけ ── サーバーが無い以上、
+          渡した相手の端末では何でもできるので、権限として機能させない
+          (docs/ux-design.md §6.5「守れる顔をしたUIを作らない」)。
+        */}
+        {members !== undefined && members.length > 0 && (
+          <div className="field">
+            <label>{t('share.members')}</label>
+            {members.map((m) => (
+              <div className="linkrow" key={m.id}>
+                <span className="lbl">
+                  {t(m.role === 'owner' ? 'share.roleOwner' : 'share.roleEditor')}
+                </span>
+                <span className="url">{m.displayName}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {note && <p className="guess">{note}</p>}
       </Sheet>

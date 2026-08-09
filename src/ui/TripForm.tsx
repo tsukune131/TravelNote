@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { LinkList } from './LinkList';
-import { addTripLink, createTrip, removeTripLink, updateTrip } from '../db/repo';
+import { addTripLink, createTrip, deleteTrip, removeTripLink, updateTrip } from '../db/repo';
 import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 import type { Trip } from '../db/types';
@@ -18,13 +18,17 @@ export function TripForm({
   trip,
   onClose,
   onCreated,
+  onDeleted,
 }: {
   trip?: Trip;
   onClose: () => void;
   onCreated?: (tripId: string) => void;
+  /** 消したあとは、その旅の画面に留まれない。呼び出し側が一覧へ戻す */
+  onDeleted?: () => void;
 }) {
   const { t, date } = useI18n();
   const [title, setTitle] = useState(trip?.title ?? '');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [startDate, setStartDate] = useState<PlainDate>(trip?.startDate ?? today());
   const [endDate, setEndDate] = useState<PlainDate>(trip?.endDate ?? addDays(today(), 2));
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +147,46 @@ export function TripForm({
       <button type="button" className="btn wide" onClick={submit} disabled={busy}>
         {trip ? t('common.save') : t('tripForm.create')}
       </button>
+
+      {/*
+        削除。**確認を挟む。**中の予定ごと消えるうえ、戻す導線が無い。
+        OS の confirm ダイアログではなくシートの中で聞く ── 何が消えるのかを
+        旅の名前つきで書けるし、文面をこちらで決められる。
+      */}
+      {trip &&
+        (confirmingDelete ? (
+          <>
+            <p className="err">{t('tripForm.deleteConfirm', { title: trip.title })}</p>
+            <div className="row">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="btn danger"
+                onClick={() => {
+                  setBusy(true);
+                  void deleteTrip(trip.id).then(() => (onDeleted ?? onClose)());
+                }}
+                disabled={busy}
+              >
+                {t('common.delete')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="btn danger wide"
+            onClick={() => setConfirmingDelete(true)}
+          >
+            {t('tripForm.deleteTrip')}
+          </button>
+        ))}
     </Sheet>
   );
 }

@@ -109,6 +109,68 @@ export function EventSheet({
         />
       </div>
 
+      {/*
+        予約。**チェックを入れるまで中身を出さない**(段階的開示・docs §4.3)。
+        予約番号と人数は、空港や店先で「どこに書いたか」を探さないために持つ。
+        タイムラインの 🎫 バッジはここでしか立たない。
+      */}
+      <div className="field">
+        <label className="inline-toggle">
+          <input
+            type="checkbox"
+            checked={event.booking?.booked === true}
+            onChange={(e) =>
+              void updateEvent(event.id, {
+                booking: e.target.checked ? { ...event.booking, booked: true } : undefined,
+              })
+            }
+          />
+          🎫 {t('event.booking')}
+        </label>
+
+        {event.booking?.booked && (
+          <div className="row pair">
+            <div className="field">
+              <label htmlFor="ev-party">{t('event.party')}</label>
+              <input
+                id="ev-party"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={event.booking.partySize ?? ''}
+                onChange={(e) =>
+                  void updateEvent(event.id, {
+                    booking: {
+                      ...event.booking,
+                      booked: true,
+                      partySize: e.target.value === '' ? undefined : Number(e.target.value),
+                    },
+                  })
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="ev-ref">{t('event.bookingRef')}</label>
+              <input
+                id="ev-ref"
+                defaultValue={event.booking.reference ?? ''}
+                autoCapitalize="off"
+                autoCorrect="off"
+                onBlur={(e) =>
+                  void updateEvent(event.id, {
+                    booking: {
+                      ...event.booking,
+                      booked: true,
+                      reference: e.target.value.trim() || undefined,
+                    },
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="field">
         <label htmlFor="ev-note">{t('event.note')}</label>
         <textarea

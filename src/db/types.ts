@@ -24,6 +24,18 @@ export type EventLink = {
   customLabel?: string;
 };
 
+/**
+ * 持ち物。旅ひとつに対して1本の一覧を持つ。
+ *
+ * 予定と違って日付にも並び順にも縛られないので、独立したテーブルにはしない
+ * (旅に付いてくるほうが、共有のときも丸ごと運べて扱いが揃う)。
+ */
+export type PackItem = {
+  id: string;
+  text: string;
+  checked: boolean;
+};
+
 export type Booking = {
   booked: boolean;
   partySize?: number;
@@ -65,6 +77,20 @@ export type Trip = SyncFields & {
    * 古い記録には無いので任意。読むときは `trip.links ?? []`。
    */
   links?: EventLink[];
+
+  /**
+   * 持ち物リスト(準備画面)。
+   *
+   * ⚠️ **共有では細かくマージしない。** 旅そのものは案に分けない決まりなので、
+   * 両方が同じ旅を直したときは手元が残る(src/share/merge.ts)。
+   * つまり**二人が同時にチェックを付けると、片方のチェックは届かない。**
+   * 予定と同じ粒度でマージするには records に分ける必要があり、
+   * 持ち物のために構造を増やす価値はないと判断した。
+   */
+  packing?: PackItem[];
+
+  /** 旅全体のメモ(集合場所・連絡先など)。予定に紐づかないもの */
+  note?: string;
 };
 
 /**

@@ -74,6 +74,25 @@ export const en: DeepPartial<Messages> = {
     deleteConfirm: 'Delete "{title}"? Everything in it goes too.',
   },
 
+  prepare: {
+    title: 'Prep',
+    packing: 'Packing',
+    packingEmpty: 'Tap to start from a set. Add anything missing below.',
+    addItem: 'Add an item',
+    clearChecked: 'Clear the checked items',
+    bookings: 'Bookings',
+    bookingsEmpty: 'Mark a stop as 🎫 booked and it shows up here.',
+    note: 'Trip notes',
+    notePlaceholder: 'Where to meet, the hotel phone number, money…',
+    template: { domestic: 'Domestic', overseas: 'Overseas', onsen: 'Onsen' },
+    item: {
+      wallet: 'Wallet', phone: 'Phone', charger: 'Charger', battery: 'Power bank',
+      meds: 'Medicine', clothes: 'Clothes', toiletries: 'Toiletries', umbrella: 'Folding umbrella',
+      passport: 'Passport', card: 'Credit card', plug: 'Plug adapter', esim: 'Travel SIM / eSIM',
+      towel: 'Towel', bathchange: 'Change of clothes', hairtie: 'Hair tie', skincare: 'Skincare',
+    },
+  },
+
   timeline: {
     unscheduled: 'No time set',
     noTime: '—',
@@ -150,6 +169,7 @@ export const en: DeepPartial<Messages> = {
     booking: 'Booking',
     booked: 'Booked',
     partySize: '{n} people',
+    party: 'People',
     bookingRef: 'Reference',
     cost: 'Cost',
   },
