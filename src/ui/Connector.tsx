@@ -4,8 +4,8 @@ import type { MessageKey } from '../i18n';
 import { Sheet } from './Sheet';
 import { setTravel } from '../db/repo';
 import { connectorBetween } from '../lib/connector';
-import { openDirections } from '../lib/openExternal';
-import { mapLinkOf } from '../lib/maps';
+import { openDirections, openMap } from '../lib/openExternal';
+import { canRouteExactly, mapLinkOf } from '../lib/maps';
 import type { MapProvider, TravelMode } from '../lib/maps';
 import type { TripEvent } from '../db/types';
 
@@ -84,6 +84,17 @@ function TravelSheet({
   const c = connectorBetween(prev, next);
   const mode = prev.travelMode ?? 'transit';
 
+  const from = { name: prev.name, lat: prev.lat, lng: prev.lng, url: mapLinkOf(prev.links) };
+  const to = { name: next.name, lat: next.lat, lng: next.lng, url: mapLinkOf(next.links) };
+  // 目的地にリンクがあるなら、名前で経路を引くより「そこを開く」ほうが確実
+  const exact = canRouteExactly(from, to) || to.url === undefined;
+
+  function openRouteOrPlace() {
+    const provider = mapProvider ?? 'google';
+    if (exact) openDirections(provider, from, to, mode);
+    else openMap(provider, to);
+  }
+
   return (
     <Sheet title={t('connector.title')} onClose={onClose}>
       <p className="guess">
@@ -133,21 +144,19 @@ function TravelSheet({
         </div>
       </div>
 
-      {/* 座標が無くても、地図アプリは場所名で経路を出せる */}
-      <button
-        type="button"
-        className="btn ghost wide"
-        onClick={() =>
-          // 出発地・目的地とも、貼られた地図リンクが最優先(lib/maps.ts)
-          openDirections(
-            mapProvider ?? 'google',
-            { name: prev.name, lat: prev.lat, lng: prev.lng, url: mapLinkOf(prev.links) },
-            { name: next.name, lat: next.lat, lng: next.lng, url: mapLinkOf(next.links) },
-            mode,
-          )
-        }
-      >
-        🗺 {t('connector.route')}
+      {/*
+        経路は**正確に引けるときだけ**引く。
+
+        Googleマップアプリの「リンクをコピー」は短縮リンクで座標が入っておらず、
+        解決には通信が要る(しない方針)。座標が取れないまま名前で経路を引くと、
+        同名の別の場所へ案内してしまう ── 旅先ではこれがいちばん痛い。
+
+        引けないときは**目的地そのものを開く。**貼られたリンクは場所を確実に
+        指しているので、地図アプリ側で1タップすれば現在地からの経路が出る。
+        旅行中はそもそも「いまいる場所から次へ」が知りたいことが多い。
+      */}
+      <button type="button" className="btn ghost wide" onClick={openRouteOrPlace}>
+        🗺 {exact ? t('connector.route') : t('connector.openNext')}
       </button>
 
       {prev.travelMinutes !== null && (

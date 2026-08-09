@@ -83,6 +83,28 @@ export function mapLinkOf(
   return links.find((l) => l.label === 'map')?.url;
 }
 
+/** その地点を座標で指せるか。指せないなら、渡せるのは名前だけ */
+function isPinned(place: MapPlace): boolean {
+  if (place.url && coordsFromMapUrl(place.url)) return true;
+  return place.lat !== undefined && place.lng !== undefined;
+}
+
+/**
+ * 2地点の経路を**正確に**引けるか。
+ *
+ * **Googleマップアプリの「リンクをコピー」は短縮リンク(`maps.app.goo.gl`)**で、
+ * 中に座標が入っていない。解決するには通信が要る ── しない方針なので、
+ * 貼ってあっても座標は取れない。そのまま名前で経路を引くと、
+ * 「一蘭」「市役所」で同名の別の場所へ案内してしまう。
+ *
+ * そこで UI 側はこれを見て、**正確に引けないなら経路をやめて
+ * 目的地そのものを開く**(貼られたリンクは場所を確実に指しているので、
+ * そこから1タップで現在地からの経路が出せる)。
+ */
+export function canRouteExactly(from: MapPlace, to: MapPlace): boolean {
+  return isPinned(from) && isPinned(to);
+}
+
 const APPLE_MODE: Record<TravelMode, string> = { walk: 'w', transit: 'r', drive: 'd' };
 const GOOGLE_MODE: Record<TravelMode, string> = {
   walk: 'walking',

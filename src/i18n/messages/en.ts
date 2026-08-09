@@ -104,6 +104,7 @@ export const en: DeepPartial<Messages> = {
     minutes: 'How long',
     clear: 'Remove travel time',
     route: 'See the route in Maps',
+    openNext: 'Open the next stop in Maps',
     gapNote: 'You have {duration} between these',
     noGap: "One of these has no time set, so we can't tell if you'll make it",
   },
