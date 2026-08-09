@@ -129,8 +129,13 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 ## フェーズC: TestFlight配布(費用: 年99ドル)
 
 - [x] C-1 Apple Developer Program 登録 — 済み(2026-08-09 時点)
-- [ ] C-2 TestFlight自動配布パイプライン(/ios-release-pipeline。
-      手順: docs/ios-release-setup.md)
+- [ ] C-2 TestFlight自動配布パイプライン(手順: docs/ios-release-setup.md §0)
+  - [x] ワークフロー / fastlane 3レーン / 共有スキーム / 相対パスビルド
+  - [x] 証明書リポジトリ `tsukune131/TravelNote-certificates`(**Private**)を作成
+  - [ ] **Apple 側の設定**(App ID / アプリ登録 / API キー **Admin権限** / Team ID)
+  - [ ] **Fine-grained PAT**(証明書リポジトリのみ・Contents 読み書き)
+  - [ ] **GitHub Secrets 7つ**を登録(コマンドは docs §0-F)
+  - [ ] lane=certificates を1回 → lane=beta
 - [ ] C-3 ネイティブ機能(/ios-native-features: 予定リマインド通知・触覚)
       ※ スプラッシュの閉じ方は A-4 で実装済み。**実機で3秒待たされないことの確認**だけ残る
 - [ ] C-4 **Share Extension**(Safari の共有シートから食べログ等を取り込む)
@@ -301,4 +306,11 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   (`gh api -X POST repos/.../pages -f build_type=workflow`)。
   初回の CI は **@capacitor/browser の宣言漏れ**で落ちた ── 手元の node_modules に
   残っていて、ローカルだけ通っていた。`npm run deps` の門を足して塞いだ。
-  **→ チェックポイントB(Apple Developer 年99ドルの判断)。**
+  **→ チェックポイントB通過。** Apple Developer は登録済みとのことで、フェーズCへ。
+- 2026-08-09 **フェーズC 着手。** `docs/` を .gitignore に入れた
+  (競合分析と価格戦略が Public で見えていたため。**手元には残る**。
+  ⚠️ 履歴にはまだ残っている)。
+  C-5 の書類タイプ(UTI)を宣言し、`appUrlOpen` の受け口を App に配線
+  ── **書いたまま呼んでいなかった**ので、受け取っても何も起きない状態だった。
+  証明書リポジトリを Private で作成。
+  **残るは Apple 側の設定と Secrets の登録(ユーザー作業。docs/ios-release-setup.md §0)。**
