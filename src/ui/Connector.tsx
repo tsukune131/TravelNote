@@ -9,8 +9,14 @@ import { canRouteExactly, mapLinkOf } from '../lib/maps';
 import type { MapProvider, TravelMode } from '../lib/maps';
 import type { TripEvent } from '../db/types';
 
-const MODES: TravelMode[] = ['walk', 'transit', 'drive'];
-const MODE_EMOJI: Record<TravelMode, string> = { walk: '🚶', transit: '🚃', drive: '🚗' };
+const MODES: TravelMode[] = ['walk', 'bike', 'transit', 'drive', 'other'];
+const MODE_EMOJI: Record<TravelMode, string> = {
+  walk: '🚶',
+  bike: '🚲',
+  transit: '🚃',
+  drive: '🚗',
+  other: '🧭',
+};
 const PRESET_MINUTES = [5, 10, 15, 20, 30, 45, 60, 90];
 
 function modeKey(mode: TravelMode): MessageKey {
@@ -112,7 +118,8 @@ function TravelSheet({
 
       <div className="field">
         <label>{t('connector.mode')}</label>
-        <div className="row">
+        {/* 5つになったので横並びをやめる。390px に3つ以上は入らない */}
+        <div className="catgrid">
           {MODES.map((m) => (
             <button
               key={m}

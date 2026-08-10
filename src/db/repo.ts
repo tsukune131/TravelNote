@@ -1,12 +1,13 @@
 import Dexie from 'dexie';
 import { db, getDeviceId, newId } from './db';
+import { setDisplayName } from './settings';
 import type { DayVariant, EventLink, Member, PackItem, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
 import { placeForTime } from '../lib/ordering';
 import type { TravelMode } from '../lib/maps';
-import { dayCount } from '../lib/plainDate';
+import { dayCount, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 
 /**
@@ -23,9 +24,36 @@ async function stamp(): Promise<{ updatedAt: number; updatedBy: string; deletedA
 
 /* ────────── 旅 ────────── */
 
+/**
+ * 旅の一覧。**作った順ではなく、いま関係がある順に並べる。**
+ *
+ *   1. 旅行中
+ *   2. これから(近い順)
+ *   3. 終わった(新しい順)
+ *
+ * 単純な日付の昇順だと**過去の旅が一番上**に来る。降順だと
+ * **来年の旅が旅行中より上**に来る。どちらも開いた瞬間に困る。
+ * この並びは、カードに出しているチップ(旅行中 / あと{n}日 / 終了)と一致する。
+ *
+ * `order`(作った順)は同じ日付どうしの決着にだけ使う。共有で運ばれる値なので
+ * 捨てはしない。
+ */
 export async function listTrips(): Promise<Trip[]> {
   const rows = await db.trips.where('deletedAt').equals(ALIVE).toArray();
-  return rows.sort(compareOrder);
+  const now = today();
+  const bucket = (t: Trip) => (t.endDate < now ? 2 : t.startDate <= now ? 0 : 1);
+
+  return rows.sort((a, b) => {
+    const byBucket = bucket(a) - bucket(b);
+    if (byBucket !== 0) return byBucket;
+    if (a.startDate !== b.startDate) {
+      // 終わった旅だけ新しい順。思い出は近いものから見たい
+      return bucket(a) === 2
+        ? b.startDate.localeCompare(a.startDate)
+        : a.startDate.localeCompare(b.startDate);
+    }
+    return compareOrder(a, b);
+  });
 }
 
 export async function getTrip(id: string): Promise<Trip | undefined> {
@@ -533,6 +561,31 @@ export async function ensureOwner(tripId: string, displayName: string): Promise<
   };
   await db.members.add(member);
   return member;
+}
+
+/**
+ * 表示名を変える。**すでに登録済みの参加者レコードの名前も直す。**
+ *
+ * `ensureOwner` は作った時点の名前を写し取るだけなので、これが無いと
+ * 設定で名前を変えても**共有画面の「参加している人」は古いまま**になる
+ * (実際に踏んだ)。送り出すしおりにも古い名前が入ってしまう。
+ *
+ * 直すのは**自分の端末IDを持つレコードだけ**。他人の名前は書き換えない。
+ */
+export async function setMyDisplayName(name: string): Promise<void> {
+  const trimmed = name.trim();
+  await setDisplayName(trimmed);
+  // 空にしたときは、すでに名乗ってある名前まで消さない
+  if (trimmed.length === 0) return;
+
+  const deviceId = await getDeviceId();
+  const mine = await db.members.where('deviceId').equals(deviceId).toArray();
+  if (mine.length === 0) return;
+
+  const s = await stamp();
+  await db.members.bulkUpdate(
+    mine.map((m) => ({ key: m.id, changes: { displayName: trimmed, ...s } })),
+  );
 }
 
 /* ────────── 起動時の着地点 ────────── */

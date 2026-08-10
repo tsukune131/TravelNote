@@ -34,20 +34,46 @@ export function TripForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit() {
-    if (title.trim().length === 0) return setError(t('tripForm.nameError'));
-    if (!isPlainDate(startDate) || !isPlainDate(endDate)) return setError(t('tripForm.rangeError'));
-    if (endDate < startDate) return setError(t('tripForm.rangeError'));
-    if (dayCount(startDate, endDate) > MAX_DAYS) return setError(t('tripForm.tooLong'));
+  /**
+   * 入れたものが正しいか。**正しくないものは保存しない**(自動保存でも同じ)。
+   * 返り値はエラーの文言。null なら通る。
+   */
+  function validate(name: string, from: PlainDate, to: PlainDate): string | null {
+    if (name.trim().length === 0) return t('tripForm.nameError');
+    if (!isPlainDate(from) || !isPlainDate(to)) return t('tripForm.rangeError');
+    if (to < from) return t('tripForm.rangeError');
+    if (dayCount(from, to) > MAX_DAYS) return t('tripForm.tooLong');
+    return null;
+  }
 
+  /**
+   * 既存の旅は**自動保存**。ボタンを押させない。
+   *
+   * 予定の詳細シートは以前から即時反映なので、旅の設定だけ「保存」を
+   * 押させるのは不揃いだった。**押し忘れると直したつもりで直っていない。**
+   *
+   * 通らない値のときは書かずにエラーだけ出す(名前を空にした瞬間に
+   * 旅の名前が消える、というようなことをしない)。
+   */
+  function autosave(next: { title?: string; startDate?: PlainDate; endDate?: PlainDate }) {
+    if (!trip) return;
+    const name = next.title ?? title;
+    const from = next.startDate ?? startDate;
+    const to = next.endDate ?? endDate;
+
+    const problem = validate(name, from, to);
+    setError(problem);
+    if (problem) return;
+    void updateTrip(trip.id, { title: name.trim(), startDate: from, endDate: to });
+  }
+
+  /** 新規作成だけボタンで確定する。まだ保存先が無いので自動保存にできない */
+  async function submit() {
+    const problem = validate(title, startDate, endDate);
+    if (problem) return setError(problem);
     setBusy(true);
-    if (trip) {
-      await updateTrip(trip.id, { title: title.trim(), startDate, endDate });
-      onClose();
-    } else {
-      const created = await createTrip({ title: title.trim(), startDate, endDate });
-      onCreated?.(created.id);
-    }
+    const created = await createTrip({ title: title.trim(), startDate, endDate });
+    onCreated?.(created.id);
   }
 
   const range = describeRange();
@@ -81,6 +107,8 @@ export function TripForm({
             setTitle(e.target.value);
             setError(null);
           }}
+          // 1文字ごとに書かない。手が止まったところで1回
+          onBlur={() => autosave({ title })}
           autoFocus={trip === undefined}
         />
       </div>
@@ -96,8 +124,9 @@ export function TripForm({
               const next = e.target.value as PlainDate;
               setStartDate(next);
               // 出発日を後ろにずらしたら帰る日も連れていく(逆転を作らせない)
+              const nextEnd = next > endDate ? next : endDate;
               if (next > endDate) setEndDate(next);
-              setError(null);
+              autosave({ startDate: next, endDate: nextEnd });
             }}
           />
         </div>
@@ -109,8 +138,9 @@ export function TripForm({
             value={endDate}
             min={startDate}
             onChange={(e) => {
-              setEndDate(e.target.value as PlainDate);
-              setError(null);
+              const next = e.target.value as PlainDate;
+              setEndDate(next);
+              autosave({ endDate: next });
             }}
           />
         </div>
@@ -144,9 +174,12 @@ export function TripForm({
 
       {error && <p className="err">{error}</p>}
 
-      <button type="button" className="btn wide" onClick={submit} disabled={busy}>
-        {trip ? t('common.save') : t('tripForm.create')}
-      </button>
+      {/* 既存の旅は自動保存なので、押させるボタンは出さない */}
+      {!trip && (
+        <button type="button" className="btn wide" onClick={submit} disabled={busy}>
+          {t('tripForm.create')}
+        </button>
+      )}
 
       {/*
         削除。**確認を挟む。**中の予定ごと消えるうえ、戻す導線が無い。

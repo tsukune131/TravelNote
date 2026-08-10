@@ -11,7 +11,15 @@
  */
 export type MapProvider = 'apple' | 'google';
 
-export type TravelMode = 'walk' | 'transit' | 'drive';
+/**
+ * 移動の手段。
+ *
+ * **自転車を別に持っているのは、地図アプリに経路を頼めるから**
+ * (レンタサイクルは旅先でよく使う)。
+ * `other` は船・ロープウェイ・送迎など、上のどれでもないもの。
+ * こちらは**地図に手段を渡さない** ── 決めつけるより、地図側に選ばせる。
+ */
+export type TravelMode = 'walk' | 'bike' | 'transit' | 'drive' | 'other';
 
 export type MapPlace = {
   name?: string;
@@ -105,11 +113,25 @@ export function canRouteExactly(from: MapPlace, to: MapPlace): boolean {
   return isPinned(from) && isPinned(to);
 }
 
-const APPLE_MODE: Record<TravelMode, string> = { walk: 'w', transit: 'r', drive: 'd' };
-const GOOGLE_MODE: Record<TravelMode, string> = {
+/**
+ * 地図アプリに渡す手段。**null は「渡さない」。**
+ *
+ * Apple マップの URL は自転車を受けない(dirflg は w / r / d だけ)。
+ * 間違った手段を渡すより、渡さずに地図側の既定に任せるほうがよい。
+ */
+const APPLE_MODE: Record<TravelMode, string | null> = {
+  walk: 'w',
+  bike: null,
+  transit: 'r',
+  drive: 'd',
+  other: null,
+};
+const GOOGLE_MODE: Record<TravelMode, string | null> = {
   walk: 'walking',
+  bike: 'bicycling',
   transit: 'transit',
   drive: 'driving',
+  other: null,
 };
 
 /** 1地点を開く URL。`app` は端末にアプリが入っている前提の URL スキーム */
@@ -153,14 +175,21 @@ export function directionsUrl(
   const destination = encodeURIComponent(query(to));
 
   if (provider === 'apple') {
-    const url = `https://maps.apple.com/?saddr=${origin}&daddr=${destination}&dirflg=${APPLE_MODE[mode]}`;
+    const flag = APPLE_MODE[mode];
+    const url =
+      `https://maps.apple.com/?saddr=${origin}&daddr=${destination}` +
+      (flag ? `&dirflg=${flag}` : '');
     return { app: url, web: url };
   }
 
   const m = GOOGLE_MODE[mode];
   return {
-    app: `comgooglemaps://?saddr=${origin}&daddr=${destination}&directionsmode=${m}`,
-    web: `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${m}`,
+    app:
+      `comgooglemaps://?saddr=${origin}&daddr=${destination}` +
+      (m ? `&directionsmode=${m}` : ''),
+    web:
+      `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}` +
+      (m ? `&travelmode=${m}` : ''),
   };
 }
 
@@ -184,12 +213,19 @@ export function guessTravelMode(km: number): TravelMode {
 }
 
 /** 手段ごとの実効速度(km/h)。直線距離を道なりに換算する係数を織り込んである */
-const SPEED_KMH: Record<TravelMode, number> = { walk: 3.6, transit: 22, drive: 30 };
+const SPEED_KMH: Record<TravelMode, number> = {
+  walk: 3.6,
+  bike: 11,
+  transit: 22,
+  drive: 30,
+  // 手段が分からないので、歩きと電車のあいだくらいに置く
+  other: 12,
+};
 
 export function estimateTravelMinutes(km: number, mode: TravelMode): number {
   const minutes = (km / SPEED_KMH[mode]) * 60;
   // 乗り換えや駐車の固定コスト
-  const overhead = mode === 'walk' ? 0 : mode === 'transit' ? 8 : 5;
+  const overhead = mode === 'walk' || mode === 'bike' ? 0 : mode === 'transit' ? 8 : 5;
   return Math.max(1, Math.round(minutes + overhead));
 }
 

@@ -127,8 +127,10 @@ export const en: DeepPartial<Messages> = {
   connector: {
     estimate: '~{duration}',
     walk: 'Walk',
+    bike: 'Bike',
     transit: 'Train',
     drive: 'Drive',
+    other: 'Other',
     tooTight: 'You may not make it',
     setTravel: 'Add travel time',
     title: 'Getting to the next stop',

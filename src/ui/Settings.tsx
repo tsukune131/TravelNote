@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { getDisplayName, getMapProvider, setDisplayName, setMapProvider } from '../db/settings';
+import { getDisplayName, getMapProvider, setMapProvider } from '../db/settings';
+import { setMyDisplayName } from '../db/repo';
 import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
 
@@ -27,7 +28,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
           value={name}
           placeholder={t('share.displayNameDefault')}
           onChange={(e) => setName(e.target.value)}
-          onBlur={() => void setDisplayName(name)}
+          onBlur={() => void setMyDisplayName(name)}
         />
       </div>
 

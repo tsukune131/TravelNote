@@ -150,8 +150,11 @@ export const ja = {
     /** 概算であることを必ず示す。経路探索APIは使わない */
     estimate: '約{duration}',
     walk: '徒歩',
+    bike: '自転車',
     transit: '電車',
     drive: '車',
+    /** 船・ロープウェイ・送迎など。地図には手段を渡さない */
+    other: 'その他',
     tooTight: '間に合わない可能性',
     setTravel: '移動時間を入れる',
     title: '次までの移動',

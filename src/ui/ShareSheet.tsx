@@ -3,8 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { Paywall } from './Paywall';
-import { getDisplayName, setDisplayName } from '../db/settings';
-import { ensureOwner, listMembers } from '../db/repo';
+import { getDisplayName } from '../db/settings';
+import { ensureOwner, listMembers, setMyDisplayName } from '../db/repo';
 import { countUnsentChanges } from '../share/snapshot';
 import { exportSnapshotText, importSnapshotText } from '../share/apply';
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
@@ -101,7 +101,7 @@ export function ShareSheet({
             value={name}
             placeholder={t('share.displayNameDefault')}
             onChange={(e) => setName(e.target.value)}
-            onBlur={() => void setDisplayName(name)}
+            onBlur={() => void setMyDisplayName(name)}
           />
           <p className="guess">{t('share.displayNameHint')}</p>
         </div>
