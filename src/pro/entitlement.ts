@@ -10,7 +10,7 @@ import type { Trip } from '../db/types';
  *   取り込む(受け取る)          → 無料。ここを有料にすると共有が死ぬ
  *   取り込んだ旅を送り返す        → 無料。ここを有料にすると往復が切れる
  *   自分の旅をはじめて共有する    → **Pro**(唯一の課金点)
- *   一度共有した旅を再送する      → 無料(解約後も)
+ *   一度共有した旅を再送する      → 無料(解約後も)。**ただし初回共有から1年**
  *
  * 旅の数は無料でも制限しない。ひとり旅の人からは取らない。
  *
@@ -38,20 +38,43 @@ export function isProActive(status: ProStatus, now: number): boolean {
 /** 共有できない理由。UI はこれを見て何を出すか決める */
 export type ShareBlock =
   | { allowed: true }
-  | { allowed: false; reason: 'needs-pro' };
+  | { allowed: false; reason: 'needs-pro' | 'window-expired' };
+
+/**
+ * 一度共有した旅を、Pro なしで送り続けられる期間。**初回共有から1年。**
+ *
+ * ## なぜ無期限をやめたか
+ *
+ * 無期限だと**一円も払わずに使い放題にできた**。誰かから1つ受け取れば
+ * その旅は `imported` で送り放題になるので、**名前と日付と予定を入れ替えて
+ * 「共有用の器」として永久に使い回せる**。払った人が1回だけ払って
+ * 同じことをするのも同様。サーバーもアカウントも持たない以上、
+ * 「別の旅に作り変えたか」を確実に見分ける手段が無い。
+ *
+ * ## なぜ1年か(90日ではなく)
+ *
+ * **海外旅行や連休の旅は3〜6か月前から計画する。** 90日にすると、
+ * 1月に共有 → 7月の旅行、という組で4月の送り返しが止まる ──
+ * **正当な使い方なのに、旅の準備中に締め出される。**
+ * 1年あれば単独の旅の一生はまず収まり、器の使い回しには課金が要るようになる。
+ *
+ * ⚠️ **誤って止めるほうが、取り損ねるより高くつく。** 失うのは¥300、
+ * 失われるのは旅先での信頼。短くするなら、この非対称を思い出すこと。
+ */
+export const FREE_RESHARE_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
 
 /**
  * この旅を書き出して送れるか。
  *
- * 無料で送れるのは:
- * - 受け取った旅(`imported`)── 送り返しは無料
- * - すでに共有を始めた旅(`sharedAt` あり)── 一度開いた扉は閉めない
+ * `sharedAt` は**初回に共有された時刻**で、取り込んだ旅は
+ * 元の値を引き継ぐ(`src/share/apply.ts`)。だから受け取った側が
+ * 器を使い回しても、起点は動かない。
  */
 export function canShare(trip: Trip, status: ProStatus, now: number): ShareBlock {
-  if (trip.imported) return { allowed: true };
-  if (trip.sharedAt !== null) return { allowed: true };
   if (isProActive(status, now)) return { allowed: true };
-  return { allowed: false, reason: 'needs-pro' };
+  if (trip.sharedAt === null) return { allowed: false, reason: 'needs-pro' };
+  if (now <= trip.sharedAt + FREE_RESHARE_WINDOW_MS) return { allowed: true };
+  return { allowed: false, reason: 'window-expired' };
 }
 
 /** 取り込みは**常に無料**。この関数が false を返すことはない(意図の明示として置く) */

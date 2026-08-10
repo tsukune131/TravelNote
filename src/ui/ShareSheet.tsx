@@ -156,6 +156,8 @@ export function ShareSheet({
 
       {paywall && (
         <Paywall
+          /* 一度は共有できていた旅なら、なぜ今さら出たのかを説明する */
+          expiredTrip={!gate.allowed && gate.reason === 'window-expired'}
           onClose={() => setPaywall(false)}
           onProceed={() => {
             setPaywall(false);

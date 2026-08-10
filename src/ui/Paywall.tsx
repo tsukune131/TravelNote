@@ -59,7 +59,16 @@ function priceOf(price: PlanPrice): string {
  * ボタンを押せるようにしない ── StoreKit が製品を返せていないなら、
  * 押しても購入は始まらない。`disabled` は今までどおり `price` の有無で見る。
  */
-export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed: () => void }) {
+export function Paywall({
+  onClose,
+  onProceed,
+  expiredTrip = false,
+}: {
+  onClose: () => void;
+  onProceed: () => void;
+  /** 一度共有できていた旅が1年を過ぎた場合。理由を説明しないと不意打ちになる */
+  expiredTrip?: boolean;
+}) {
   const { t } = useI18n();
   const [prices, setPrices] = useState<PlanPrice[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -74,7 +83,7 @@ export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed
 
   return (
     <Sheet title={t('pro.title')} onClose={onClose}>
-      <p className="paywall-lead">{emphasize(t('pro.lead'))}</p>
+      <p className="paywall-lead">{emphasize(t(expiredTrip ? 'pro.leadExpired' : 'pro.lead'))}</p>
 
       <div className="field">
         <label>{t('pro.freeTitle')}</label>
