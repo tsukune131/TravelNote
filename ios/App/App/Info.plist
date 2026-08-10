@@ -77,6 +77,28 @@
 				<string>com.tsukune.travelnote.shiori</string>
 			</array>
 		</dict>
+		<!--
+		  書き出しは `.json` にした ── **LINE が独自拡張子のファイルを送れず、
+		  共有の主経路が塞がっていた**(実機で確認)。詳細は
+		  src/share/snapshot.ts の snapshotFileName。
+
+		  `public.json` は Apple の型なので Owner を名乗らない。
+		  **Alternate** にして、JSON を扱う他のアプリの邪魔をしない
+		  (共有シートには出るが、既定にはならない)。
+		  しおりでない JSON を開かれても parseSnapshot が弾く。
+		-->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>しおりのファイル (JSON)</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.json</string>
+			</array>
+		</dict>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

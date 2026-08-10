@@ -123,10 +123,21 @@ export async function loadBaseline(tripId: string): Promise<Snapshot | null> {
   }
 }
 
-/** 書き出し用のファイル名。相手のファイル一覧で見分けがつくように日付を入れる */
+/**
+ * 書き出し用のファイル名。相手のファイル一覧で見分けがつくように日付を入れる。
+ *
+ * ⚠️ **拡張子は `.json`。独自の `.tabishiori` には戻さない。**
+ * LINE が独自拡張子のファイルを送れず、**共有の主経路が塞がっていた**
+ * (実機で確認: `.json` に変えると送れる)。日本の家族・友人の旅行で
+ * LINE が使えないのは、この機能が無いのとほぼ同じ。
+ *
+ * 見分けは拡張子ではなく**名前の頭**で付ける。中身は元から JSON なので
+ * 形式は何も変わっていない。過去に配った `.tabishiori` も引き続き開ける
+ * (transport.ts の `SHARE_EXTS` / Info.plist の書類タイプ)。
+ */
 export function snapshotFileName(trip: Trip): string {
   const safeTitle = trip.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'trip';
-  return `${safeTitle}_${trip.startDate}.tabishiori`;
+  return `たびのしおり_${safeTitle}_${trip.startDate}.json`;
 }
 
 export const SNAPSHOT_MIME = 'application/json';

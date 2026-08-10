@@ -17,7 +17,15 @@ import type { Trip } from '../db/types';
  * ネイティブでないときは、ブラウザで確かめられるように別の道へ落とす。
  */
 
-export const SHARE_EXT = 'tabishiori';
+/**
+ * 受け取れる拡張子。**`json` が現役、`tabishiori` は過去に配ったファイル用。**
+ *
+ * 独自拡張子をやめた理由は snapshot.ts の `snapshotFileName` に書いた
+ * (LINE が送れなかった)。**古い方を消さない** ── すでに誰かの
+ * トーク履歴やファイルアプリに `.tabishiori` が残っているので、
+ * それが開けなくなるほうが害が大きい。
+ */
+export const SHARE_EXTS = ['json', 'tabishiori'] as const;
 
 /* ────────── 送る ────────── */
 
@@ -72,7 +80,8 @@ export function listenForIncomingFile(onText: (text: string) => void): () => voi
   const handle = App.addListener('appUrlOpen', (event) => {
     void (async () => {
       const url = event.url;
-      if (!url.includes(`.${SHARE_EXT}`)) return;
+      // 拡張子で足切りする。中身が しおり かどうかは parseSnapshot が見る
+      if (!SHARE_EXTS.some((ext) => url.toLowerCase().includes(`.${ext}`))) return;
       try {
         const file = await Filesystem.readFile({
           path: decodeURI(url.replace(/^file:\/\//, '')),
@@ -99,7 +108,7 @@ export function readFileFromPicker(): Promise<string | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = `.${SHARE_EXT},application/json`;
+    input.accept = `${SHARE_EXTS.map((ext) => `.${ext}`).join(',')},application/json`;
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return resolve(null);
