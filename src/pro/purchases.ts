@@ -63,14 +63,18 @@ export type PlanPrice = {
   plan: PlanId;
   /** StoreKit が整形した文字列(「¥300」)。**自前で組み立てない** */
   priceString: string;
+  /** どのストアフロントの値か。日本以外なら表示には使わない(Paywall) */
+  currencyCode: string;
 };
 
 /**
  * 価格を取りに行く。
  *
- * **表示する価格は必ずここで取った文字列を使う。** ハードコードした数字を出すと、
- * 地域や価格改定でずれて「価格の明示」(3.1.2)が嘘になる。
- * 取れなかったときは空を返し、UI 側は**購入ボタンを押せなくする**。
+ * **取れなかったときは空を返し、UI 側は購入ボタンを押せなくする。**
+ * 製品を取れていないなら、押しても購入は始まらないため。
+ *
+ * 表示に使うかどうかは `currencyCode` 次第 ── 判断は `src/ui/Paywall.tsx` に置いた。
+ * ここは**取ってくるだけ**で、値を選ばない。
  */
 export async function loadPrices(): Promise<PlanPrice[]> {
   if (!(await available())) return [];
@@ -83,7 +87,9 @@ export async function loadPrices(): Promise<PlanPrice[]> {
     return (Object.keys(PRODUCT_IDS) as PlanId[])
       .map((plan) => {
         const found = products.find((p) => p.identifier === PRODUCT_IDS[plan]);
-        return found ? { plan, priceString: found.priceString } : null;
+        return found
+          ? { plan, priceString: found.priceString, currencyCode: found.currencyCode }
+          : null;
       })
       .filter((p): p is PlanPrice => p !== null);
   } catch {

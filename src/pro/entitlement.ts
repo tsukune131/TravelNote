@@ -93,12 +93,23 @@ export const PRODUCT_IDS: Record<PlanId, string> = {
   yearly: 'com.tsukune.travelnote.pro.yearly',
 };
 
-/*
- * **参考価格の定数はここに置かない。**
+/**
+ * 日本の定価。**表示にしか使わない。課金する金額は StoreKit が決める。**
  *
- * 以前 REFERENCE_PRICE_JPY を持っていたが、消した。表示に使える数字が
- * コードの中にあると、いつか誰かがそれを画面に出す。地域や価格改定でずれた
- * 瞬間に「価格の明示」(3.1.2)が嘘になる。
- * **価格は StoreKit から取った整形済み文字列だけを出す**(src/pro/purchases.ts)。
- * 月¥300 / 年¥1,800 という値は docs/pricing.md と ROADMAP にある。
+ * 一度は「価格の定数を持たない」方針にしたが、戻した。理由:
+ * **Sandbox のストアフロントが米国になり、ドル表示から抜け出せなかった**
+ * (サンドボックステスターを日本にしても直らなかった)。
+ * 審査用スクリーンショットを円で撮るためにここが要る。
+ *
+ * ただし**無条件には使わない**(src/ui/Paywall.tsx):
+ * StoreKit が**円で**返したときはそちらを出し、円以外のときだけこれを出す。
+ * 本アプリは**日本のみ配信**なので、本番で円以外が返ることはない ──
+ * つまり本番では常に StoreKit の値が出て、価格改定にも自動で追従する。
+ *
+ * ⚠️ **App Store Connect の価格を変えたら、ここも変える。**
+ * 変え忘れると Sandbox の表示だけが古くなる(本番は StoreKit が正すので無事)。
  */
+export const PRICE_TEXT_JPY: Record<PlanId, string> = {
+  monthly: '¥300',
+  yearly: '¥1,800',
+};

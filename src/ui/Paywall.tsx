@@ -5,8 +5,16 @@ import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import { loadPrices, purchase, restore } from '../pro/purchases';
 import type { PlanPrice } from '../pro/purchases';
 import { setProStatus } from '../pro/store';
-import { isProActive } from '../pro/entitlement';
+import { isProActive, PRICE_TEXT_JPY } from '../pro/entitlement';
 import type { PlanId } from '../pro/entitlement';
+
+/**
+ * ボタンに出す価格。**円で返ってきたときだけ StoreKit を信じる。**
+ * 円以外は日本の定価に差し替える(理由は下の Paywall のコメント)。
+ */
+function priceOf(price: PlanPrice): string {
+  return price.currencyCode === 'JPY' ? price.priceString : PRICE_TEXT_JPY[price.plan];
+}
 
 /**
  * 唯一の課金点 ── **自分の旅をはじめて送ろうとしたとき**だけ出る。
@@ -18,9 +26,22 @@ import type { PlanId } from '../pro/entitlement';
  * ## 3.1.2 が要求するもの(外すと差し戻される)
  *
  * 名称・期間・**価格**・利用規約とプライバシーポリシーへの動くリンク・購入を復元。
- * **価格は StoreKit から取った文字列をそのまま出す。** 自前で組み立てると
- * 地域や価格改定でずれて「価格の明示」が嘘になる。
  * 取れていないうちは**押せなくする** ── 価格の無い購入ボタンは審査で弾かれる。
+ *
+ * ## 価格の出し方(`priceOf`)
+ *
+ * **StoreKit が円で返したときだけ、その文字列を出す。** 円以外なら
+ * `PRICE_TEXT_JPY`(日本の定価)を出す。
+ *
+ * 本アプリは**日本のみ配信**なので、本番で円以外が返る経路が無い ──
+ * つまり実利用では常に StoreKit の値が出て、価格改定にも自動で追従する。
+ * 円以外が来るのは **Sandbox のストアフロントが米国に落ちるとき**だけで、
+ * これは端末側からは直せなかった(サンドボックステスターを日本にしても
+ * ドルのまま。審査用スクリーンショットが撮れず、この分岐を入れた)。
+ *
+ * ⚠️ **買える／買えないの判定は、価格の表示と分ける。** 定価が出せるからと
+ * ボタンを押せるようにしない ── StoreKit が製品を返せていないなら、
+ * 押しても購入は始まらない。`disabled` は今までどおり `price` の有無で見る。
  */
 export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed: () => void }) {
   const { t } = useI18n();
@@ -55,7 +76,7 @@ export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed
         </ul>
       </div>
 
-      {/* 3.1.2: 名称・期間・価格。価格は StoreKit の整形済み文字列 */}
+      {/* 3.1.2: 名称・期間・価格 */}
       <div className="row">
         {(['monthly', 'yearly'] as const).map((plan) => {
           const price = prices?.find((p) => p.plan === plan);
@@ -68,7 +89,7 @@ export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed
               onClick={() => void buy(plan)}
             >
               <b>{t(plan === 'monthly' ? 'pro.monthly' : 'pro.yearly')}</b>
-              <span>{price ? price.priceString : '…'}</span>
+              <span>{price ? priceOf(price) : '…'}</span>
             </button>
           );
         })}
