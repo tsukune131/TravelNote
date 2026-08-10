@@ -4,7 +4,7 @@ import { planMerge } from './merge';
 import type { MergeSummary } from './merge';
 import { buildSnapshot, loadBaseline, parseSnapshot, saveBaseline } from './snapshot';
 import type { Snapshot } from './snapshot';
-import { markShared } from '../pro/entitlement';
+import { markShared, shareWindowUntilFor } from '../pro/entitlement';
 
 /**
  * 受け取ったファイルを取り込む。merge.ts の判定結果を DB に書くだけの層。
@@ -56,11 +56,15 @@ export async function importSnapshot(
       imported: true,
       sharedAt: incoming.trip.sharedAt ?? incoming.exportedAt,
       /*
-       * **無料期間の起点は「受け取った今」。** ファイルに乗ってきた値は使わない。
-       * 送り主の初回共有日を引き継ぐと、1年以上前に共有された旅を受け取った人が
-       * **最初から送り返せない** ── 往復が切れる(監査で見つかった)。
+       * **送れる期限は受け取った側で決める。** ファイルの値は使わない ──
+       * 送り主の期限を引き継ぐと、期限切れの旅を受け取った人が
+       * **最初から送り返せない**(往復が切れる)。
+       *
+       * ⚠️ **手元に記録が残っていればそれを優先する。** 無条件に決め直すと、
+       * **旅を消して同じファイルを取り込み直すだけで期限が伸びる** ──
+       * 一人で、何度でも。消しても墓標は残るので、その値を拾えば塞げる。
        */
-      shareWindowFrom: Date.now(),
+      shareWindowUntil: existing?.shareWindowUntil ?? shareWindowUntilFor(incoming.trip, Date.now()),
       // **受け取ったものは生きている。**送り主側の墓標も、手元の墓標も持ち越さない
       deletedAt: ALIVE,
       /*
@@ -123,14 +127,14 @@ export async function importSnapshot(
    * これらは端末ごとの事実なので、持ち越すのは間違い:
    *   imported        … 受け取った側かどうか
    *   sharedAt        … 表示(「◯月◯日に送りました」)
-   *   shareWindowFrom … 無料期間の起点。**未設定なら今から**
-   *                     (受け取ったこと自体が「送れるようになった」ということ)
+   *   shareWindowUntil … 送れる期限。**未設定ならここで決める**
+   *                      (受け取ったこと自体が「送れるようになった」ということ)
    * 一度立っていれば動かさない ── 動かすと A↔B の往復だけで無期限になる。
    */
   await db.trips.update(tripId, {
     imported: existing.imported,
     sharedAt: existing.sharedAt,
-    shareWindowFrom: existing.shareWindowFrom ?? Date.now(),
+    shareWindowUntil: existing.shareWindowUntil ?? shareWindowUntilFor(existing, Date.now()),
   });
 
   // 取り込んだ時点の「相手の中身」を共通祖先として覚える

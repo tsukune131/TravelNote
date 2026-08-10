@@ -1,3 +1,4 @@
+import { toDate } from '../lib/plainDate';
 import type { Trip } from '../db/types';
 
 /**
@@ -10,7 +11,7 @@ import type { Trip } from '../db/types';
  *   取り込む(受け取る)          → 無料。ここを有料にすると共有が死ぬ
  *   取り込んだ旅を送り返す        → 無料。ここを有料にすると往復が切れる
  *   自分の旅をはじめて共有する    → **Pro**(唯一の課金点)
- *   一度共有した旅を再送する      → 無料(解約後も)。**ただし初回共有から1年**
+ *   一度共有した旅を再送する      → 無料(解約後も)。**旅の終了日+60日まで**
  *
  * 旅の数は無料でも制限しない。ひとり旅の人からは取らない。
  *
@@ -40,46 +41,76 @@ export type ShareBlock =
   | { allowed: true }
   | { allowed: false; reason: 'needs-pro' | 'window-expired' };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * 一度共有した旅を、Pro なしで送り続けられる期間。**初回共有から1年。**
- *
- * ## なぜ無期限をやめたか
- *
- * 無期限だと**一円も払わずに使い放題にできた**。誰かから1つ受け取れば
- * その旅は `imported` で送り放題になるので、**名前と日付と予定を入れ替えて
- * 「共有用の器」として永久に使い回せる**。払った人が1回だけ払って
- * 同じことをするのも同様。サーバーもアカウントも持たない以上、
- * 「別の旅に作り変えたか」を確実に見分ける手段が無い。
- *
- * ## なぜ1年か(90日ではなく)
- *
- * **海外旅行や連休の旅は3〜6か月前から計画する。** 90日にすると、
- * 1月に共有 → 7月の旅行、という組で4月の送り返しが止まる ──
- * **正当な使い方なのに、旅の準備中に締め出される。**
- * 1年あれば単独の旅の一生はまず収まり、器の使い回しには課金が要るようになる。
- *
- * ⚠️ **誤って止めるほうが、取り損ねるより高くつく。** 失うのは¥300、
- * 失われるのは旅先での信頼。短くするなら、この非対称を思い出すこと。
+ * 旅が終わってから、Pro なしで送れる猶予。**旅の記録を送り合う期間。**
+ * 帰ってから写真やメモを足して送り直す、までは無料で通したい。
  */
-export const FREE_RESHARE_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
+export const GRACE_AFTER_TRIP_MS = 60 * DAY_MS;
+
+/**
+ * 送れるようになってから、最低限保証する期間。
+ *
+ * ⚠️ **これが無いと、終わった旅を共有した瞬間に期限切れになる。**
+ * 去年の旅を記録として送る使い方は普通にあるし、Pro を買った直後に
+ * 「送れません」と出るのは事故にしか見えない。
+ */
+export const MIN_SHARE_WINDOW_MS = 90 * DAY_MS;
+
+/**
+ * 1つの旅から取り出せる無料期間の上限。
+ *
+ * ⚠️ **これが無いと、遠い未来の日付で器を作れる。** ¥300で1か月だけ入り、
+ * 2099年の旅として共有してから解約すれば、その旅は2099年まで送れてしまう。
+ * 解約した人も無料の人なので縛り自体はかかっているが、**縛りが70年ある**。
+ *
+ * 日付の入力そのものは制限しない ── 2099年の旅を作るのは自由。
+ * **取り出せる無料期間だけ**を切る。3年あれば実際の計画には十分で、
+ * それより先を計画している人はまず契約中。
+ */
+export const MAX_SHARE_WINDOW_MS = 3 * 365 * DAY_MS;
+
+/**
+ * この旅を Pro なしで送れる期限を決める。**送れるようになった瞬間に1度だけ呼ぶ。**
+ *
+ * 基準は**旅の終了日**であって、受け取った日ではない ──
+ * 「受け取ってから1年」にしていたときは、**器を作り変えて来年の旅に使えた**。
+ * 終了日を基準にすれば、その器は「その旅のためのもの」に閉じる。
+ *
+ * 決めたあとに日付を編集しても**期限は動かない**(呼び直さない)。
+ * だから日付そのものを編集不可にする必要がない ── 1泊延ばす・宿が取れずに
+ * 1週間ずらす、は計画中の日常で、そこを止める代償のほうが大きい。
+ */
+export function shareWindowUntilFor(trip: Trip, now: number): number {
+  const afterTrip = toDate(trip.endDate).getTime() + GRACE_AFTER_TRIP_MS;
+  const wanted = Math.max(afterTrip, now + MIN_SHARE_WINDOW_MS);
+  return Math.min(wanted, now + MAX_SHARE_WINDOW_MS);
+}
 
 /**
  * この旅を書き出して送れるか。
  *
- * 起点は **`shareWindowFrom`(この端末が送れるようになった時刻)**であって、
- * `sharedAt`(世界で最初に共有された時刻)ではない ──
- * `sharedAt` を起点にすると、**1年以上前の旅を受け取った人が最初から
- * 送り返せず、往復が切れる**(監査で見つかった)。詳細は `db/types.ts`。
+ * 見るのは **`shareWindowUntil`(この端末で送れる期限)**。
+ * 送れるようになった瞬間に凍結した絶対時刻なので、あとから旅の日付を
+ * 動かしても伸びない ── 器の使い回しを塞ぐのはここ。
  *
- * `?? sharedAt` は、この項目が無い頃に作られた旅のための保険。
+ * `sharedAt` へのフォールバックは、この項目が無い頃に作られた旅のための保険。
  */
 export function canShare(trip: Trip, status: ProStatus, now: number): ShareBlock {
   if (isProActive(status, now)) return { allowed: true };
 
-  const from = trip.shareWindowFrom ?? trip.sharedAt;
-  if (from === null || from === undefined) return { allowed: false, reason: 'needs-pro' };
-  if (now <= from + FREE_RESHARE_WINDOW_MS) return { allowed: true };
-  return { allowed: false, reason: 'window-expired' };
+  if (trip.shareWindowUntil !== undefined) {
+    return now <= trip.shareWindowUntil
+      ? { allowed: true }
+      : { allowed: false, reason: 'window-expired' };
+  }
+
+  // 旧データ: 期限を持っていない。共有済みなら、その場で決め直して判定する
+  if (trip.sharedAt === null) return { allowed: false, reason: 'needs-pro' };
+  return now <= shareWindowUntilFor(trip, trip.sharedAt)
+    ? { allowed: true }
+    : { allowed: false, reason: 'window-expired' };
 }
 
 /** 取り込みは**常に無料**。この関数が false を返すことはない(意図の明示として置く) */
@@ -114,7 +145,10 @@ export function canEditTrip(): true {
  */
 export function markShared(trip: Trip, now: number): Partial<Trip> | null {
   if (trip.sharedAt !== null) return null;
-  return { sharedAt: now, shareWindowFrom: trip.shareWindowFrom ?? now };
+  return {
+    sharedAt: now,
+    shareWindowUntil: trip.shareWindowUntil ?? shareWindowUntilFor(trip, now),
+  };
 }
 
 /* ────────── 購入画面に出す内容(3.1.2 の必須表示) ────────── */

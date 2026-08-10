@@ -72,8 +72,8 @@ Pro が必要なのは「自分の旅を、はじめて同行者に送るとき�
 
 ・1か月 ¥300 / 1年 ¥1,800
 ・相手はアプリを入れるだけ。登録も支払いも要りません
-・受け取ったしおりを直して送り返すのは、受け取ってから1年間は無料です
-・一度送った旅は、解約したあとも初回共有から1年間は送り続けられます
+・受け取ったしおりを直して送り返すのは、旅が終わって60日後まで無料です
+・一度送った旅は、解約したあとも旅が終わって60日後まで送り続けられます
 ・解約しても、作った旅は読めますし、直せます
 
 ■ つくった人
@@ -209,7 +209,7 @@ Shintaro Fujisawa
 
 無料でできること: 旅の作成・編集・閲覧のすべて。旅の数に制限はありません。
 　共有されたしおりを受け取って編集することは、いつでも無料でできます。
-　送り返しも無料です(受け取った日から1年間)。
+　送り返しも無料です(その旅の終了から60日後まで。受け取った時点から90日間は必ず可)。
 Pro でできること: 自分の旅を同行者と共有できます。
 　旅行のたびに新しい共有を始められる、継続してご利用いただく前提の機能です。
 
@@ -217,7 +217,9 @@ Pro でできること: 自分の旅を同行者と共有できます。
 　(⋯ のメニューではありません。⋯ は「準備」と「旅の設定」です)
 購入の復元: 設定 →「購入を復元」、および購入画面内のボタン
 解約後: 作成済みの旅は引き続き閲覧・編集できます。すでに共有した旅は、
-　その旅がはじめて共有された日から1年間、解約後も送り続けられます。
+　その旅の終了から60日後まで、解約後も送り続けられます(共有を始めた時点
+　または受け取った時点から90日間は必ず送れます)。この期限は共有を始めた
+　時点で確定し、あとから旅の日付を変えても変わりません。
 　新しく共有を始めることのみできなくなります。データはロックされません。
 
 ■ 1台の端末だけで共有の往復をご確認いただけます
@@ -246,8 +248,10 @@ Pro: sharing your own itinerary with travel companions. Users start a new share
 Path to the purchase screen: open a trip -> share icon (top right) -> "Send".
 Restore purchases: Settings -> "Restore Purchases", and inside the purchase sheet.
 After cancelling: existing trips remain viewable and editable. A trip that has
-  already been shared can still be sent for one year from the date it was first
-  shared. Only starting a brand-new share is disabled. No data is locked.
+  already been shared can still be sent until 60 days after the trip ends (and
+  always for at least 90 days from when you first shared or received it). This
+  deadline is fixed when sharing begins and does not move if the dates change.
+  Only starting a brand-new share is disabled. No data is locked.
 
 You can verify the full sharing round trip on a single device:
   1. Create a trip and add one event.
@@ -297,8 +301,8 @@ Sharing works by exporting a file that the user sends themselves; we never recei
 　(5.1.1(v) の対象外です)。
 ・広告は表示せず、トラッキングも行いません。ATT ダイアログはありません。
 ・自動更新サブスク「たびのしおり Pro」の導線は上記「審査に関する情報」のとおりです。
-　解約後も作成済みの旅は閲覧・編集でき、すでに共有した旅は初回共有から
-　1年間は送り続けられます。データはロックされません。
+　解約後も作成済みの旅は閲覧・編集でき、すでに共有した旅は旅の終了から
+　60日後まで送り続けられます。データはロックされません。
 ```
 
 ---
