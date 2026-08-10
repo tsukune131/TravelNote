@@ -9,6 +9,22 @@ import { isProActive, PRICE_TEXT_JPY } from '../pro/entitlement';
 import type { PlanId } from '../pro/entitlement';
 
 /**
+ * 文言中の `**…**` を太字にする。
+ *
+ * ⚠️ **文言をそのまま `{t(...)}` に流すと、アスタリスクが画面に出る。**
+ * 実際に `**送るときだけ** Pro が要ります。` と表示されたまま
+ * TestFlight まで行った(審査で最初に見られる画面なのに)。
+ *
+ * 使っているのは `pro.lead` だけ。訳す人が文を分断されずに済むよう、
+ * キーを割らずにここで処理する。**他のキーで `**` を使うならここを通すこと。**
+ */
+function emphasize(text: string) {
+  return text
+    .split(/\*\*(.+?)\*\*/g)
+    .map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
+}
+
+/**
  * ボタンに出す価格。**円で返ってきたときだけ StoreKit を信じる。**
  * 円以外は日本の定価に差し替える(理由は下の Paywall のコメント)。
  */
@@ -58,7 +74,7 @@ export function Paywall({ onClose, onProceed }: { onClose: () => void; onProceed
 
   return (
     <Sheet title={t('pro.title')} onClose={onClose}>
-      <p className="paywall-lead">{t('pro.lead')}</p>
+      <p className="paywall-lead">{emphasize(t('pro.lead'))}</p>
 
       <div className="field">
         <label>{t('pro.freeTitle')}</label>
