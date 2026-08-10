@@ -189,14 +189,54 @@ Pro でできること: 自分の旅を同行者と共有できます。
 
 購入画面までの経路: 旅の画面 → ⋯ →「しおりを送る」
 購入の復元: 設定 →「購入を復元」、および購入画面内のボタン
-解約後: 作成済みの旅は引き続き閲覧・編集できます。すでに共有した旅は
-　解約後も送り続けられます。新しく共有を始めることのみできなくなります。
+解約後: 作成済みの旅は引き続き閲覧・編集できます。すでに共有した旅は、
+　その旅がはじめて共有された日から1年間、解約後も送り続けられます。
+　新しく共有を始めることのみできなくなります。データはロックされません。
 
-審査での確認方法: 受け取り側の機能は無料でご確認いただけます。
-　(サンプルのしおりファイルの入手方法 or 1回だけ無料で共有できる導線を書く)
+■ 1台の端末だけで共有の往復をご確認いただけます
+　1. 旅を作り、予定を1件追加します
+　2. 右上の共有アイコン →「しおりを送る」→ 購入画面が出ます
+　3. 購入後、iOS の共有シートが開きます。「"ファイル"に保存」を選びます
+　4.「ファイル」アプリで保存した .json をタップ → 共有 →「たびのしおり」
+　5. アプリが開き、しおりが取り込まれます(取り込みは無料の機能です)
+　サンプルのしおりファイルを添付しています。3〜4 の代わりに、これを
+　「ファイル」アプリに置いてタップしていただいても同じ動作をご確認いただけます。
 ```
 
-(日本語UIの場合は英語版メモも用意する)
+英語版(日本語UIのため併記する):
+
+```
+Auto-renewable subscription "Tabi no Shiori Pro" (1 month ¥300 / 1 year ¥1,800).
+No account or sign-in is required. All features are available immediately.
+
+Free: creating, editing and viewing itineraries, with no limit on the number of
+  trips. Receiving a shared itinerary, editing it and sending it back is also free.
+Pro: sharing your own itinerary with travel companions. Users start a new share
+  each time they travel, which is the ongoing value of the subscription.
+
+Path to the purchase screen: open a trip -> share icon (top right) -> "Send".
+Restore purchases: Settings -> "Restore Purchases", and inside the purchase sheet.
+After cancelling: existing trips remain viewable and editable. A trip that has
+  already been shared can still be sent for one year from the date it was first
+  shared. Only starting a brand-new share is disabled. No data is locked.
+
+You can verify the full sharing round trip on a single device:
+  1. Create a trip and add one event.
+  2. Share icon -> "Send" -> the purchase screen appears.
+  3. After purchase, the iOS share sheet opens. Choose "Save to Files".
+  4. In the Files app, tap the saved .json -> Share -> "Tabi no Shiori".
+  5. The app opens and imports the itinerary (importing is free).
+A sample itinerary file is attached. You may place it in the Files app and tap it
+  instead of steps 3-4 to reach the same result.
+
+This app makes no network requests. Itineraries are stored only on the device.
+Sharing works by exporting a file that the user sends themselves; we never receive it.
+```
+
+**添付するサンプル**: `store/review-sample-kyoto.json`
+(App Store Connect →「App Review に関する情報」の添付ファイル欄)。
+アプリ本体の `parseSnapshot` を通して生成しているので、形式のズレは無い。
+再生成が要るときは git log からスクリプトを引く。
 
 > **初回提出ではサブスク製品をアプリのバージョンに紐づけて一緒に審査に出す。**
 
@@ -225,7 +265,8 @@ Pro でできること: 自分の旅を同行者と共有できます。
 　(5.1.1(v) の対象外です)。
 ・広告は表示せず、トラッキングも行いません。ATT ダイアログはありません。
 ・自動更新サブスク「たびのしおり Pro」の導線は上記「審査に関する情報」のとおりです。
-　解約後も作成済みの旅は閲覧・編集・共有でき、データはロックされません。
+　解約後も作成済みの旅は閲覧・編集でき、すでに共有した旅は初回共有から
+　1年間は送り続けられます。データはロックされません。
 ```
 
 ---
