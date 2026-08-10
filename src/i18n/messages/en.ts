@@ -136,6 +136,8 @@ export const en: DeepPartial<Messages> = {
     title: 'Getting to the next stop',
     mode: 'How',
     minutes: 'How long',
+    freeMinutes: 'Enter minutes',
+    unitMinutes: 'min',
     clear: 'Remove travel time',
     route: 'See the route in Maps',
     openNext: 'Open the next stop in Maps',

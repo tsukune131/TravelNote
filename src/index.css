@@ -972,6 +972,35 @@ button {
   padding: 0.15rem 0.45rem;
 }
 
+/* 移動時間の自由入力。プリセットの下に小さく置く(主役はプリセット) */
+.minsrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.minsrow input {
+  flex: 0 0 6rem;
+  border: 1.5px solid var(--rule);
+  background: var(--surface);
+  border-radius: 0.8rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 1rem;
+  min-height: 2.75rem;
+  min-width: 0;
+}
+
+.minsrow input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.minsrow .unit {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
 /* ───────── スワイプ ───────── */
 
 .swipe {

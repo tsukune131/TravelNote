@@ -18,6 +18,8 @@ const MODE_EMOJI: Record<TravelMode, string> = {
   other: '🧭',
 };
 const PRESET_MINUTES = [5, 10, 15, 20, 30, 45, 60, 90];
+/** 1日を超える移動時間は打ち間違い。丸1日は 1440 分 */
+const MAX_TRAVEL_MINUTES = 1440;
 
 function modeKey(mode: TravelMode): MessageKey {
   return `connector.${mode}` as MessageKey;
@@ -95,6 +97,22 @@ function TravelSheet({
   // 目的地にリンクがあるなら、名前で経路を引くより「そこを開く」ほうが確実
   const exact = canRouteExactly(from, to) || to.url === undefined;
 
+  /**
+   * 自由入力を確定する。**通らない値は書かない。**
+   * 空にしたときは移動そのものを消す(「未設定」に戻す道でもある)。
+   */
+  function commitMinutes(raw: string) {
+    const text = raw.trim();
+    if (text.length === 0) {
+      if (prev.travelMinutes !== null) void setTravel(prev.id, null, null);
+      return;
+    }
+    const minutes = Math.round(Number(text));
+    if (!Number.isFinite(minutes) || minutes < 1 || minutes > MAX_TRAVEL_MINUTES) return;
+    if (minutes === prev.travelMinutes) return;
+    void setTravel(prev.id, minutes, mode);
+  }
+
   function openRouteOrPlace() {
     const provider = mapProvider ?? 'google';
     if (exact) openDirections(provider, from, to, mode);
@@ -148,6 +166,31 @@ function TravelSheet({
               {duration(m)}
             </button>
           ))}
+        </div>
+
+        {/*
+          **プリセットは 90 分で終わる。**新幹線もフェリーも入らない。
+          よく使う刻みは1タップのまま残して、外れる値だけここで受ける。
+          入力のたびに書かない(「1」「12」「120」と3回書いてしまう)ので、
+          欄から離れたときに1回だけ。
+        */}
+        <div className="minsrow">
+          <input
+            id="conn-mins"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={MAX_TRAVEL_MINUTES}
+            placeholder={t('connector.freeMinutes')}
+            defaultValue={prev.travelMinutes ?? ''}
+            key={prev.travelMinutes ?? 'empty'}
+            aria-label={t('connector.freeMinutes')}
+            onBlur={(e) => commitMinutes(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur();
+            }}
+          />
+          <span className="unit">{t('connector.unitMinutes')}</span>
         </div>
       </div>
 
