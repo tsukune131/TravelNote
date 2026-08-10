@@ -77,7 +77,8 @@ export function InboxSheet({
 
   return (
     <Sheet title={t('inbox.title')} onClose={onClose}>
-      <p className="guess">{t('inbox.hint')}</p>
+      {/* 説明は文脈で変える。入る先が違うのに同じ文だと嘘になる */}
+      <p className="guess">{t(here ? 'inbox.hintHere' : 'inbox.hint')}</p>
 
       {items?.map((item) => (
         <div className="inboxrow" key={item.id}>

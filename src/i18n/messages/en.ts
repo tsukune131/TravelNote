@@ -99,6 +99,7 @@ export const en: DeepPartial<Messages> = {
     placeHere: 'Put on Day {n}',
     otherTrip: 'To file it under a different trip, open this from the trip list.',
     hint: 'Pick a trip and it becomes a stop on Day 1. You can move it to another day later.',
+    hintHere: 'Open the Day tab you want first — it goes on the day you have open.',
     place: 'Add to a trip',
     chooseTrip: 'Which trip?',
     noTrip: 'Create a trip first.',
