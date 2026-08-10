@@ -11,6 +11,7 @@ import { FLAGS, getDisplayName, getFlag, setFlag } from './db/settings';
 import { importSnapshotText } from './share/apply';
 import { listenForIncomingFile } from './share/transport';
 import { drainSharedInbox } from './share/inbox';
+import { syncProStatus } from './pro/store';
 import { App as CapApp } from '@capacitor/app';
 import { today } from './lib/plainDate';
 
@@ -93,8 +94,12 @@ function Shell({ onReady }: { onReady?: () => void }) {
    */
   useEffect(() => {
     void drainSharedInbox();
+    // 購入状態も同じ機会に取り直す。別の端末で買った・解約した、が反映される
+    void syncProStatus();
     const handle = CapApp.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) void drainSharedInbox();
+      if (!isActive) return;
+      void drainSharedInbox();
+      void syncProStatus();
     });
     return () => void handle.then((h) => h.remove());
   }, []);

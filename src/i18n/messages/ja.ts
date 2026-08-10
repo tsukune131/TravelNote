@@ -317,7 +317,12 @@ export const ja = {
     restore: '購入を復元',
     terms: '利用規約',
     privacy: 'プライバシーポリシー',
-    notReady: '課金はまだ準備中です(フェーズD)。いまは制限していません。',
+    /** 自動更新であることは必ず書く(3.1.2) */
+    renewNote: '自動更新です。解約はいつでも設定からできます。期間終了の24時間前までに解約しないと更新されます。',
+    unavailable: 'いまは購入できません。時間をおいて試してください。',
+    purchaseFailed: '購入は完了しませんでした。',
+    nothingToRestore: '復元できる購入は見つかりませんでした。',
+    restored: '購入を復元しました。',
     proceed: 'このまま送る',
   },
 
@@ -334,6 +339,7 @@ export const ja = {
     privacy: 'プライバシーポリシー',
     terms: '利用規約',
     restore: '購入を復元',
+    manageSubscription: 'サブスクリプションの管理',
     version: 'バージョン',
   },
 

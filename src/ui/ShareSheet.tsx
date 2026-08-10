@@ -9,7 +9,7 @@ import { countUnsentChanges } from '../share/snapshot';
 import { exportSnapshotText, importSnapshotText } from '../share/apply';
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
 import { canShare } from '../pro/entitlement';
-import { FREE } from '../pro/entitlement';
+import { useProStatus } from '../pro/store';
 import type { MergeSummary } from '../share/merge';
 import type { Trip } from '../db/types';
 
@@ -40,14 +40,14 @@ export function ShareSheet({
   const [paywall, setPaywall] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const members = useLiveQuery(() => listMembers(trip.id), [trip.id]);
+  const pro = useProStatus();
 
   useEffect(() => {
     void getDisplayName().then(setName);
     void countUnsentChanges(trip.id).then(setUnsent);
   }, [trip.id]);
 
-  // 課金はフェーズDで配線する。いまは判定だけ通して、実際には止めない
-  const gate = canShare(trip, FREE, Date.now());
+  const gate = canShare(trip, pro, Date.now());
 
   /** `force` はペイウォールから戻ってきたとき。付けないと同じ関門で永久に跳ね返る */
   async function send(force = false) {

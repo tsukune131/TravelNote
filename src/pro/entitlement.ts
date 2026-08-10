@@ -93,12 +93,12 @@ export const PRODUCT_IDS: Record<PlanId, string> = {
   yearly: 'com.tsukune.travelnote.pro.yearly',
 };
 
-/**
- * 表示用の価格は**必ず StoreKit から取った値を使う**。
- * ここの数値は、地域や価格改定でずれうる参考値でしかない。
- * ハードコードした価格を画面に出すと 3.1.2 の「価格の明示」が嘘になる。
+/*
+ * **参考価格の定数はここに置かない。**
+ *
+ * 以前 REFERENCE_PRICE_JPY を持っていたが、消した。表示に使える数字が
+ * コードの中にあると、いつか誰かがそれを画面に出す。地域や価格改定でずれた
+ * 瞬間に「価格の明示」(3.1.2)が嘘になる。
+ * **価格は StoreKit から取った整形済み文字列だけを出す**(src/pro/purchases.ts)。
+ * 月¥300 / 年¥1,800 という値は docs/pricing.md と ROADMAP にある。
  */
-export const REFERENCE_PRICE_JPY: Record<PlanId, number> = {
-  monthly: 300,
-  yearly: 1800,
-};

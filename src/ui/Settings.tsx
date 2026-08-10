@@ -3,6 +3,9 @@ import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { getDisplayName, getMapProvider, setMapProvider } from '../db/settings';
 import { setMyDisplayName } from '../db/repo';
+import { openSubscriptionSettings, restore } from '../pro/purchases';
+import { setProStatus, useProStatus } from '../pro/store';
+import { isProActive } from '../pro/entitlement';
 import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
 
@@ -11,6 +14,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   const [provider, setProvider] = useState<MapProvider | null>(null);
   const [name, setName] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  const pro = useProStatus();
 
   useEffect(() => {
     void (async () => {
@@ -57,13 +62,45 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {t('settings.terms')}
           <span className="sub">›</span>
         </button>
+        {/*
+          3.1.2 は「購入を復元」を求める。**購入画面と設定の2か所に置き、
+          購入したあとも消さない**(機種変更や再インストールのあとに要る)。
+          解約はアプリ内に作らず Apple の画面へ渡す ── こちらで
+          止められるものではないし、途中まで作ると誤解を生む。
+        */}
+        <button type="button" className="menu-item" onClick={() => void doRestore()}>
+          {t('settings.restore')}
+          <span className="sub">›</span>
+        </button>
+        {isProActive(pro, Date.now()) && (
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => void openSubscriptionSettings()}
+          >
+            {t('settings.manageSubscription')}
+            <span className="sub">›</span>
+          </button>
+        )}
         <div className="menu-item">
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
         </div>
       </div>
+
+      {note && <p className="guess">{note}</p>}
     </Sheet>
   );
+
+  async function doRestore() {
+    try {
+      const status = await restore();
+      setProStatus(status);
+      setNote(isProActive(status, Date.now()) ? t('pro.restored') : t('pro.nothingToRestore'));
+    } catch {
+      setNote(t('pro.nothingToRestore'));
+    }
+  }
 }
 
 /**

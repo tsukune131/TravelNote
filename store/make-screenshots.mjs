@@ -3,106 +3,200 @@
  *
  *   node store/make-screenshots.mjs
  *
- * photo/ に入れた実機のスクリーンショットを、App Store Connect が要求する
- * 6.9インチ枠 1320x2868 のキャンバスに載せ、上にキャプションの帯を置く。
+ * `photo/` に入れた実機のスクリーンショットを、App Store Connect が要求する
+ * 6.9インチ枠 1320x2868 のキャンバスに載せ、上にキャプションを置く。
  *
- * ・元画像を切り取って寸法を変えるとアップロードで弾かれるが、
+ * ・**元画像を切り取って寸法を変えるとアップロードで弾かれる**が、
  *   所定寸法のキャンバスに載せるのは自由。撮り直さずに枠を合わせられる
- * ・ステータスバー(時刻・電池)は top の割合指定で切り落とす
- * ・photo/ は .gitignore 対象(実機の記録が写るため手元のみ)。
- *   組み上がりだけ store/screenshots/ に残す
+ * ・ステータスバー(時刻・電池)は上から割合で切り落とす
+ * ・`photo/` は .gitignore 対象(実機の記録が写るため手元のみ)。
+ *   組み上がりだけ `store/screenshots/` に残す
  *
- * COLORS と FONT をアプリのテーマに合わせて書き換えて使う。
+ * **sharp は使わない**(Windows でネイティブビルドが詰まる)。
+ * アイコン(store/make-icon.mjs)と同じく、入っている Chrome / Edge に
+ * 描かせて撮る。playwright-core は devDependency に入っている。
  */
-import sharp from 'sharp';
-import { mkdir } from 'node:fs/promises';
+import { chromium } from 'playwright-core';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 
-/** 6.9インチが必須。6.5インチ(1284x2778)も出すなら SIZES に足す */
-const SIZES = [
-  { W: 1320, H: 2868, dir: 'store/screenshots' },
-  { W: 1284, H: 2778, dir: 'store/screenshots-65' },
-];
+const W = 1320;
+const H = 2868;
+const OUT_DIR = 'store/screenshots';
 
-/** 版面の基準。ここからの比で余白と文字を決める */
-const BASE_W = 1320;
+/** アプリの配色(src/index.css と揃える) */
+const PAPER = '#fff7f5';
+const INK = '#3d2a33';
+const PRIMARY = '#e35d8b';
+const FONT = "'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', sans-serif";
 
-// ---- アプリのテーマに合わせて書き換える ----
-const PAPER = '#f5f5f0';   // 背景
-const INK = '#33362f';     // 見出し文字
-const MUTED = '#8b9085';   // サブ文字
-const ACCENT = '#cf4a41';  // 差し色
-const FONT = 'Yu Gothic UI, Meiryo, Hiragino Sans, sans-serif';
-
-/** 帯の高さ(基準版面での値)。スクリーンショットはこの下に置く */
-const BASE_BAND = 430;
-/** 載せるスクリーンショットの幅(少し縮めて左右に余白を作る) */
-const BASE_SHOT_W = 1080;
+/** ステータスバーを落とす割合(元画像の高さに対して) */
+const CROP_TOP = 0.05;
 
 /**
- * photo/ 内のファイル名・キャプション・切り出し範囲。
- * top/bottom は元画像の高さに対する割合(既定 top でステータスバーを落とす)。
+ * 並び順に意味がある。
+ * 1枚目に全体像、2枚目に**アプリの外で動くところ**(共有シート)。
+ * 3枚目以降で「同行者と」「旅の前後」を足す。
  */
 const SHOTS = [
-  { file: 'IMG_0001.PNG', title: 'キャプション1(最重要の1枚目)', sub: 'サブテキスト' },
-  { file: 'IMG_0002.PNG', title: 'キャプション2', sub: 'サブテキスト' },
-  { file: 'IMG_0003.PNG', title: 'キャプション3', sub: 'サブテキスト' },
-  { file: 'IMG_0004.PNG', title: 'キャプション4', sub: 'サブテキスト' },
-  { file: 'IMG_0005.PNG', title: 'キャプション5', sub: 'サブテキスト' },
+  {
+    file: 'IMG_2473.PNG',
+    caption: '旅行中は、片手で3秒',
+    sub: '電波がなくても、現在地から次の予定まで確認可能',
+  },
+  {
+    pair: ['IMG_2471.PNG', 'IMG_2472.PNG'],
+    caption: '見つけたスポットは、その場で予定に組み込む',
+    sub: 'Safari の共有シートから。あとで好きな日に入れられます',
+  },
+  {
+    file: 'IMG_2479.PNG',
+    caption: '登録なしで、一緒に行く人に共有可能',
+    sub: '相手はアプリを入れるだけ。登録も支払いも要りません',
+  },
+  {
+    file: 'IMG_2478.PNG',
+    caption: '持ち物も予約番号も、ここに',
+    sub: '準備からお土産のリストまで活用可能',
+  },
+  { file: 'IMG_2477.PNG', caption: '旅ごとに、ぜんぶまとまる', sub: '旅行中の旅がいちばん上に出ます' },
 ];
 
-const DEFAULT_TOP = 0.045;
+const CANDIDATES = [
+  process.env.TN_BROWSER,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  '/usr/bin/chromium',
+  '/usr/bin/google-chrome',
+].filter(Boolean);
 
-function esc(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const exe = CANDIDATES.find((p) => existsSync(p));
+if (!exe) {
+  console.error('Chrome も Edge も見つかりませんでした。TN_BROWSER にパスを渡してください');
+  process.exit(1);
 }
 
-function band(W, bandH, scale, title, sub) {
-  const titleSize = Math.round(72 * scale);
-  const subSize = Math.round(40 * scale);
-  const pad = Math.round(90 * scale);
-  return Buffer.from(`<svg width="${W}" height="${bandH}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${W}" height="${bandH}" fill="${PAPER}"/>
-    <rect x="${pad}" y="${Math.round(bandH * 0.30)}" width="${Math.round(10 * scale)}" height="${titleSize}" fill="${ACCENT}"/>
-    <text x="${pad + Math.round(34 * scale)}" y="${Math.round(bandH * 0.30) + titleSize - Math.round(12 * scale)}"
-      font-family="${FONT}" font-size="${titleSize}" font-weight="700" fill="${INK}">${esc(title)}</text>
-    <text x="${pad + Math.round(34 * scale)}" y="${Math.round(bandH * 0.30) + titleSize + subSize + Math.round(24 * scale)}"
-      font-family="${FONT}" font-size="${subSize}" fill="${MUTED}">${esc(sub)}</text>
-  </svg>`);
+async function dataUri(name) {
+  const buf = await readFile(`photo/${name}`);
+  return `data:image/png;base64,${buf.toString('base64')}`;
 }
 
-for (const { W, H, dir } of SIZES) {
-  const scale = W / BASE_W;
-  const bandH = Math.round(BASE_BAND * scale);
-  const shotW = Math.round(BASE_SHOT_W * scale);
-  await mkdir(dir, { recursive: true });
+/** 元画像の寸法(iPhone 6.9インチのスクリーンショット) */
+const SRC_W = 1206;
+const SRC_H = 2622;
 
-  for (const [i, shot] of SHOTS.entries()) {
-    const src = sharp(`photo/${shot.file}`);
-    const meta = await src.metadata();
-    const top = Math.round(meta.height * (shot.top ?? DEFAULT_TOP));
-    const bottom = Math.round(meta.height * (shot.bottom ?? 0));
-    const cropped = await src
-      .extract({ left: 0, top, width: meta.width, height: meta.height - top - bottom })
-      .resize({ width: shotW })
-      .png()
-      .toBuffer();
+/**
+ * 端末のスクリーンショット1枚。上を切って角を丸め、影をつける。
+ *
+ * ⚠️ **切る量は px で計算する。** CSS の % マージンは
+ * **高さではなく幅**に対する割合なので、`margin-top:-5%` では
+ * ほとんど切れない(実際に踏んだ)。
+ */
+function phone(src, width) {
+  const shown = (width * SRC_H) / SRC_W;
+  const cut = Math.round(shown * CROP_TOP);
+  return `<div class="phone" style="width:${width}px;height:${Math.round(shown) - cut}px">
+    <img src="${src}" style="width:${width}px;margin-top:-${cut}px">
+  </div>`;
+}
 
-    const shotMeta = await sharp(cropped).metadata();
-    const out = `${dir}/${String(i + 1).padStart(2, '0')}-${shot.file.replace(/\.png$/i, '')}.png`;
+/** 長いキャプションは小さくする */
+function captionSize(text) {
+  const n = [...text].length;
+  if (n <= 11) return 96;
+  if (n <= 15) return 84;
+  return 76;
+}
 
-    await sharp({ create: { width: W, height: H, channels: 3, background: PAPER } })
-      .composite([
-        { input: band(W, bandH, scale, shot.title, shot.sub), top: 0, left: 0 },
-        {
-          input: cropped,
-          top: bandH,
-          left: Math.round((W - shotW) / 2),
-          // 画面より縦に長い場合は下がはみ出すが、composite が切ってくれる
-        },
-      ])
-      .png()
-      .toFile(out);
+/**
+ * 長いキャプションは**折り返す場所を決める。**
+ * 任せると「その場で放/り込む」のように語の途中で切れる(実際に踏んだ)。
+ * 読点があればそこで折る ── 書いた人が意味の切れ目を置いた場所なので。
+ */
+function captionHtml(text) {
+  if ([...text].length <= 15) return text;
+  const i = text.indexOf('、');
+  return i > 0 ? `${text.slice(0, i + 1)}<br>${text.slice(i + 1)}` : text;
+}
 
-    console.log(`${out} (${W}x${H}, shot ${shotW}x${shotMeta.height})`);
+const css = `
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:${W}px; height:${H}px;
+    background: linear-gradient(160deg, #fffdfc 0%, ${PAPER} 45%, #ffeef0 100%);
+    font-family:${FONT}; color:${INK};
+    display:flex; flex-direction:column; align-items:center;
+    overflow:hidden;
   }
+  .band { padding: 130px 60px 0; text-align:center; }
+  .caption {
+    font-weight: 800; line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+  .sub {
+    margin-top: 34px; font-size: 44px; line-height: 1.5;
+    color: ${PRIMARY}; font-weight: 700;
+  }
+  /* 余白は上下に振り分ける。下にだけ溜まると作りかけに見える */
+  .stage { flex:1; display:flex; align-items:center; justify-content:center;
+           padding-bottom:60px; position:relative; }
+
+  /*
+   * 2枚並べるとき。**横に並べるだけでは縦長のキャンバスが埋まらない**ので、
+   * 重ねてずらす。左右は少しはみ出させて、画面の外へ続いて見せる。
+   */
+  .pair { position:relative; width:${W}px; height:2030px; }
+  .pair .phone { position:absolute; }
+  .pair .phone:nth-of-type(1) { left:-34px; top:0; }
+  .pair .phone:nth-of-type(2) { right:-34px; top:584px; }
+  /* 上を切るのはここ。元画像そのものは加工していない */
+  .phone {
+    overflow:hidden; border-radius:52px;
+    box-shadow: 0 26px 70px rgba(150,80,110,.28);
+    background:${PAPER};
+  }
+  .phone img { display:block; }
+  /* 重なりの真ん中に置く。流れが「左上 → 右下」だと分かる位置 */
+  .arrow {
+    position:absolute; top:46%; left:50%; transform:translate(-50%,-50%) rotate(28deg);
+    width:120px; height:120px; border-radius:50%;
+    background:${PRIMARY}; color:#fff;
+    display:grid; place-items:center;
+    font-size:74px; font-weight:800; line-height:1;
+    box-shadow: 0 12px 30px rgba(190,60,110,.4);
+  }
+`;
+
+await mkdir(OUT_DIR, { recursive: true });
+const browser = await chromium.launch({ executablePath: exe });
+const page = await browser.newPage({ viewport: { width: W, height: H } });
+
+for (const [i, shot] of SHOTS.entries()) {
+  const stage = shot.pair
+    ? `<div class="pair">
+         ${phone(await dataUri(shot.pair[0]), 700)}
+         ${phone(await dataUri(shot.pair[1]), 700)}
+         <div class="arrow">→</div>
+       </div>`
+    : phone(await dataUri(shot.file), 1000);
+
+  await page.setContent(`<style>${css}</style>
+    <div class="band">
+      <div class="caption" style="font-size:${captionSize(shot.caption)}px">${captionHtml(shot.caption)}</div>
+      <div class="sub">${shot.sub}</div>
+    </div>
+    <div class="stage">${stage}</div>`);
+
+  const png = await page.screenshot();
+  const w = png.readUInt32BE(16);
+  const h = png.readUInt32BE(20);
+  if (w !== W || h !== H) throw new Error(`寸法が違います: ${w}x${h}`);
+
+  const name = `${String(i + 1).padStart(2, '0')}.png`;
+  await writeFile(`${OUT_DIR}/${name}`, png);
+  console.log(`✓ ${OUT_DIR}/${name}  ${w}x${h}  ${(png.length / 1024).toFixed(0)}KB  ${shot.caption}`);
 }
+
+await browser.close();

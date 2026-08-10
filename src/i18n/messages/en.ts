@@ -290,7 +290,11 @@ export const en: DeepPartial<Messages> = {
     restore: 'Restore Purchases',
     terms: 'Terms of Use',
     privacy: 'Privacy Policy',
-    notReady: 'Purchases are not wired up yet (phase D). Nothing is blocked for now.',
+    renewNote: 'Auto-renewing. Cancel any time in Settings. It renews unless cancelled 24 hours before the period ends.',
+    unavailable: "Purchases aren't available right now. Please try again later.",
+    purchaseFailed: 'The purchase did not go through.',
+    nothingToRestore: 'No purchases found to restore.',
+    restored: 'Your purchase has been restored.',
     proceed: 'Send anyway',
   },
 
@@ -307,6 +311,7 @@ export const en: DeepPartial<Messages> = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Use',
     restore: 'Restore Purchases',
+    manageSubscription: 'Manage subscription',
     version: 'Version',
   },
 
