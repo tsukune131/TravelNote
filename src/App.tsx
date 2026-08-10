@@ -68,7 +68,7 @@ function Shell({ onReady }: { onReady?: () => void }) {
    * ⚠️ この経路は**実機でしか確かめられない**(ROADMAP C-5)。
    */
   useEffect(() => {
-    return listenForIncomingFile((text) => {
+    const onFile = (text: string) => {
       void (async () => {
         try {
           const name = (await getDisplayName()) || t('variant.mine');
@@ -83,7 +83,13 @@ function Shell({ onReady }: { onReady?: () => void }) {
           setImported({ kind: 'failed', message: err instanceof Error ? err.message : '' });
         }
       })();
-    });
+    };
+
+    // ファイルそのものが読めなかった場合。**黙って終わらせない**
+    const onFailed = () =>
+      setImported({ kind: 'failed', message: t('importResult.readFailed') });
+
+    return listenForIncomingFile(onFile, onFailed);
   }, [t]);
 
   /**

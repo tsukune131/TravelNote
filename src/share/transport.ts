@@ -74,7 +74,10 @@ function sendFromBrowser(fileName: string, text: string): SendResult {
  * ⚠️ **この経路は実機でしか確かめられない**(ROADMAP C-5)。
  * ブラウザでは §「ファイルから読み込む」を使う。
  */
-export function listenForIncomingFile(onText: (text: string) => void): () => void {
+export function listenForIncomingFile(
+  onText: (text: string) => void,
+  onFailed: () => void,
+): () => void {
   if (!Capacitor.isNativePlatform()) return () => {};
 
   const handle = App.addListener('appUrlOpen', (event) => {
@@ -82,19 +85,41 @@ export function listenForIncomingFile(onText: (text: string) => void): () => voi
       const url = event.url;
       // 拡張子で足切りする。中身が しおり かどうかは parseSnapshot が見る
       if (!SHARE_EXTS.some((ext) => url.toLowerCase().includes(`.${ext}`))) return;
-      try {
-        const file = await Filesystem.readFile({
-          path: decodeURI(url.replace(/^file:\/\//, '')),
-          encoding: Encoding.UTF8,
-        });
-        onText(typeof file.data === 'string' ? file.data : await file.data.text());
-      } catch {
-        // 読めなければ何もしない。取り込み画面から手で選べる道が残っている
-      }
+
+      const text = await readIncomingFile(url);
+      // **読めなかったときに黙らない。** かつては catch して何もしていなかったので、
+      // 「開いたのに何も起きない」が原因不明のまま残った
+      if (text === null) onFailed();
+      else onText(text);
     })();
   });
 
   return () => void handle.then((h) => h.remove());
+}
+
+/**
+ * 届いたファイルを読む。
+ *
+ * ⚠️ **`directory` を渡さないとき、Capacitor は「完全な `file://` URI」を期待する**
+ * (`FilesystemLocationResolver` → `getFileURL(atPath:withSearchPath:)`)。
+ * 以前は `file://` を剥がした素のパスを渡していたので `invalidPath` で失敗し、
+ * **LINE から開いても何も起きなかった**。実機で判明。
+ *
+ * 渡し方は端末やパスの中身(日本語のファイル名)で変わりうるので、
+ * **確からしい順に試す**。1つでも読めればそれでよい。
+ */
+async function readIncomingFile(url: string): Promise<string | null> {
+  const stripped = url.replace(/^file:\/\//, '');
+
+  for (const path of new Set([url, decodeURI(url), stripped, decodeURI(stripped)])) {
+    try {
+      const file = await Filesystem.readFile({ path, encoding: Encoding.UTF8 });
+      return typeof file.data === 'string' ? file.data : await file.data.text();
+    } catch {
+      // この渡し方では読めなかっただけ。次を試す
+    }
+  }
+  return null;
 }
 
 /**
