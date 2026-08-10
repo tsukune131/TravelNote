@@ -29,7 +29,9 @@ function emphasize(text: string) {
  * 円以外は日本の定価に差し替える(理由は下の Paywall のコメント)。
  */
 function priceOf(price: PlanPrice): string {
-  return price.currencyCode === 'JPY' ? price.priceString : PRICE_TEXT_JPY[price.plan];
+  if (price.currencyCode === 'JPY') return price.priceString;
+  // 本番では**必ず StoreKit の値**。表示と請求額がずれるほうが害が大きい
+  return import.meta.env.DEV ? PRICE_TEXT_JPY[price.plan] : price.priceString;
 }
 
 /**

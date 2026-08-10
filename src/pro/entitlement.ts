@@ -66,14 +66,19 @@ export const FREE_RESHARE_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
 /**
  * この旅を書き出して送れるか。
  *
- * `sharedAt` は**初回に共有された時刻**で、取り込んだ旅は
- * 元の値を引き継ぐ(`src/share/apply.ts`)。だから受け取った側が
- * 器を使い回しても、起点は動かない。
+ * 起点は **`shareWindowFrom`(この端末が送れるようになった時刻)**であって、
+ * `sharedAt`(世界で最初に共有された時刻)ではない ──
+ * `sharedAt` を起点にすると、**1年以上前の旅を受け取った人が最初から
+ * 送り返せず、往復が切れる**(監査で見つかった)。詳細は `db/types.ts`。
+ *
+ * `?? sharedAt` は、この項目が無い頃に作られた旅のための保険。
  */
 export function canShare(trip: Trip, status: ProStatus, now: number): ShareBlock {
   if (isProActive(status, now)) return { allowed: true };
-  if (trip.sharedAt === null) return { allowed: false, reason: 'needs-pro' };
-  if (now <= trip.sharedAt + FREE_RESHARE_WINDOW_MS) return { allowed: true };
+
+  const from = trip.shareWindowFrom ?? trip.sharedAt;
+  if (from === null || from === undefined) return { allowed: false, reason: 'needs-pro' };
+  if (now <= from + FREE_RESHARE_WINDOW_MS) return { allowed: true };
   return { allowed: false, reason: 'window-expired' };
 }
 
@@ -99,12 +104,17 @@ export function canEditTrip(): true {
 }
 
 /**
- * 共有を始めた印をつける。書き出しが成功した直後に呼ぶ。
+ * 共有を始めた印をつける。**送るのが成功した直後に呼ぶ。**
+ *
+ * ⚠️ **共有シートを閉じただけのときは呼ばない。** 以前は書き出しの時点で
+ * 立てていたので、**一度も送っていないのに1年の時計が動き出していた**
+ * (監査で見つかった)。判定を2か所に分けないよう、印を作るのはここだけ。
+ *
  * 一度立てたら**下ろさない**(解約しても送り続けられるようにするため)。
  */
 export function markShared(trip: Trip, now: number): Partial<Trip> | null {
   if (trip.sharedAt !== null) return null;
-  return { sharedAt: now };
+  return { sharedAt: now, shareWindowFrom: trip.shareWindowFrom ?? now };
 }
 
 /* ────────── 購入画面に出す内容(3.1.2 の必須表示) ────────── */

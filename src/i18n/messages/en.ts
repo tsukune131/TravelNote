@@ -279,12 +279,14 @@ export const en: DeepPartial<Messages> = {
   pro: {
     title: 'Tabi no Shiori Pro',
     lead: '**Only sending** needs Pro.\nThe people you send to pay nothing.',
-    freeTitle: 'Always free',
+    leadExpired:
+      'The **free sending period for this trip (1 year from its first share)** has ended.\nYou can still view and edit everything in it.',
+    freeTitle: 'What you can do for free',
     free1: 'Create and edit as many trips as you like',
-    free2: 'Open an itinerary you received, edit it, send it back',
+    free2: 'Open an itinerary you received, edit it, send it back (1 year from receipt)',
     proTitle: 'With Pro',
     pro1: 'Send your own trips to friends',
-    pro2: 'Once sent, a trip stays sendable even after you cancel',
+    pro2: 'Once sent, a trip stays sendable even after you cancel (1 year from first share)',
     monthly: '1 month',
     yearly: '1 year',
     restore: 'Restore Purchases',

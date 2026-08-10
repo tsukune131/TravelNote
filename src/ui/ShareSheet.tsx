@@ -6,7 +6,7 @@ import { Paywall } from './Paywall';
 import { getDisplayName } from '../db/settings';
 import { ensureOwner, listMembers, setMyDisplayName } from '../db/repo';
 import { countUnsentChanges } from '../share/snapshot';
-import { exportSnapshotText, importSnapshotText } from '../share/apply';
+import { commitShared, exportSnapshotText, importSnapshotText } from '../share/apply';
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
 import { canShare } from '../pro/entitlement';
 import { useProStatus } from '../pro/store';
@@ -62,8 +62,15 @@ export function ShareSheet({
        * 一度作れば以後は同じレコードを使い回す。
        */
       await ensureOwner(trip.id, myName);
-      const { text } = await exportSnapshotText(trip.id, myName);
+      const { text, snapshot } = await exportSnapshotText(trip.id, myName);
       const result = await sendSnapshot(trip, text);
+      /*
+       * **送れたときだけ記録する。** 共有シートを閉じただけ('cancelled')で
+       * 「送った」ことにすると、一度も送っていないのに無料期間の時計が動き、
+       * 未送信バッジまで消える(監査で見つかった)。
+       */
+      if (result === 'cancelled') return;
+      await commitShared(trip.id, snapshot);
       if (result === 'downloaded') setNote(t('share.downloaded'));
       setUnsent(await countUnsentChanges(trip.id));
     } finally {

@@ -37,7 +37,8 @@
 	  CFBundleDocumentTypes:      その形式を開けるアプリだと宣言する
 
 	  中身は JSON なので public.json に適合させる。
-	  LSHandlerRank = Owner にして、自分の形式は自分が第一候補になるようにする。
+	  自分の形式(.tabishiori)だけ LSHandlerRank = Owner。
+	  あとから足した public.json は Apple の型なので Alternate にしてある。
 	-->
 	<key>UTExportedTypeDeclarations</key>
 	<array>

@@ -72,8 +72,8 @@ Pro が必要なのは「自分の旅を、はじめて同行者に送るとき�
 
 ・1か月 ¥300 / 1年 ¥1,800
 ・相手はアプリを入れるだけ。登録も支払いも要りません
-・受け取ったしおりを直して送り返すのは、ずっと無料です
-・一度送った旅は、解約したあとも送り続けられます
+・受け取ったしおりを直して送り返すのは、受け取ってから1年間は無料です
+・一度送った旅は、解約したあとも初回共有から1年間は送り続けられます
 ・解約しても、作った旅は読めますし、直せます
 
 ■ つくった人
@@ -96,13 +96,21 @@ Shintaro Fujisawa
 86字。名前とサブタイトルに入れた語(しおり・旅程表・旅行・計画・スケジュール)は
 **繰り返していない**。他社アプリ名も入れていない。
 
-## サポートURL / マーケティングURL
+## App Store Connect に入れる URL(4つとも同じ実体を配っている)
 
-```
-https://tsukune131.github.io/TravelNote/
-```
+| 欄 | URL |
+|---|---|
+| サポートURL | `https://tsukune131.github.io/TravelNote/` |
+| マーケティングURL | `https://tsukune131.github.io/TravelNote/` |
+| **プライバシーポリシーURL**(必須) | `https://tsukune131.github.io/TravelNote/legal/privacy.html` |
+| **利用規約 / EULA URL**(3.1.2) | `https://tsukune131.github.io/TravelNote/legal/terms.html` |
 
 問い合わせ先メールアドレスを紹介ページに掲載しておく。
+
+**アプリ内のリンクと同じ実体**を配っている ── `public/legal/` を
+`.github/workflows/pages-ci.yml` が `site/legal/` にコピーし、
+アプリからは `src/lib/openExternal.ts` の `LEGAL_BASE` が同じ URL を開く。
+**二重管理をしない**(片方だけ直して食い違うのを防ぐため)。
 
 ---
 
@@ -163,8 +171,25 @@ https://tsukune131.github.io/TravelNote/
   課金SDK(RevenueCat 等)も使わず、StoreKit 2 を直接叩く
 - 端末内の匿名IDと表示名は端末から出ない(ユーザーが送るファイルに含まれる場合を除く)
 
-年齢制限レーティング: 記録と計画のみで、広告もユーザー生成コンテンツの公開もないため
-該当項目は「なし」想定。Kids Category には出さない。
+**検証記録(2026-08-10・コードで確認)**
+
+| 主張 | 確認方法 | 結果 |
+|---|---|---|
+| 解析・広告・課金SDKなし | `package.json` の dependencies を全列挙 | Capacitor 6 + dexie 2 + react 2 + native-purchases のみ |
+| 外部通信しない | `fetch`/`XMLHttpRequest`/`WebSocket`/`sendBeacon`/`axios`/`EventSource` を `src` 全文検索 | **0件** |
+| トラッキングしない | `AppTrackingTransparency`/`NSUserTrackingUsageDescription`/`IDFA` | なし |
+| 権限を要求しない | Info.plist の `NS*UsageDescription` | **1つもない** |
+| 輸出コンプライアンス | `ITSAppUsesNonExemptEncryption` | `false`(通信しないので整合) |
+| 外部ドメイン | `src` から URL を抽出 | `maps.apple.com` / `google.com` / `tsukune131.github.io` / `tabelog.com` のみ。すべて**ユーザーが開くリンク**で、こちらから取りに行っていない |
+
+**依存を1つでも足したらこの表に戻る。** 解析SDKを1つ入れた時点でこの申告は嘘になる。
+
+**年齢制限レーティングの「無制限のWebアクセス」は「いいえ」**。予定に任意のURLを
+貼れるが、開くのは `@capacitor/browser` = SFSafariViewController で、Safari 本体の
+サンドボックスとペアレンタルコントロールが効く。自前のWebビューは持たない。
+
+年齢制限レーティングのその他の項目は、記録と計画のみで広告もユーザー生成コンテンツの
+公開も無いため「なし」。Kids Category には出さない。
 
 **ATT は不要。** トラッキングを行わないため
 `NSUserTrackingUsageDescription` も許可ダイアログも実装しない。
@@ -183,11 +208,13 @@ https://tsukune131.github.io/TravelNote/
 アカウント登録は不要で、起動後すぐにすべての機能をご確認いただけます。
 
 無料でできること: 旅の作成・編集・閲覧のすべて。旅の数に制限はありません。
-　共有されたしおりを受け取って編集し、送り返すことも無料でできます。
+　共有されたしおりを受け取って編集することは、いつでも無料でできます。
+　送り返しも無料です(受け取った日から1年間)。
 Pro でできること: 自分の旅を同行者と共有できます。
 　旅行のたびに新しい共有を始められる、継続してご利用いただく前提の機能です。
 
-購入画面までの経路: 旅の画面 → ⋯ →「しおりを送る」
+購入画面までの経路: 旅の画面 → 右上の共有アイコン →「しおりを送る」
+　(⋯ のメニューではありません。⋯ は「準備」と「旅の設定」です)
 購入の復元: 設定 →「購入を復元」、および購入画面内のボタン
 解約後: 作成済みの旅は引き続き閲覧・編集できます。すでに共有した旅は、
 　その旅がはじめて共有された日から1年間、解約後も送り続けられます。
@@ -197,10 +224,11 @@ Pro でできること: 自分の旅を同行者と共有できます。
 　1. 旅を作り、予定を1件追加します
 　2. 右上の共有アイコン →「しおりを送る」→ 購入画面が出ます
 　3. 購入後、iOS の共有シートが開きます。「"ファイル"に保存」を選びます
-　4.「ファイル」アプリで保存した .json をタップ → 共有 →「たびのしおり」
+　4.「ファイル」アプリで保存した .json を**長押し →「共有」→「たびのしおり」**
+　　(本アプリは .json の既定アプリを名乗らないため、共有から開いてください)
 　5. アプリが開き、しおりが取り込まれます(取り込みは無料の機能です)
 　サンプルのしおりファイルを添付しています。3〜4 の代わりに、これを
-　「ファイル」アプリに置いてタップしていただいても同じ動作をご確認いただけます。
+　「ファイル」アプリに置いて長押し →「共有」→「たびのしおり」でも同じです。
 ```
 
 英語版(日本語UIのため併記する):
@@ -210,7 +238,8 @@ Auto-renewable subscription "Tabi no Shiori Pro" (1 month ¥300 / 1 year ¥1,800
 No account or sign-in is required. All features are available immediately.
 
 Free: creating, editing and viewing itineraries, with no limit on the number of
-  trips. Receiving a shared itinerary, editing it and sending it back is also free.
+  trips. Receiving and editing a shared itinerary is always free; sending it back
+  is free for one year from the date you received it.
 Pro: sharing your own itinerary with travel companions. Users start a new share
   each time they travel, which is the ongoing value of the subscription.
 
@@ -224,7 +253,8 @@ You can verify the full sharing round trip on a single device:
   1. Create a trip and add one event.
   2. Share icon -> "Send" -> the purchase screen appears.
   3. After purchase, the iOS share sheet opens. Choose "Save to Files".
-  4. In the Files app, tap the saved .json -> Share -> "Tabi no Shiori".
+  4. In the Files app, long-press the saved .json -> Share -> "Tabi no Shiori".
+     (We do not claim to be the default handler for .json, so please use Share.)
   5. The app opens and imports the itinerary (importing is free).
 A sample itinerary file is attached. You may place it in the Files app and tap it
   instead of steps 3-4 to reach the same result.
@@ -242,15 +272,17 @@ Sharing works by exporting a file that the user sends themselves; we never recei
 
 ### 3.1.2 のチェック(外すと確実に差し戻される)
 
-| 見る点 | 状態 |
+| 見る点 | 状態(2026-08-10 監査) |
 |---|---|
-| アプリ内に名称・期間・価格を表示 | |
-| プライバシーポリシーへの機能するリンク | |
-| 利用規約(EULA)への機能するリンク | |
-| 「購入を復元」ボタン | |
-| App Store Connect のメタデータにも両URL | |
-| 継続的な価値(ongoing value)の説明 | |
-| ユーザーの全デバイスで利用できる | |
+| アプリ内に名称・期間・価格を表示 | ✅ `Paywall.tsx`(`pro.title` / `pro.monthly`・`pro.yearly` / StoreKit の `priceString`) |
+| プライバシーポリシーへの機能するリンク | ✅ `Paywall.tsx` と設定の2か所 |
+| 利用規約(EULA)への機能するリンク | ✅ 同上 |
+| 「購入を復元」ボタン | ✅ 購入シートと設定の2か所。**購入後も消えない** |
+| App Store Connect のメタデータにも両URL | ⬜ 提出時に入力(URLは上の表) |
+| 継続的な価値(ongoing value)の説明 | ✅ 「旅行のたびに新しい共有を始められる」を審査メモに記載 |
+| ユーザーの全デバイスで利用できる | ✅ 同じ Apple ID なら `currentEntitlements` で自動、加えて復元ボタン |
+| 価格未取得のときに購入させない | ✅ `disabled={!price}` + `pro.unavailable` |
+| 表示価格と請求額が一致する | ✅ 本番は常に StoreKit の値(定価への差し替えは `import.meta.env.DEV` の中だけ) |
 
 ---
 
@@ -273,14 +305,29 @@ Sharing works by exporting a file that the user sends themselves; we never recei
 
 ## 提出前チェック(release-auditor で監査した結果をここに記録)
 
-| 見る点 | 状態 |
+| 見る点 | 状態(2026-08-10) |
 |---|---|
-| 購入の復元ボタン | |
-| アプリ内での価格表示 | |
-| 課金内容の明示 | |
-| 外部決済への誘導 | |
-| アカウント削除要件(5.1.1) | |
-| 権限の用途説明と実装の一致 | |
-| 医療機器該当性・免責 | |
-| デバッグ表示・console出力 | |
-| 法務文書の改定日 | |
+| 購入の復元ボタン | ✅ 購入シート・設定の2か所、購入後も残る |
+| アプリ内での価格表示 | ✅ StoreKit の整形済み文字列 |
+| 課金内容の明示 | ✅ 規約 §2 に名称・期間・価格・自動更新・解約・返金・価格改定・解約後の扱い |
+| 外部決済への誘導 | ✅ なし(`src` に決済URL・fetch・XHR が1つも無い) |
+| アカウント削除要件(5.1.1) | ✅ 対象外。アカウントの概念が無い |
+| 権限の用途説明と実装の一致 | ✅ 対象なし。`NS*UsageDescription` が**1つも無い** |
+| 医療機器該当性・免責 | ✅ 対象外。HealthKit 未使用、診断・治療を示唆する文言なし |
+| デバッグ表示・console出力 | ✅ `src` に `console.*`/`debugger`/`alert(` がゼロ。dev の抜け道は `import.meta.env.DEV` で本番から落ちる |
+| 法務文書の改定日 | ✅ 規約・ポリシーとも 2026年8月10日(直近の仕様変更と同日) |
+| 「無料」の記述が実装と一致 | ✅ 1年の窓を購入シート・説明文・紹介ページ・規約すべてに反映(**監査で不一致を検出 → 修正済み**) |
+| 審査メモの導線が実装と一致 | ✅ 共有はトップバーのアイコン(⋯ ではない)に修正 |
+
+**監査で見つかり、直したもの**(2026-08-10 / release-auditor):
+
+1. **購入シートが「ずっと無料」と書いていた** ── 1年の窓を入れたときに文言を
+   直し忘れていた。3.1.2 の誤認表示にあたる。ja/en・説明文・紹介ページを修正
+2. **往復が切れる経路があった** ── 無料期間の起点を `sharedAt` にしていたため、
+   1年以上前に共有された旅を受け取った人が**最初から送り返せなかった**。
+   起点を `shareWindowFrom`(この端末が受け取った/送れるようになった時刻)に分離
+3. **共有シートを閉じただけで時計が動いていた** ── 書き出しの時点で `sharedAt` と
+   共通祖先を書いていた。`commitShared()` に分離し、送れたときだけ記録する
+4. **審査メモの導線が実装と違っていた**(日本語版のみ。⋯ メニュー → 共有アイコン)
+5. 価格の定価差し替えを `import.meta.env.DEV` 限定に(審査担当者の Sandbox が
+   米国に落ちると、表示 ¥300・請求 $◯ になり得たため)

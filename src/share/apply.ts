@@ -4,6 +4,7 @@ import { planMerge } from './merge';
 import type { MergeSummary } from './merge';
 import { buildSnapshot, loadBaseline, parseSnapshot, saveBaseline } from './snapshot';
 import type { Snapshot } from './snapshot';
+import { markShared } from '../pro/entitlement';
 
 /**
  * 受け取ったファイルを取り込む。merge.ts の判定結果を DB に書くだけの層。
@@ -54,6 +55,12 @@ export async function importSnapshot(
       // 受け取った旅は imported。送り返しは無料でできる(docs/pricing.md §3)
       imported: true,
       sharedAt: incoming.trip.sharedAt ?? incoming.exportedAt,
+      /*
+       * **無料期間の起点は「受け取った今」。** ファイルに乗ってきた値は使わない。
+       * 送り主の初回共有日を引き継ぐと、1年以上前に共有された旅を受け取った人が
+       * **最初から送り返せない** ── 往復が切れる(監査で見つかった)。
+       */
+      shareWindowFrom: Date.now(),
       // **受け取ったものは生きている。**送り主側の墓標も、手元の墓標も持ち越さない
       deletedAt: ALIVE,
       /*
@@ -110,6 +117,22 @@ export async function importSnapshot(
     }
   });
 
+  /*
+   * **共有まわりの3項目は、相手の値で上書きさせない。**
+   * merge は「相手だけが動いた」とき旅レコードを丸ごと差し替える(merge.ts)。
+   * これらは端末ごとの事実なので、持ち越すのは間違い:
+   *   imported        … 受け取った側かどうか
+   *   sharedAt        … 表示(「◯月◯日に送りました」)
+   *   shareWindowFrom … 無料期間の起点。**未設定なら今から**
+   *                     (受け取ったこと自体が「送れるようになった」ということ)
+   * 一度立っていれば動かさない ── 動かすと A↔B の往復だけで無期限になる。
+   */
+  await db.trips.update(tripId, {
+    imported: existing.imported,
+    sharedAt: existing.sharedAt,
+    shareWindowFrom: existing.shareWindowFrom ?? Date.now(),
+  });
+
   // 取り込んだ時点の「相手の中身」を共通祖先として覚える
   await saveBaseline(tripId, incoming);
 
@@ -117,25 +140,35 @@ export async function importSnapshot(
 }
 
 /**
- * 書き出す。**書き出した時点の中身も共通祖先として覚える** —
- * 「これを相手に渡した」という宣言であり、次に受け取ったときの比較基準になる。
+ * 書き出す。**副作用は持たない** ── 中身を組み立てて文字列にするだけ。
  *
- * あわせて `sharedAt` を立てる。一度共有した旅は、
- * **Pro が切れても送り続けられる**(docs/pricing.md §5)。
+ * ⚠️ **かつてはここで `sharedAt` と共通祖先を書き込んでいた。**
+ * ところが呼び出し側は、このあと共有シートを出して**閉じられることがある**。
+ * その結果、一度も送っていないのに1年の時計が動き、
+ * 「未送信の変更」バッジまで消えていた(監査で見つかった)。
+ * **本当に送れたあと**に `commitShared()` を呼ぶこと。
  *
  * ⚠️ Pro の判定は呼び出し側で行うこと(`canShare`)。
- * ここは「送れると決まったあと」の処理。
  */
 export async function exportSnapshotText(
   tripId: string,
   myName: string,
 ): Promise<{ text: string; snapshot: Snapshot }> {
   const deviceId = await getDeviceId();
-  const trip = await db.trips.get(tripId);
-  if (trip && trip.sharedAt === null) {
-    await db.trips.update(tripId, { sharedAt: Date.now() });
-  }
   const snapshot = await buildSnapshot(tripId, deviceId, myName);
-  await saveBaseline(tripId, snapshot);
   return { text: JSON.stringify(snapshot), snapshot };
+}
+
+/**
+ * **送れたと確定したあと**に呼ぶ。
+ *
+ * - 渡した中身を共通祖先として覚える(次に受け取ったときの比較基準)
+ * - 共有を始めた印を立てる(`markShared`。判定はそこにだけ置く)
+ */
+export async function commitShared(tripId: string, snapshot: Snapshot): Promise<void> {
+  await saveBaseline(tripId, snapshot);
+  const trip = await db.trips.get(tripId);
+  if (!trip) return;
+  const patch = markShared(trip, Date.now());
+  if (patch) await db.trips.update(tripId, patch);
 }
