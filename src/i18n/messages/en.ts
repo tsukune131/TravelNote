@@ -95,9 +95,13 @@ export const en: DeepPartial<Messages> = {
 
   inbox: {
     title: 'Shared links',
-    waiting: '{n} shared item(s) waiting',
-    hint: 'Tap to turn one into a stop on Day {n}. The name and URL come along.',
-    place: 'Put on Day {n}',
+    waiting: '{n} shared link(s)',
+    placeHere: 'Put on Day {n}',
+    otherTrip: 'To file it under a different trip, open this from the trip list.',
+    hint: 'Pick a trip and it becomes a stop on Day 1. You can move it to another day later.',
+    place: 'Add to a trip',
+    chooseTrip: 'Which trip?',
+    noTrip: 'Create a trip first.',
     empty: 'Nothing waiting right now.',
   },
 

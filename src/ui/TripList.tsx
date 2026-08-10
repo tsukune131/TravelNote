@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { listTrips } from '../db/repo';
+import { listInbox } from '../share/inbox';
 import { dayCount, diffDays, toDate, today } from '../lib/plainDate';
 import type { Trip } from '../db/types';
 import { TripForm } from './TripForm';
 import { openLink } from '../lib/openExternal';
 import { primaryLink } from '../lib/maps';
 import { Settings } from './Settings';
+import { InboxBar, InboxSheet } from './Inbox';
 import { IconPlus, IconSettings } from './Icon';
 import { ImportButton } from './ImportButton';
 import { ImportResult } from './ImportResult';
@@ -20,6 +22,8 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
   const [creating, setCreating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const inbox = useLiveQuery(() => listInbox(), []);
   const now = today();
 
   return (
@@ -40,6 +44,12 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
 
       <div className="scroller">
         <div className="pad">
+          {/*
+            共有シートから届いたもの。**インボックスは旅ではなく端末のもの**なので、
+            端末の画面であるここに置く(旅の中に出すと、旅の数だけ同じ帯が並ぶ)
+          */}
+          <InboxBar count={inbox?.length ?? 0} onOpen={() => setInboxOpen(true)} />
+
           {trips !== undefined && trips.length === 0 && (
             <div className="empty">
               <b>{t('tripList.empty')}</b>
@@ -130,6 +140,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
         />
       )}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {inboxOpen && <InboxSheet onClose={() => setInboxOpen(false)} />}
 
       {imported && (
         <ImportResult

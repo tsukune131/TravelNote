@@ -153,13 +153,19 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
         依存が少ないほど iOS の更新に追従しやすく、審査で説明することも減る
 - [ ] C-4 **Share Extension**(Safari の共有シートから食べログ等を取り込む)
       ── 実装済み・**Apple 側の作業と実機確認が残っている**(2026-08-10)
-  - [x] 拡張ターゲット(`ios/App/ShareExtension/`)。画面を出さず、受け取って即閉じる
+  - [x] 拡張ターゲット(`ios/App/ShareExtension/`)。結果を一言出して 0.7 秒で閉じる
   - [x] `project.pbxproj` を手で編集(Xcode を持たないため)。
         **`xcode` パッケージでパースして検証済み** ── 2ターゲット・未定義参照なし・
         埋め込みフェーズ `dstSubfolderSpec=13`・Bundle ID と entitlements の対応
   - [x] App Group `group.com.tsukune.travelnote` の entitlements を両ターゲットに
   - [x] アプリ側のインボックス(Dexie v2 + 起動/前面復帰で取り込み + 配置画面)
-        — **ブラウザで検証済み**(届く → 配置 → リンク付きの予定になる)
+        — **ブラウザで検証済み**(届く → 旅を選ぶ → リンク付きの予定になる)
+  - [x] **実機で共有シートに出るところまで確認**(2026-08-10)。
+        pbxproj・拡張のコンパイル・埋め込み・2ターゲットの署名は通った
+  - [x] **受け渡しを作り直した**(2026-08-10)。preferences の group は
+        App Group ではなくキーの接頭辞だった → App Group のファイル →
+        SceneDelegate → Documents → Filesystem に変更。preferences は依存から外した
+  - [x] **入口を旅一覧へ移した**(2026-08-10)。旅の中に置くと旅の数だけ同じ帯が出る
   - [x] fastlane を2ターゲットぶんの署名に(match / update_code_signing_settings /
         export_options をそれぞれ別々に指定)
   - [ ] **ユーザー作業(Apple Developer ポータル)** — 手順は docs/ios-release-setup.md §7.6。
@@ -167,7 +173,8 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
         両方の App ID で App Group を **Configure** → **`lane=refresh_profiles`**
         (**`certificates` では足りない**。force が無く本体の既存プロファイルを
         作り直さないので、App Group が入らないまま落ちる)
-  - [ ] **実機で確認**: Safari の共有シートに出るか / 届いたものが配置できるか
+  - [ ] **実機で確認(作り直したぶん)**: 共有すると手応えが出るか /
+        アプリに戻ると旅一覧に帯が出るか / 旅を選んで配置できるか
 - **地図ビューは不採用**(2026-08-09 → docs/ux-design.md §11)。
       外部の地図アプリに投げるだけで足りる。地図SDKは「データを収集していません」を
       失いかねず、1画面のために最大の資産を賭けない
@@ -411,3 +418,12 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   **`xcode` パッケージでパースして検証済み**(2ターゲット・未定義参照なし・
   埋め込みフェーズ dstSubfolderSpec=13・Bundle ID と entitlements の対応)。
   ⚠️ **Apple 側の作業が終わるまでビルドは通らない**(App Group と拡張用 App ID)。
+- 2026-08-10 **共有シートに出るところまで実機で通った**(pbxproj・拡張のコンパイル・
+  埋め込み・2ターゲットの署名)。ただし**押しても何も届かなかった** ──
+  `@capacitor/preferences` の `group` は App Group ではなく**キーの接頭辞**で、
+  読むのは常に `UserDefaults.standard` だった(実装を読んで判明)。
+  受け渡しを **App Group のファイル → SceneDelegate → Documents → Filesystem**
+  に作り直し、preferences は依存から外した。
+  あわせて**インボックスの入口を旅一覧へ移した** ── 旅の中に置くと、
+  旅の数だけ同じ帯が出て「この旅に1件」と読めてしまうため(端末のものは端末の画面に)。
+  拡張も無言をやめ、結果を一言出して閉じるようにした。

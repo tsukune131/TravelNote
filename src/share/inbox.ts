@@ -1,66 +1,62 @@
 import { Capacitor } from '@capacitor/core';
-import { Preferences } from '@capacitor/preferences';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { db, newId } from '../db/db';
 import type { InboxItem } from '../db/types';
 
 /**
  * 共有シートから届いたものを受け取る。
  *
- * ## なぜ「起動・復帰のときに読む」なのか
+ * ## 経路
  *
- * 共有拡張はアプリとは**別プロセス**で、アプリの IndexedDB には書けない。
- * 書けるのは App Group で共有した入れ物だけ。そして
- * **iOS はアプリに「いま共有された」と教えてくれない。**
- * だから拾えるのは、起動したときと前面に戻ったときの2つだけになる。
+ *   拡張(別プロセス)→ App Group のファイル
+ *     → SceneDelegate が起動・前面復帰で Documents へ移す
+ *     → ここが読んで Dexie に入れる
  *
- * ## なぜ Preferences なのか
+ * ネイティブで一段挟むのは、**JS から App Group を指す方法が無い**から。
+ * `@capacitor/preferences` の `group` で読めると思っていたが、
+ * **あれは group をキーの接頭辞にしか使わず、読むのは `UserDefaults.standard`**
+ * だった(実装を読んで判明)。App Group は原理的に見えない。
  *
- * 拡張(Swift)が書いた UserDefaults を JS から読む必要がある。
- * `@capacitor/preferences` は `group` を指定すると App Group の
- * UserDefaults を見にいく。**キーには `_cap_` が前置される**ので、
- * 拡張側は `_cap_inbox` に書いている(ShareViewController.swift)。
- * 片方だけ変えると静かに読めなくなる。
+ * ⚠️ ファイル名と JSON の形は ShareViewController.swift・SharedInbox.swift と
+ * 揃っている。**どれか1つだけ変えると、エラーも出ずに黙って届かなくなる。**
  */
 
-const APP_GROUP = 'group.com.tsukune.travelnote';
-const KEY = 'inbox';
+const FILE = 'shared-inbox.json';
 
 /** 拡張が書いた1件の形。壊れていても落とさず、読めるものだけ拾う */
 type Incoming = { url?: unknown; title?: unknown; at?: unknown };
 
 /**
- * 共有された分を手元へ移す。**移したら向こうは空にする**(二重に取り込まない)。
+ * 届いたぶんを手元へ移す。**移したらファイルは消す**(二重に取り込まない)。
  * 返り値は今回取り込んだ件数。
  */
 export async function drainSharedInbox(): Promise<number> {
   if (!Capacitor.isNativePlatform()) return 0;
 
+  let text: string;
   try {
-    /*
-     * これは**プロセス全体の設定**を切り替える。
-     * このアプリは他で Preferences を使っていない(設定は Dexie にある)ので
-     * 副作用が無い。使い始めるときはここに注意。
-     */
-    await Preferences.configure({ group: APP_GROUP });
-    const { value } = await Preferences.get({ key: KEY });
-    if (!value) return 0;
+    const file = await Filesystem.readFile({
+      path: FILE,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+    });
+    text = typeof file.data === 'string' ? file.data : await file.data.text();
+  } catch {
+    // まだ何も届いていない(ファイルが無い)。ふつうの状態
+    return 0;
+  }
 
-    const parsed: unknown = JSON.parse(value);
-    if (!Array.isArray(parsed)) {
-      await Preferences.remove({ key: KEY });
-      return 0;
-    }
-
-    const items = parsed
-      .map((raw) => toItem(raw as Incoming))
-      .filter((item): item is InboxItem => item !== null);
-
+  try {
+    const parsed: unknown = JSON.parse(text);
+    const items = Array.isArray(parsed)
+      ? parsed.map((raw) => toItem(raw as Incoming)).filter((i): i is InboxItem => i !== null)
+      : [];
     if (items.length > 0) await db.inbox.bulkPut(items);
-    // 取り込めたぶんだけ消す ── 途中で失敗したら次の起動でやり直せる
-    await Preferences.remove({ key: KEY });
+    await Filesystem.deleteFile({ path: FILE, directory: Directory.Documents });
     return items.length;
   } catch {
-    // 読めない・壊れているときは黙って何もしない。次の機会に拾える
+    // 壊れていたら消して打ち切る。残すと毎回同じところで失敗し続ける
+    await Filesystem.deleteFile({ path: FILE, directory: Directory.Documents }).catch(() => {});
     return 0;
   }
 }

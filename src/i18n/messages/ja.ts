@@ -115,9 +115,13 @@ export const ja = {
   /** 共有シートから届いたもの(ROADMAP C-4) */
   inbox: {
     title: '届いたリンク',
-    waiting: '共有から{n}件 届いています',
-    hint: 'タップで Day {n} の予定になります。名前と URL はそのまま入ります。',
-    place: 'Day {n} に入れる',
+    waiting: '届いたリンク {n}件',
+    placeHere: 'Day {n} に入れる',
+    otherTrip: '別の旅に入れるときは、旅の一覧から開いてください。',
+    hint: '入れたい旅を選ぶと、その旅の Day 1 に予定として入ります。あとから別の日へ移せます。',
+    place: '旅に入れる',
+    chooseTrip: 'どの旅に入れますか?',
+    noTrip: '先に旅をつくってください。',
     empty: 'いまは何も届いていません。',
   },
 

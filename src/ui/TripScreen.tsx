@@ -205,7 +205,11 @@ export function TripScreen({
 
       <div className="scroller">
         <div className="pad">
-          {/* 共有シートから届いたもの。配置できるのは旅の中だけなのでここに出す */}
+          {/*
+            届いたリンク。**旅行中こそ「この店よさそう」を放り込む**ので、
+            旅一覧だけに置くと(旅行中は起動が旅に着地するため)一度も目に入らない。
+            中身は端末のものなので、入れ先は「この日」と明示して押させる
+          */}
           <InboxBar count={inbox?.length ?? 0} onOpen={() => setInboxOpen(true)} />
 
           {variants && variants.length >= 2 && (
@@ -363,7 +367,7 @@ export function TripScreen({
       {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
 
       {inboxOpen && (
-        <InboxSheet tripId={tripId} dayIndex={dayIndex} onClose={() => setInboxOpen(false)} />
+        <InboxSheet here={{ tripId, dayIndex }} onClose={() => setInboxOpen(false)} />
       )}
 
       {editingTrip && (
