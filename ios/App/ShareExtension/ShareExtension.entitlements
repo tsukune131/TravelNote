@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 本体と同じ App Group。ここが揃っていないと受け渡しができない -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.tsukune.travelnote</string>
+	</array>
+</dict>
+</plist>

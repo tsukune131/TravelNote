@@ -10,6 +10,8 @@ import { findLandingPoint } from './db/repo';
 import { FLAGS, getDisplayName, getFlag, setFlag } from './db/settings';
 import { importSnapshotText } from './share/apply';
 import { listenForIncomingFile } from './share/transport';
+import { drainSharedInbox } from './share/inbox';
+import { App as CapApp } from '@capacitor/app';
 import { today } from './lib/plainDate';
 
 type Route =
@@ -81,6 +83,21 @@ function Shell({ onReady }: { onReady?: () => void }) {
       })();
     });
   }, [t]);
+
+  /**
+   * 共有シートから届いたものを拾う。
+   *
+   * **iOS は「いま共有された」を教えてくれない。** 拡張は別プロセスで走り、
+   * App Group に書いて終わる。だから拾えるのは**起動したとき**と
+   * **前面に戻ったとき**の2つだけ(src/share/inbox.ts)。
+   */
+  useEffect(() => {
+    void drainSharedInbox();
+    const handle = CapApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) void drainSharedInbox();
+    });
+    return () => void handle.then((h) => h.remove());
+  }, []);
 
   // 着地点が決まるまでは何も描かない(旅一覧が一瞬見えてから飛ぶのを避ける)
   if (route === null) return <div className="screen" />;

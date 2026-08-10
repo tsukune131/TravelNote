@@ -18,6 +18,7 @@ import { EventSheet } from './EventSheet';
 import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
 import { Prepare } from './Prepare';
+import { InboxBar, InboxSheet } from './Inbox';
 import { MapProviderPrompt } from './Settings';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
@@ -27,6 +28,7 @@ import type { ImportOutcome } from './ShareSheet';
 import { ImportResult } from './ImportResult';
 import { VariantBar } from './VariantBar';
 import { countUnsentChanges } from '../share/snapshot';
+import { listInbox } from '../share/inbox';
 
 export function TripScreen({
   tripId,
@@ -44,6 +46,7 @@ export function TripScreen({
   const events = useLiveQuery(() => listEventsOfDay(tripId, dayIndex), [tripId, dayIndex]);
   const variants = useLiveQuery(() => listVariants(tripId, dayIndex), [tripId, dayIndex]);
   const unsent = useLiveQuery(() => countUnsentChanges(tripId), [tripId]);
+  const inbox = useLiveQuery(() => listInbox(), []);
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export function TripScreen({
   const [editingTrip, setEditingTrip] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
@@ -201,6 +205,9 @@ export function TripScreen({
 
       <div className="scroller">
         <div className="pad">
+          {/* 共有シートから届いたもの。配置できるのは旅の中だけなのでここに出す */}
+          <InboxBar count={inbox?.length ?? 0} onOpen={() => setInboxOpen(true)} />
+
           {variants && variants.length >= 2 && (
             <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
           )}
@@ -354,6 +361,10 @@ export function TripScreen({
       )}
 
       {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
+
+      {inboxOpen && (
+        <InboxSheet tripId={tripId} dayIndex={dayIndex} onClose={() => setInboxOpen(false)} />
+      )}
 
       {editingTrip && (
         <TripForm

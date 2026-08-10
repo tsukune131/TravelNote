@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import type { EntityTable } from 'dexie';
-import type { Baseline, DayVariant, Member, Setting, Trip, TripEvent } from './types';
+import type { Baseline, DayVariant, InboxItem, Member, Setting, Trip, TripEvent } from './types';
 
 /**
  * 端末内のデータベース(IndexedDB)。
@@ -17,6 +17,7 @@ export class TabiDB extends Dexie {
   dayVariants!: EntityTable<DayVariant, 'id'>;
   baselines!: EntityTable<Baseline, 'tripId'>;
   settings!: EntityTable<Setting, 'key'>;
+  inbox!: EntityTable<InboxItem, 'id'>;
 
   constructor() {
     super('tabinoshiori');
@@ -31,6 +32,15 @@ export class TabiDB extends Dexie {
       dayVariants: 'id, tripId, [tripId+dayIndex]',
       baselines: 'tripId',
       settings: 'key',
+    });
+
+    /*
+     * 共有シートから受け取ったものの置き場(ROADMAP C-4)。
+     * **旅に属さないので別テーブル。** 変えたのはここだけなので、
+     * version(2) では足したテーブルだけ書けばよい(既存はそのまま引き継がれる)。
+     */
+    this.version(2).stores({
+      inbox: 'id, createdAt',
     });
   }
 }

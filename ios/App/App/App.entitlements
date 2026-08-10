@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		共有拡張と本体で1つの入れ物を共有する。
+		拡張は別プロセスなので、これが無いと受け取ったリンクを本体へ渡せない。
+
+		⚠️ Capability の追加なので、Apple Developer ポータルで
+		この App Group を作り、両方の App ID で有効にしてから
+		lane=refresh_profiles を回すこと(手順は docs/ios-release-setup.md)。
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.tsukune.travelnote</string>
+	</array>
+</dict>
+</plist>

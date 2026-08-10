@@ -1420,6 +1420,71 @@ body.sheet-open .addbar-hint {
   white-space: nowrap;
 }
 
+/* ───────── 届いたリンク(共有シートから) ───────── */
+
+/*
+ * 件数があるときだけ出る帯。**気づかれないのが一番もったいない**ので
+ * 旅程の上に置くが、色は差し色の薄いほうにして旅程より前に出さない。
+ */
+.inboxbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid var(--primary);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.7rem;
+  min-height: 2.75rem;
+}
+
+.inboxbar .sub {
+  margin-left: auto;
+}
+
+.inboxrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.inboxrow .what {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.inboxrow .name {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxrow .url {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxrow .btn {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+}
+
 /* ───────── 準備(持ち物・予約まとめ) ───────── */
 
 .packrow {

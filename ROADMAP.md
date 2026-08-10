@@ -152,15 +152,22 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
         (app / browser / filesystem / share / splash-screen)。
         依存が少ないほど iOS の更新に追従しやすく、審査で説明することも減る
 - [ ] C-4 **Share Extension**(Safari の共有シートから食べログ等を取り込む)
-      ── **保留**(2026-08-09)。捨ててはいない。docs/ux-design.md §4.4 が
-      「本命の入力導線」と呼ぶものだが、**割に合うかは実際に使ってから決める。**
-      止めている理由は価値ではなくコスト:
-      Xcodeの新ターゲット(`project.pbxproj` を手書き)・App Group・
-      拡張用の App ID・署名を2ターゲットぶんに、が要る。
-      **Windowsでは一切検証できず**、正否が分かるのは CI のビルドだけ。
-      いまの入力導線(名前だけで追加 → あとでリンクを貼る)で足りているなら、
-      この構成変更を先に入れる理由はない。
-      **C-7 で実際に旅行して「リンクを貼るのが面倒」と思ったら着手する**
+      ── 実装済み・**Apple 側の作業と実機確認が残っている**(2026-08-10)
+  - [x] 拡張ターゲット(`ios/App/ShareExtension/`)。画面を出さず、受け取って即閉じる
+  - [x] `project.pbxproj` を手で編集(Xcode を持たないため)。
+        **`xcode` パッケージでパースして検証済み** ── 2ターゲット・未定義参照なし・
+        埋め込みフェーズ `dstSubfolderSpec=13`・Bundle ID と entitlements の対応
+  - [x] App Group `group.com.tsukune.travelnote` の entitlements を両ターゲットに
+  - [x] アプリ側のインボックス(Dexie v2 + 起動/前面復帰で取り込み + 配置画面)
+        — **ブラウザで検証済み**(届く → 配置 → リンク付きの予定になる)
+  - [x] fastlane を2ターゲットぶんの署名に(match / update_code_signing_settings /
+        export_options をそれぞれ別々に指定)
+  - [ ] **ユーザー作業(Apple Developer ポータル)** — 手順は docs/ios-release-setup.md §7.6。
+        App Group を作る → 拡張用 App ID `com.tsukune.travelnote.share` を作る →
+        両方の App ID で App Group を **Configure** → **`lane=refresh_profiles`**
+        (**`certificates` では足りない**。force が無く本体の既存プロファイルを
+        作り直さないので、App Group が入らないまま落ちる)
+  - [ ] **実機で確認**: Safari の共有シートに出るか / 届いたものが配置できるか
 - **地図ビューは不採用**(2026-08-09 → docs/ux-design.md §11)。
       外部の地図アプリに投げるだけで足りる。地図SDKは「データを収集していません」を
       失いかねず、1画面のために最大の資産を賭けない
@@ -397,3 +404,10 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
   地図は外部アプリに投げる設計なので直さない。
   通知を不採用にしたので、**このアプリは権限を1つも要求しない**ことも確定した。
   **フェーズCで残るのは C-7(実際に1回旅行して使う)だけ。**
+- 2026-08-10 **C-4 Share Extension を実装した**(保留を解除)。
+  共有シートの「たびのしおり」→ App Group → アプリが起動・復帰時に拾って
+  **インボックス**に溜め、旅の中で Day に配置する(docs/ux-design.md §4.4)。
+  Xcode を持たないので `project.pbxproj` を手で編集したが、
+  **`xcode` パッケージでパースして検証済み**(2ターゲット・未定義参照なし・
+  埋め込みフェーズ dstSubfolderSpec=13・Bundle ID と entitlements の対応)。
+  ⚠️ **Apple 側の作業が終わるまでビルドは通らない**(App Group と拡張用 App ID)。

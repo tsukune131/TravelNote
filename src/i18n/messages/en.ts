@@ -93,6 +93,14 @@ export const en: DeepPartial<Messages> = {
     },
   },
 
+  inbox: {
+    title: 'Shared links',
+    waiting: '{n} shared item(s) waiting',
+    hint: 'Tap to turn one into a stop on Day {n}. The name and URL come along.',
+    place: 'Put on Day {n}',
+    empty: 'Nothing waiting right now.',
+  },
+
   timeline: {
     unscheduled: 'No time set',
     noTime: '—',

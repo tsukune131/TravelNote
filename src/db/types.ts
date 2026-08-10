@@ -192,6 +192,23 @@ export type Member = SyncFields & {
   role: MemberRole;
 };
 
+/**
+ * 共有シートから受け取った、まだどの旅にも入れていないもの。
+ *
+ * **旅に属さない。端末に属する。** 共有した時点では旅が1つも無いこともある
+ * (「来年ここ行きたい」で店を放り込む使い方は普通にある)。
+ * だから旅を作ったあとに配置する形になる。
+ *
+ * **しおり(.tabishiori)には乗せない。** まだ誰のものでもない下書きなので。
+ */
+export type InboxItem = {
+  id: string;
+  url: string;
+  /** 共有元のページ題名。Safari が渡してこないこともあるので空を許す */
+  title: string;
+  createdAt: number;
+};
+
 /** 端末固有の設定。同期しない */
 export type Setting = {
   key: string;

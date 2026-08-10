@@ -112,6 +112,15 @@ export const ja = {
     },
   },
 
+  /** 共有シートから届いたもの(ROADMAP C-4) */
+  inbox: {
+    title: '届いたリンク',
+    waiting: '共有から{n}件 届いています',
+    hint: 'タップで Day {n} の予定になります。名前と URL はそのまま入ります。',
+    place: 'Day {n} に入れる',
+    empty: 'いまは何も届いていません。',
+  },
+
   timeline: {
     unscheduled: '時刻未定',
     noTime: '—',
