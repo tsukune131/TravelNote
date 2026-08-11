@@ -267,8 +267,9 @@ Pro でできること: 自分の旅を同行者と共有できます。
 　4.「ファイル」アプリで保存した .json を**長押し →「共有」→「たびのしおり」**
 　　(本アプリは .json の既定アプリを名乗らないため、共有から開いてください)
 　5. アプリが開き、しおりが取り込まれます(取り込みは無料の機能です)
-　サンプルのしおりファイルを添付しています。3〜4 の代わりに、これを
-　「ファイル」アプリに置いて長押し →「共有」→「たびのしおり」でも同じです。
+　サンプルのしおりファイルを添付しています(zip)。「ファイル」アプリで展開すると
+　.json が出ます。3〜4 の代わりに、それを長押し →「共有」→「たびのしおり」でも
+　同じ動作をご確認いただけます。
 ```
 
 英語版(日本語UIのため併記する):
@@ -298,14 +299,19 @@ You can verify the full sharing round trip on a single device:
   4. In the Files app, long-press the saved .json -> Share -> "Tabi no Shiori".
      (We do not claim to be the default handler for .json, so please use Share.)
   5. The app opens and imports the itinerary (importing is free).
-A sample itinerary file is attached. You may place it in the Files app and tap it
-  instead of steps 3-4 to reach the same result.
+A sample itinerary file is attached as a zip. Unzip it in the Files app to get the
+  .json, then long-press it -> Share -> "Tabi no Shiori" instead of steps 3-4.
 
 This app makes no network requests. Itineraries are stored only on the device.
 Sharing works by exporting a file that the user sends themselves; we never receive it.
 ```
 
-**添付するサンプル**: `store/review-sample-kyoto.json`
+**添付するサンプル**: `store/review-sample-kyoto.zip`
+
+⚠️ **App Store Connect の添付欄は `.json` を受け付けない。**
+許可されているのは .pdf/.doc/.docx/.rtf/.pages/.xls/.xlsx/.numbers/**.zip**/.rar/
+.plist/.crash/.jpg/.png/.mov/.mp4/.avi のみ。そのため zip で包んである
+(`Compress-Archive`)。中身は `review-sample-kyoto.json` そのまま。
 (App Store Connect →「App Review に関する情報」の添付ファイル欄)。
 アプリ本体の `parseSnapshot` を通して生成しているので、形式のズレは無い。
 再生成が要るときは git log からスクリプトを引く。
