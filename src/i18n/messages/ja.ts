@@ -349,6 +349,24 @@ export const ja = {
     version: 'バージョン',
   },
 
+  /**
+   * CloudKit の実現可能性を確かめる画面(ROADMAP E-0)。
+   * **E-0 のブランチにしか無い。main に入れない。E-1 で捨てる。**
+   */
+  cloudProbe: {
+    title: 'CloudKit の確認',
+    lead: '実機で CloudKit が使えるかを1段ずつ確かめます。旅程には触れません。',
+    nativeOnly: 'この確認は実機でしか動きません(ブラウザでは何も起きません)。',
+    account: '① iCloud の状態を見る',
+    dryRun: '② 書き込みのドライラン',
+    createShare: '③ 共有リンクを作る',
+    fetchShared: '④ 共有されたものを読む',
+    pending: '⑤ 受諾したぶんを引き取る',
+    cleanUp: '⑥ 試したデータを消す',
+    shareUrl: '共有リンク',
+    sampleTitle: 'たびのしおり(確認用)',
+  },
+
   common: {
     save: '保存',
     cancel: 'やめる',

@@ -138,5 +138,15 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!--
+		CloudKit の共有リンクをこのアプリで開く(ROADMAP E-0)。
+
+		⚠️ **これが無いと、共有リンクをタップしても Safari が
+		iCloud のページを開くだけ**で、SceneDelegate の
+		`userDidAcceptCloudKitShareWith` は一度も呼ばれない。
+		「受け取りが動かない」の原因になりやすい1行。
+	-->
+	<key>CKSharingSupported</key>
+	<true/>
 </dict>
 </plist>

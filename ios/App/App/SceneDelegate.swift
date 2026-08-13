@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import CloudKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -11,7 +12,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         SharedInbox.drain()
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        // 素の CAPBridgeViewController ではなく、CloudKit プラグインを
+        // 登録する版を使う(MainViewController.swift に理由)
+        window?.rootViewController = MainViewController()
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
@@ -31,5 +34,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+    }
+
+    /**
+     共有リンクをタップされたとき(ROADMAP E-0)。
+
+     ⚠️ **`CKSharingSupported` を Info.plist に立てていないと、ここは呼ばれない。**
+     リンクをタップしても Safari が iCloud の Web ページを開くだけになる。
+
+     受諾は非同期で、**そのときアプリが起動したばかりだと WebView がまだ居ない**。
+     だから結果を `AcceptedShares` に置いて、JS が起動後に取りに来る形にした
+     (共有拡張のインボックスと同じ考え方)。
+     */
+    func windowScene(_ windowScene: UIWindowScene, userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
+        let operation = CKAcceptSharesOperation(shareMetadatas: [metadata])
+        operation.perShareCompletionBlock = { metadata, _, error in
+            guard error == nil else { return }
+            let title = metadata.share[CKShare.SystemFieldKey.title] as? String
+            AcceptedShares.add(title ?? "")
+        }
+        CKContainer(identifier: "iCloud.com.tsukune.travelnote").add(operation)
     }
 }

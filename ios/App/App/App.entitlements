@@ -14,5 +14,25 @@
 	<array>
 		<string>group.com.tsukune.travelnote</string>
 	</array>
+
+	<!--
+		CloudKit(ROADMAP E-0)。**旅程は利用者自身の iCloud に置かれ、
+		開発者はアクセスできない** ── これが「データを収集していません」を
+		維持したまま共有を作れる根拠。
+
+		⚠️ 拡張(ShareExtension)には付けない。共有拡張は CloudKit を触らない。
+		⚠️ App Group と同じく Capability の追加なので、
+		   ポータルでコンテナを作る → App ID で iCloud を有効にする →
+		   lane=refresh_profiles、の順が要る(docs/ios-release-setup.md §7.7)。
+		   certificates では足りない(force が無く既存プロファイルを作り直さない)
+	-->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.tsukune.travelnote</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
 </dict>
 </plist>

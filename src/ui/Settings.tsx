@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
+import { CloudProbe } from './CloudProbe';
 import { getDisplayName, getMapProvider, setMapProvider } from '../db/settings';
 import { setMyDisplayName } from '../db/repo';
 import { openSubscriptionSettings, restore } from '../pro/purchases';
@@ -15,6 +16,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [provider, setProvider] = useState<MapProvider | null>(null);
   const [name, setName] = useState('');
   const [note, setNote] = useState<string | null>(null);
+  const [probe, setProbe] = useState(false);
   const pro = useProStatus();
 
   useEffect(() => {
@@ -86,9 +88,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
         </div>
+        {/*
+          ROADMAP E-0 の確認用。**このブランチ(cloudkit-e0)にしか無い。**
+          main は 1.0 の提出候補なので、診断画面を混ぜない
+          (`screenshot-jpy` と同じやり方)。E-1 に進むときに消す。
+        */}
+        <button type="button" className="menu-item" onClick={() => setProbe(true)}>
+          {t('cloudProbe.title')}
+          <span className="sub">›</span>
+        </button>
       </div>
 
       {note && <p className="guess">{note}</p>}
+      {probe && <CloudProbe onClose={() => setProbe(false)} />}
     </Sheet>
   );
 

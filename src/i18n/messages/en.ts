@@ -318,6 +318,20 @@ export const en: DeepPartial<Messages> = {
     version: 'Version',
   },
 
+  cloudProbe: {
+    title: 'CloudKit check',
+    lead: 'Checks CloudKit on a real device, one step at a time. Your trips are not touched.',
+    nativeOnly: 'This check only runs on a device (nothing happens in a browser).',
+    account: '1. iCloud account status',
+    dryRun: '2. Write dry run',
+    createShare: '3. Create a share link',
+    fetchShared: '4. Read what was shared with me',
+    pending: '5. Collect accepted shares',
+    cleanUp: '6. Delete the test data',
+    shareUrl: 'Share link',
+    sampleTitle: 'TravelNote (check)',
+  },
+
   common: {
     save: 'Save',
     cancel: 'Cancel',
