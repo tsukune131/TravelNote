@@ -34,6 +34,22 @@ const FONT = "'Yu Gothic UI', 'Meiryo', 'Hiragino Sans', sans-serif";
 const CROP_TOP = 0.05;
 
 /**
+ * 下を落とす割合。**共有シートの下段アクションを画面外へ追い出すために要る。**
+ *
+ * ⚠️ 2枚目の元画像(IMG_2471)の最下部には **「Brave で開く」** が写っている。
+ * 他社ブラウザのロゴと名称が App Store の販売素材に入ると 5.2.1(第三者の
+ * 知的財産)に触れるうえ、キャプションが「Safari の共有シートから」なのに
+ * 別のブラウザが写るのは訴求としても矛盾する(2026-08-12 の監査で検出)。
+ *
+ * **元画像は加工しない。** 上を切るのと同じく、枠の高さを縮めて overflow で
+ * 隠す ── 撮り直さずに済み、切る量が数字としてここに残る。
+ *
+ * 0.055 = 元画像 2622px のうち下 144px。「プリント」の行までを残し、
+ * その下の区切り線と Brave の行、ホームインジケータが枠の外に出る。
+ */
+const CROP_BOTTOM_SHARESHEET = 0.055;
+
+/**
  * 並び順に意味がある。
  * 1枚目に全体像、2枚目に**アプリの外で動くところ**(共有シート)。
  * 3枚目以降で「同行者と」「旅の前後」を足す。
@@ -94,10 +110,11 @@ const SRC_H = 2622;
  * **高さではなく幅**に対する割合なので、`margin-top:-5%` では
  * ほとんど切れない(実際に踏んだ)。
  */
-function phone(src, width) {
+function phone(src, width, cropBottom = 0) {
   const shown = (width * SRC_H) / SRC_W;
   const cut = Math.round(shown * CROP_TOP);
-  return `<div class="phone" style="width:${width}px;height:${Math.round(shown) - cut}px">
+  const cutBottom = Math.round(shown * cropBottom);
+  return `<div class="phone" style="width:${width}px;height:${Math.round(shown) - cut - cutBottom}px">
     <img src="${src}" style="width:${width}px;margin-top:-${cut}px">
   </div>`;
 }
@@ -176,7 +193,7 @@ const page = await browser.newPage({ viewport: { width: W, height: H } });
 for (const [i, shot] of SHOTS.entries()) {
   const stage = shot.pair
     ? `<div class="pair">
-         ${phone(await dataUri(shot.pair[0]), 700)}
+         ${phone(await dataUri(shot.pair[0]), 700, CROP_BOTTOM_SHARESHEET)}
          ${phone(await dataUri(shot.pair[1]), 700)}
          <div class="arrow">→</div>
        </div>`
