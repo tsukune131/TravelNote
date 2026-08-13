@@ -101,7 +101,19 @@ platform :ios do
         provisioningProfiles: {
           APP_IDENTIFIER => profile_name,
           EXTENSION_IDENTIFIER => extension_profile_name
-        }
+        },
+        # **CloudKit のどちらの環境を見るか**(ROADMAP E-0)。
+        #
+        # ⚠️ 既定は Production。**Development にするのはスキーマを作るときだけ。**
+        # Production ではレコード型を新しく作れず、CKShare が使う
+        # `cloudkit.share` は**コンソールで手作りできないシステム型**なので、
+        # 一度 Development で JIT 生成させて Deploy するしかない。
+        # その Development に入る正規の道(Xcode のデバッグビルド)が
+        # Mac 無しでは通れないため、**ビルドの向き先ごと切り替える**。
+        #
+        # ⚠️ **Development で上げたビルドを審査に出さないこと。**
+        # 利用者の実データが開発用データベースに書かれる。
+        iCloudContainerEnvironment: ENV.fetch("ICLOUD_ENV", "Production")
       }
     )
 

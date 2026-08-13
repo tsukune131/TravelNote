@@ -12,6 +12,21 @@ on:
           - beta
           - certificates
           - refresh_profiles
+      icloud_env:
+        # ⚠️ **CloudKit のスキーマを作るためだけの逃げ道**(ROADMAP E-0)。
+        # Production ではレコード型を新しく作れず、`cloudkit.share` は
+        # 手作りもできないシステム型。Development で1度 JIT 生成させて
+        # Deploy する必要があるが、**Development に入るには Xcode からの
+        # デバッグビルドが要る = Mac が無いと通れない**。
+        # そこで TestFlight のビルド自体を Development に向ける。
+        # **通常は Production のまま触らないこと。**
+        description: "CloudKit の環境(通常は Production。スキーマ作成時だけ Development)"
+        required: false
+        default: Production
+        type: choice
+        options:
+          - Production
+          - Development
 
 jobs:
   build:
@@ -59,6 +74,8 @@ jobs:
         run: npx cap sync ios
 
       - name: Run fastlane
+        env:
+          ICLOUD_ENV: ${{ inputs.icloud_env }}
         run: bundle exec fastlane ios ${{ inputs.lane }}
 
       - name: Upload IPA artifact
