@@ -14,6 +14,9 @@ import { IconPlus, IconSettings } from './Icon';
 import { ImportButton } from './ImportButton';
 import { ImportResult } from './ImportResult';
 import type { ImportOutcome } from './ShareSheet';
+import { Paywall } from './Paywall';
+import { useProStatus } from '../pro/store';
+import { isProActive } from '../pro/entitlement';
 
 
 export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number) => void }) {
@@ -23,7 +26,9 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
   const [showSettings, setShowSettings] = useState(false);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const inbox = useLiveQuery(() => listInbox(), []);
+  const pro = useProStatus();
   const now = today();
 
   return (
@@ -117,6 +122,18 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             </div>
             );
           })}
+
+          {/*
+            Pro の存在自体を、共有しようとするまで誰も知らない設計だった
+            (課金導線は共有シートの奥にしか無い)。一覧の最後に軽く出しておく ──
+            共有を試すより前に「そもそも送れる」と知ってもらうため。
+          */}
+          {trips !== undefined && trips.length > 0 && !isProActive(pro, Date.now()) && (
+            <button type="button" className="probanner" onClick={() => setShowPaywall(true)}>
+              <span>{t('tripList.proBanner')}</span>
+              <span className="sub">›</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -141,6 +158,11 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       )}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       {inboxOpen && <InboxSheet onClose={() => setInboxOpen(false)} />}
+      {/*
+        共有シートの外からの唯一の入口。ここでは「送ろうとした旅」が無いので、
+        買えたあとに続ける操作が無い ── onProceed は閉じるだけでいい。
+      */}
+      {showPaywall && <Paywall onClose={() => setShowPaywall(false)} onProceed={() => setShowPaywall(false)} />}
 
       {imported && (
         <ImportResult

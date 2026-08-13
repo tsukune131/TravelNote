@@ -46,6 +46,7 @@ export const ja = {
     upcomingIn: 'あと{n}日',
     ongoing: '旅行中',
     past: '終了',
+    proBanner: '✨ 友達や恋人にしおりを送るには Pro が必要です',
   },
 
   trip: {

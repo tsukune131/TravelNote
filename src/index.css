@@ -1480,6 +1480,33 @@ body.sheet-open .addbar-hint {
   margin-left: auto;
 }
 
+/*
+ * 一覧の最後に出す Pro の案内。inboxbar と違って**返事を急がせるものではない**
+ * ので、コーラルで塗らずに紙の一段濃いところ(surface-2)に馴染ませる。
+ * 気づいてもらえれば十分で、無視しても旅の作成・編集は一切妨げない。
+ */
+.probanner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.4rem;
+  min-height: 2.75rem;
+}
+
+.probanner .sub {
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
 .inboxrow {
   display: flex;
   align-items: center;

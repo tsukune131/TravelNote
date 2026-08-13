@@ -46,6 +46,7 @@ export const en: DeepPartial<Messages> = {
     upcomingIn: 'in {n} days',
     ongoing: 'On the trip',
     past: 'Finished',
+    proBanner: "✨ Pro is needed to send a trip to friends or partners",
   },
 
   trip: {
