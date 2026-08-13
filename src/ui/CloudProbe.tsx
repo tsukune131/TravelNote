@@ -73,7 +73,8 @@ export function CloudProbe({ onClose }: { onClose: () => void }) {
 
   /** 結果を1行にする。**code と ms を必ず出す**(それが E-0 で知りたいこと) */
   function describe(name: string, r: ProbeResult): string {
-    const head = `${name}: ${r.ok ? 'OK' : 'NG'} ${r.ms}ms`;
+    const account = r.account ? ` [${r.account}]` : '';
+    const head = `${name}: ${r.ok ? 'OK' : 'NG'} ${r.ms}ms${account}`;
     if (r.ok) return head;
     return `${head} / ${r.stage} / ${r.code ?? '-'} / ${r.error ?? ''}`;
   }

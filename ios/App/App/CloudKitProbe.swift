@@ -105,9 +105,21 @@ public class CloudKitProbePlugin: CAPPlugin, CAPBridgedPlugin {
         let database = container.privateCloudDatabase
         let recordID = CKRecord.ID(recordName: "probe-\(UUID().uuidString)", zoneID: zoneID)
 
-        ensureZone(in: database) { zoneError in
+        // **アカウントの状態を毎回一緒に返す。** 実機での1往復が高いので、
+        // ②が落ちたときに「①も押してください」ともう1往復させない
+        container.accountStatus { status, _ in
+            let account = Self.describe(status)
+
+            /// 結果に account を足してから返す
+            func finish(_ payload: [String: Any]) {
+                var merged = payload
+                merged["account"] = account
+                call.resolve(merged)
+            }
+
+            self.ensureZone(in: database) { zoneError in
             if let zoneError = zoneError {
-                call.resolve(Self.failure(zoneError, stage: "zone", started: started))
+                finish(Self.failure(zoneError, stage: "zone", started: started))
                 return
             }
 
@@ -117,26 +129,27 @@ public class CloudKitProbePlugin: CAPPlugin, CAPBridgedPlugin {
 
             database.save(record) { saved, saveError in
                 if let saveError = saveError {
-                    call.resolve(Self.failure(saveError, stage: "write", started: started))
+                    finish(Self.failure(saveError, stage: "write", started: started))
                     return
                 }
 
                 database.fetch(withRecordID: saved?.recordID ?? recordID) { fetched, fetchError in
                     if let fetchError = fetchError {
-                        call.resolve(Self.failure(fetchError, stage: "read", started: started))
+                        finish(Self.failure(fetchError, stage: "read", started: started))
                         return
                     }
                     let readBack = (fetched?["title"] as? String) == "probe"
 
                     // 消せなかったとしてもドライランは成功。ゴミは cleanUp で拾う
                     database.delete(withRecordID: recordID) { _, _ in
-                        call.resolve([
+                        finish([
                             "ok": readBack,
                             "ms": Self.elapsed(started),
                             "stage": "done"
                         ])
                     }
                 }
+            }
             }
         }
     }
@@ -308,26 +321,59 @@ public class CloudKitProbePlugin: CAPPlugin, CAPBridgedPlugin {
      JS 側で文字列を見分ける羽目になる。
      */
     private static func failure(_ error: Error, stage: String, started: Date) -> [String: Any] {
-        var code = "unknown"
-        if let ckError = error as? CKError {
-            switch ckError.code {
-            case .quotaExceeded: code = "quotaExceeded"
-            case .notAuthenticated: code = "notAuthenticated"
-            case .networkUnavailable, .networkFailure: code = "network"
-            case .permissionFailure: code = "permission"
-            case .managedAccountRestricted: code = "restricted"
-            case .zoneNotFound, .userDeletedZone: code = "zoneNotFound"
-            case .serverRecordChanged: code = "conflict"
-            default: code = "ck\(ckError.errorCode)"
-            }
-        }
+        let (code, message) = classify(error)
         return [
             "ok": false,
             "ms": elapsed(started),
             "stage": stage,
             "code": code,
-            "error": error.localizedDescription
+            "error": message
         ]
+    }
+
+    /**
+     エラーを「見て意味の分かる形」にする。
+
+     ⚠️ **`partialFailure`(ck2)は中身が空のラッパー。**
+     `partialErrorsByItemID` を開かないと本当の原因が出てこない
+     ── 最初の版がこれを開いておらず、実機で
+     「dryRun NG / zone / ck2 / failed to modify some record zones」としか
+     出せなかった。**知りたいことだけが捨てられていた。**
+
+     入れ子は1段とは限らないので**再帰で開く**。
+     */
+    private static func classify(_ error: Error) -> (String, String) {
+        guard let ckError = error as? CKError else {
+            return ("unknown", error.localizedDescription)
+        }
+
+        if ckError.code == .partialFailure {
+            // 最初の1件で足りる。**どの item で落ちたかも一緒に返す**
+            if let partials = ckError.partialErrorsByItemID, let (item, inner) = partials.first {
+                let (innerCode, innerMessage) = classify(inner)
+                return (innerCode, "[\(item)] \(innerMessage)")
+            }
+            return ("partialFailure", ckError.localizedDescription)
+        }
+
+        let code: String
+        switch ckError.code {
+        case .quotaExceeded: code = "quotaExceeded"
+        case .notAuthenticated: code = "notAuthenticated"
+        case .networkUnavailable, .networkFailure: code = "network"
+        case .permissionFailure: code = "permission"
+        case .managedAccountRestricted: code = "restricted"
+        case .zoneNotFound, .userDeletedZone: code = "zoneNotFound"
+        case .serverRecordChanged: code = "conflict"
+        case .badContainer: code = "badContainer"
+        case .missingEntitlement: code = "missingEntitlement"
+        case .internalError: code = "internalError"
+        case .serverRejectedRequest: code = "serverRejected"
+        case .invalidArguments: code = "invalidArguments"
+        default: code = "ck\(ckError.errorCode)"
+        }
+        // **番号も必ず残す。** 名前だけだと Apple の資料と突き合わせられない
+        return (code, "ck\(ckError.errorCode): \(ckError.localizedDescription)")
     }
 }
 

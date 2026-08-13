@@ -32,6 +32,11 @@ export type ProbeResult = {
   /** fetchShared のときだけ返る、共有されて見えているレコードの題名 */
   titles?: string[];
   recordName?: string;
+  /**
+   * dryRun のときだけ返る iCloud の状態。
+   * **実機での1往復が高いので、②が落ちたときに①を押し直させない。**
+   */
+  account?: string;
 };
 
 export type AccountStatus = {
