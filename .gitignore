@@ -41,3 +41,6 @@ docs/
 .env
 *.p8
 *.mobileprovision
+
+# Markdown ドキュメントは全てGit管理から除外
+*.md
