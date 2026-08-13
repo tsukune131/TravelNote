@@ -14,11 +14,10 @@ import UIKit
  `capacitorDidLoad()` で明示的に登録すれば、生成物に触らずに済む
  (Capacitor が「アプリ内のプラグイン」向けに用意している場所)。
 
- ⚠️ `cloudkit-e0` ブランチにも同じファイルがある(CloudKitProbePlugin を登録)。
- 合わせるときは登録を1行ずつ足すだけ。
  */
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(WeatherPlugin())
+        bridge?.registerPluginInstance(CloudKitProbePlugin())
     }
 }

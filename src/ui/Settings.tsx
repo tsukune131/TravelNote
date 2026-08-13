@@ -5,6 +5,7 @@ import { Paywall } from './Paywall';
 import { getDisplayName, getMapProvider, getTheme, setMapProvider, setTheme } from '../db/settings';
 import { THEMES, THEME_SWATCH, applyTheme } from '../lib/theme';
 import type { ThemeId } from '../lib/theme';
+import { CloudProbe } from './CloudProbe';
 import { setMyDisplayName } from '../db/repo';
 import { openSubscriptionSettings, restore } from '../pro/purchases';
 import { setProStatus, useProStatus } from '../pro/store';
@@ -24,6 +25,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [paywall, setPaywall] = useState(false);
   /** バージョンの行を押した回数。5回で広告の診断を出す(下のコメント) */
   const [versionTaps, setVersionTaps] = useState(0);
+  const [probe, setProbe] = useState(false);
   const pro = useProStatus();
 
   useEffect(() => {
@@ -116,6 +118,15 @@ export function Settings({ onClose }: { onClose: () => void }) {
         <button type="button" className="menu-item" onClick={() => setVersionTaps((n) => n + 1)}>
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
+        </div>
+        {/*
+          ROADMAP E-0 の確認用。**main には入れない。**
+          main は 1.0 の提出候補なので、診断画面を混ぜない
+          (`screenshot-jpy` と同じやり方)。E-1 に進むときに消す。
+        */}
+        <button type="button" className="menu-item" onClick={() => setProbe(true)}>
+          {t('cloudProbe.title')}
+          <span className="sub">›</span>
         </button>
       </div>
 
@@ -123,6 +134,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
       {note && <p className="guess">{note}</p>}
       {paywall && <Paywall reason="ads" onClose={() => setPaywall(false)} />}
+      {probe && <CloudProbe onClose={() => setProbe(false)} />}
     </Sheet>
   );
 
