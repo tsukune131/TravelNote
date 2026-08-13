@@ -182,10 +182,46 @@ function report(label, { status, json, text }) {
   console.log(`  ✗ ${label}: status ${status}\n${text}`);
 }
 
+/**
+ * ③ Sign in Callback を空にできなかったとき用の受け取り口。
+ *
+ * コンソールで `http://localhost:7788/` を登録した場合、サインイン後に
+ * ブラウザがここへ飛んでくる。**トークンを端末の外へ出さない**のが狙い
+ * ── GitHub Pages などを callback にすると、セッショントークンが
+ * アドレスバーと相手のサーバーのログに乗る。
+ */
+async function catchToken() {
+  const { createServer } = await import('node:http');
+  const port = 7788;
+
+  const server = createServer((req, res) => {
+    const token = new URL(req.url, `http://localhost:${port}`).searchParams.get('ckWebAuthToken');
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+
+    if (!token) {
+      res.end('ckWebAuthToken が付いていません。このタブは閉じて構いません。');
+      return;
+    }
+    res.end('受け取りました。このタブは閉じてください。');
+    console.log('\n✓ ckWebAuthToken を受け取りました:\n');
+    console.log(token);
+    console.log('\n次はこれを実行してください:\n');
+    console.log('  CK_API_TOKEN=... CK_WEB_AUTH_TOKEN=<上の値> node scripts/cloudkit-schema.mjs share\n');
+    server.close();
+  });
+
+  server.listen(port, () => {
+    console.log(`http://localhost:${port}/ で待っています。`);
+    console.log('別の窓で signin を実行し、出てきた URL をブラウザで開いてください。');
+    console.log('(Ctrl-C で終了)');
+  });
+}
+
 const command = process.argv[2];
 if (command === 'signin') await signin();
 else if (command === 'share') await share();
+else if (command === 'catch') await catchToken();
 else {
-  console.log('使い方: node scripts/cloudkit-schema.mjs <signin|share>');
+  console.log('使い方: node scripts/cloudkit-schema.mjs <signin|catch|share>');
   process.exit(1);
 }
