@@ -1,7 +1,7 @@
 {
   "name": "travelnote",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "size": "node scripts/size-budget.mjs",
-    "deps": "node scripts/check-imports.mjs"
+    "deps": "node scripts/check-imports.mjs",
+    "version:check": "node scripts/check-version.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",

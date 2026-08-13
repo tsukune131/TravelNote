@@ -50,6 +50,9 @@ jobs:
       - name: Build web assets
         run: |
           npm ci
+          # 設定画面に出る版数と App Store に出る版数がずれたまま
+          # TestFlight に上がると、配ってからでないと気づけない。**上げる前に**止める
+          npm run version:check
           npm run build
 
       - name: Sync Capacitor iOS project

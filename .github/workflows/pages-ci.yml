@@ -31,6 +31,9 @@ jobs:
       # 手元の node_modules に残っているだけの依存を早い段階で炙り出す
       # (@capacitor/browser で実際に踏んだ。tsc より前に、原因が分かる形で落とす)
       - run: npm run deps
+      # 設定画面に出る版数(package.json)と App Store に出る版数
+      # (MARKETING_VERSION)のずれ。片方だけ上げてもビルドは通るので、ここで止める
+      - run: npm run version:check
       # tsconfig.json はソリューション形式(references)なので -b で型チェックする。
       # 各プロジェクトは noEmit: true なので出力は出ない
       - run: npx tsc -b
