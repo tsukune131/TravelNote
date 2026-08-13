@@ -36,13 +36,17 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       <header className="topbar">
         <div className="topbar-row">
           <h1>{t('tripList.title')}</h1>
-          <button
-            type="button"
-            className="iconbtn"
-            onClick={() => setShowSettings(true)}
-            aria-label={t('settings.title')}
-          >
-            <IconSettings />
+          {/*
+            ここだけラベルを添える。旅の中のトップバーと違ってボタンが1つしかなく
+            場所に余裕があるし、**アプリで最初に着く画面**なので、
+            歯車を読めなくても「設定」と書いてあれば分かる。
+            見えている文字がボタンの名前になるので aria-label は付けない。
+          */}
+          <button type="button" className="iconbtn labeled" onClick={() => setShowSettings(true)}>
+            <span>
+              <IconSettings size={17} />
+              {t('settings.title')}
+            </span>
           </button>
         </div>
       </header>
