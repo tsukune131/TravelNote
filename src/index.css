@@ -1276,6 +1276,10 @@ body.sheet-open .addbar-hint {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  /* flex列の子はデフォルトで min-height:auto となり、中身の高さぶん
+     親(.sheet の max-height:88%)を突き破ってしまう。0にして初めて
+     overflow-y:auto が効き、中でスクロールするようになる */
+  min-height: 0;
 }
 
 /* ───────── フォーム ───────── */
