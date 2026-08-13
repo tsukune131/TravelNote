@@ -33,7 +33,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
           <h1>{t('tripList.title')}</h1>
           <button
             type="button"
-            className="iconbtn plain"
+            className="iconbtn"
             onClick={() => setShowSettings(true)}
             aria-label={t('settings.title')}
           >
