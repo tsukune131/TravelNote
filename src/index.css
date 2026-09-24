@@ -86,6 +86,153 @@
   }
 }
 
+/*
+ * ベース色(設定で選ぶ。src/lib/theme.ts)。既定の桜色は上の :root そのもの。
+ *
+ * 替えるのは地・文字・罫・差し色だけ。**カテゴリ色は替えない**(6系統を色で見分ける)。
+ *
+ * ⚠️ **明るい側で書いた変数は、暗い側でも必ず全部書き直すこと。**
+ * `:root[data-theme]` は素の `:root` より強いので、暗い側で書き漏らした変数は
+ * 暗い配色の中に明るい値のまま残る。
+ */
+:root[data-theme='green'] {
+  --paper: #f3faf5;
+  --surface-2: #e0f2e6;
+  --ink: #25352c;
+  --ink-2: #5b7264;
+  --ink-3: #8ea596;
+  --rule: #d2e8d9;
+  --rule-soft: #e6f3ea;
+  --primary: #2e9e6a;
+  --primary-2: #8fd16a;
+  --on-primary: #ffffff;
+  --shadow: 0 1px 2px rgba(70, 140, 100, 0.1), 0 8px 24px rgba(70, 140, 100, 0.13);
+  --scrim: rgba(37, 53, 44, 0.35);
+  --sunset: linear-gradient(105deg, #93d06a 0%, #2e9e6a 55%, #1f8a80 100%);
+}
+
+:root[data-theme='blue'] {
+  --paper: #f3f7fd;
+  --surface-2: #e1ecfb;
+  --ink: #25303f;
+  --ink-2: #5b6b80;
+  --ink-3: #8e9cb0;
+  --rule: #d5e2f3;
+  --rule-soft: #e8f0fa;
+  --primary: #3a7bd5;
+  --primary-2: #6cc4f0;
+  --on-primary: #ffffff;
+  --shadow: 0 1px 2px rgba(80, 120, 180, 0.1), 0 8px 24px rgba(80, 120, 180, 0.13);
+  --scrim: rgba(37, 48, 63, 0.35);
+  --sunset: linear-gradient(105deg, #6cc4f0 0%, #3a7bd5 55%, #5a62d0 100%);
+}
+
+:root[data-theme='red'] {
+  --paper: #fdf5f3;
+  --surface-2: #fbe2de;
+  --ink: #3b2624;
+  --ink-2: #7a5c58;
+  --ink-3: #a88c88;
+  --rule: #f1d5d0;
+  --rule-soft: #f9e8e5;
+  --primary: #d2433f;
+  --primary-2: #f28a5b;
+  --on-primary: #ffffff;
+  --shadow: 0 1px 2px rgba(180, 90, 80, 0.1), 0 8px 24px rgba(180, 90, 80, 0.13);
+  --scrim: rgba(59, 38, 36, 0.35);
+  --sunset: linear-gradient(105deg, #f59a5b 0%, #d2433f 55%, #b8324e 100%);
+}
+
+/*
+ * 黄色は白抜き文字が読めない。**ボタンの上の文字だけ暗くする**(--on-primary)。
+ * 差し色(--primary)は罫や文字にも使うので、紙の上で読める芥子色まで落としてある。
+ */
+:root[data-theme='yellow'] {
+  --paper: #fffbee;
+  --surface-2: #fdf0c6;
+  --ink: #3a3222;
+  --ink-2: #756a52;
+  --ink-3: #a69b80;
+  --rule: #f0e3b9;
+  --rule-soft: #f8f0d5;
+  --primary: #b07800;
+  --primary-2: #f5c542;
+  --on-primary: #3a2a00;
+  --shadow: 0 1px 2px rgba(170, 140, 60, 0.12), 0 8px 24px rgba(170, 140, 60, 0.15);
+  --scrim: rgba(58, 50, 34, 0.35);
+  --sunset: linear-gradient(105deg, #ffe066 0%, #f7c23a 55%, #f0a21e 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='green'] {
+    --paper: #111a15;
+    --surface: #1a261f;
+    --surface-2: #24342b;
+    --ink: #e6f4ea;
+    --ink-2: #a8c4b2;
+    --ink-3: #7c9786;
+    --rule: #2e4237;
+    --rule-soft: #1f2c24;
+    --primary: #6fd49e;
+    --primary-2: #b4e58c;
+    --on-primary: #0d2418;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(5, 12, 8, 0.6);
+    --sunset: linear-gradient(105deg, #b4e58c 0%, #6fd49e 55%, #5cc9c0 100%);
+  }
+
+  :root[data-theme='blue'] {
+    --paper: #111722;
+    --surface: #1a2230;
+    --surface-2: #243044;
+    --ink: #e7eef8;
+    --ink-2: #a8b7cc;
+    --ink-3: #7a889c;
+    --rule: #2e3a4e;
+    --rule-soft: #1e2735;
+    --primary: #7fb2ff;
+    --primary-2: #8fd8f7;
+    --on-primary: #0c1a30;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(5, 8, 14, 0.6);
+    --sunset: linear-gradient(105deg, #8fd8f7 0%, #7fb2ff 55%, #9b9cf5 100%);
+  }
+
+  :root[data-theme='red'] {
+    --paper: #1c1413;
+    --surface: #291d1c;
+    --surface-2: #372624;
+    --ink: #f7e8e6;
+    --ink-2: #caa9a5;
+    --ink-3: #9c7e7a;
+    --rule: #463130;
+    --rule-soft: #2f2120;
+    --primary: #ff8a80;
+    --primary-2: #ffb38a;
+    --on-primary: #2a0f0d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(12, 6, 6, 0.6);
+    --sunset: linear-gradient(105deg, #ffb38a 0%, #ff8a80 55%, #f07a96 100%);
+  }
+
+  :root[data-theme='yellow'] {
+    --paper: #1b170e;
+    --surface: #272116;
+    --surface-2: #352d1c;
+    --ink: #f8f0dc;
+    --ink-2: #cbbd9a;
+    --ink-3: #9c8f70;
+    --rule: #463c26;
+    --rule-soft: #2c2518;
+    --primary: #ffd060;
+    --primary-2: #ffe08a;
+    --on-primary: #2a1f00;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.5);
+    --scrim: rgba(12, 10, 4, 0.6);
+    --sunset: linear-gradient(105deg, #ffe08a 0%, #ffd060 55%, #f5b04a 100%);
+  }
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -626,6 +773,27 @@ button {
   opacity: 0.85;
 }
 
+/* メモのタブ。日付の代わりに「ToDo」を添える。Day と見分けがつくよう破線にする */
+.daytab.ideas {
+  border-style: dashed;
+  border-bottom-color: transparent;
+}
+
+.daytab.ideas[aria-selected='true'] {
+  border-style: solid;
+  border-color: transparent;
+}
+
+/* ドラッグ中、指が乗っている落とし先 */
+.daytab.drop {
+  border: 2px solid var(--primary);
+  border-bottom-color: transparent;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  transform: translateY(-2px);
+  transition: transform 0.12s;
+}
+
 /* ───────── タイムライン ───────── */
 
 .ev {
@@ -744,7 +912,7 @@ button {
   background: var(--surface);
   border: 2.5px solid var(--cat-move);
   flex: 0 0 auto;
-  box-shadow: 0 1px 3px rgba(190, 120, 140, 0.18);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 .pin.culture { border-color: var(--cat-culture); }
@@ -792,12 +960,19 @@ button {
   text-align: left;
 }
 
+/*
+ * 名前は2行まで折り返す。地図の左に複製・リンクを常設したぶん幅が減り、
+ * 1行で切ると「二条城」より長い名前がほとんど読めなくなった
+ */
 .ev-name {
   font-weight: 700;
   font-size: 0.95rem;
+  line-height: 1.4;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 /* 済んだ予定は名前だけでなく節も落として、視線が先へ進むようにする */
@@ -869,11 +1044,39 @@ button {
 .ev-map {
   flex: 0 0 auto;
   color: var(--primary);
-  min-width: 2.2rem;
+  min-width: 2rem;
   min-height: 2.6rem;
   margin: -0.35rem 0;
   display: grid;
   place-items: center;
+}
+
+/* 複製・リンク。地図より一段控えめな色にして、主役(地図)を目立たせたまま置く */
+.ev-act {
+  flex: 0 0 auto;
+  position: relative;
+  color: var(--ink-2);
+  min-width: 2rem;
+  min-height: 2.6rem;
+  margin: -0.35rem 0;
+  display: grid;
+  place-items: center;
+}
+
+.ev-count {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.05rem;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 0.95rem;
+  text-align: center;
 }
 
 /*
@@ -884,7 +1087,7 @@ button {
 .ev-drag {
   flex: 0 0 auto;
   color: var(--ink-3);
-  min-width: 2.2rem;
+  min-width: 2rem;
   min-height: 2.6rem;
   margin: -0.35rem 0;
   display: grid;
@@ -900,7 +1103,7 @@ button {
  */
 .ev.drag .ev-body {
   border-color: var(--primary);
-  box-shadow: 0 6px 22px rgba(190, 120, 140, 0.4);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--primary) 40%, transparent);
   transform: scale(1.015);
 }
 
@@ -935,6 +1138,47 @@ button {
 .dragging .hintbar {
   opacity: 0.25;
   transition: opacity 0.15s;
+}
+
+/*
+ * Day タブの上に来たら、行を小さくして「タブに入れる」ことを見せる。
+ * 変えるのは中身だけ ── 行そのものの transform は指の位置に使っている
+ */
+.tl-row.over-tab .ev {
+  transform: scale(0.72);
+  transform-origin: right center;
+  opacity: 0.85;
+  transition: transform 0.12s, opacity 0.12s;
+}
+
+/* メモのタブ。日付が無いので時刻の列を持たない */
+.ev.idea {
+  grid-template-columns: 1.5rem 1fr;
+}
+
+.section-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  margin: 0.2rem 0.2rem 0.5rem;
+}
+
+.ideas-note {
+  margin-top: 1.2rem;
+}
+
+.link-choice {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.link-choice small {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ───────── 予定と予定のあいだ ───────── */
@@ -1207,7 +1451,7 @@ body.sheet-open .addbar-hint {
   font-weight: 700;
   font-size: 0.95rem;
   min-height: 2.75rem;
-  box-shadow: 0 2px 10px rgba(227, 93, 139, 0.28);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
 .btn[disabled] {
@@ -1652,4 +1896,157 @@ body.sheet-open .addbar-hint {
   margin-left: auto;
   color: var(--ink-3);
   font-size: 0.85rem;
+}
+
+/* ───────── 日程のカレンダー(出発と帰りを続けて選ぶ) ───────── */
+
+.range {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  padding: 0.5rem 0.5rem 0.6rem;
+}
+
+.range-prompt {
+  margin: 0 0.3rem 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.range-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.range-head b {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.range-head .iconbtn {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 0.15rem;
+}
+
+.range-wd {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ink-3);
+  padding-bottom: 0.2rem;
+}
+
+.range-day {
+  position: relative;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.range-day > span {
+  position: relative;
+  z-index: 1;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+}
+
+.range-day.sun {
+  color: var(--alert);
+}
+
+.range-day.sat {
+  color: var(--cat-stay);
+}
+
+/* 前後の月の日は薄く。ただし選んだ日と帯の中は薄めない(翌月にまたがる旅がある) */
+.range-day.outside:not(.start):not(.end):not(.inside) {
+  opacity: 0.35;
+}
+
+.range-day[disabled] {
+  opacity: 0.2;
+  cursor: default;
+}
+
+.range-day.today > span {
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+}
+
+/* 出発と帰りのあいだを帯で塗る。何泊になるかが目で分かる */
+.range-day.inside::before,
+.range-day.start:not(.single)::before,
+.range-day.end:not(.single)::before {
+  content: '';
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  left: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+/* 帯は端の日の中央から始める(丸の外に帯がはみ出さないように) */
+.range-day.start:not(.single)::before {
+  left: 50%;
+}
+
+.range-day.end:not(.single)::before {
+  right: 50%;
+}
+
+/* 帰る日を選んでいるあいだは出発日の丸だけ。帯はまだ描かない */
+.range.pending .range-day.start::before {
+  display: none;
+}
+
+.range-day.start > span,
+.range-day.end > span {
+  background: var(--sunset);
+  color: var(--on-primary);
+  font-weight: 700;
+}
+
+/* ───────── ベース色 ───────── */
+
+.theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.theme-swatch {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+  min-height: 2.75rem;
+  font-size: 0.85rem;
+  background: var(--surface);
+}
+
+.theme-swatch .dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.theme-swatch[aria-pressed='true'] {
+  border-color: var(--primary);
+  border-width: 2px;
+  font-weight: 700;
 }

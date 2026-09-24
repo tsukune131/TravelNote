@@ -63,6 +63,12 @@ export const ja = {
     namePlaceholder: '京都・大阪 3泊4日',
     startDate: '出発日',
     endDate: '帰る日',
+    dates: '日程',
+    /** カレンダーの上。いまどちらを選んでいるかを言う */
+    pickStart: '出発日をタップ',
+    pickEnd: '帰る日をタップ(日帰りなら同じ日)',
+    prevMonth: '前の月',
+    nextMonth: '次の月',
     /** 決めた日付を年つきで返す。来年の旅を今年で作ってしまわないように */
     range: '{start} 〜 {end}・{length}',
     album: '写真アルバム',
@@ -117,7 +123,7 @@ export const ja = {
   inbox: {
     title: '届いたリンク',
     waiting: '届いたリンク {n}件',
-    placeHere: 'Day {n} に入れる',
+    placeHere: '{day} に入れる',
     otherTrip: '別の旅に入れるときは、旅の一覧から開いてください。',
     hint: '入れたい旅を選ぶと、その旅の Day 1 に予定として入ります。あとから別の日へ移せます。',
     /** 旅の中から開いたとき。入る先は「いま見ている Day」なので、そう書く */
@@ -126,6 +132,19 @@ export const ja = {
     chooseTrip: 'どの旅に入れますか?',
     noTrip: '先に旅をつくってください。',
     empty: 'いまは何も届いていません。',
+  },
+
+  /**
+   * Day 1 の手前のタブ。**まだどの日にするか決めていないもの**の置き場。
+   * 思いついたものを放り込み、決まったら Day タブへドラッグして振り分ける
+   */
+  ideas: {
+    tab: 'メモ',
+    tabSub: 'ToDo',
+    list: 'やりたいこと・行きたいところ',
+    empty: 'まだ何もありません',
+    emptyHint:
+      '思いついたものを下から入れておき、決まったら右のつまみを掴んで上の Day タブへドラッグすると、その日に移せます。',
   },
 
   timeline: {
@@ -143,7 +162,11 @@ export const ja = {
     done: '行った',
     delete: '削除',
     duplicate: '複製',
+    openLink: 'リンクを開く',
     moveToDay: '別の日へ移動',
+    /** ドラッグで別のタブへ落としたあと */
+    movedTo: '{day} へ移しました',
+    show: '見る',
     pinned: '固定',
   },
 
@@ -198,7 +221,7 @@ export const ja = {
   },
 
   event: {
-    namePlaceholder: '場所の名前',
+    namePlaceholder: '場所の名前ややりたいことなど',
     nameHint: '改行で続けて追加。「9:00 二条城」と書けば時刻ごと入ります。',
     guessedCategory: '推定',
     changeCategory: 'タップで変更',
@@ -347,6 +370,15 @@ export const ja = {
     restore: '購入を復元',
     manageSubscription: 'サブスクリプションの管理',
     version: 'バージョン',
+    theme: 'ベース色',
+  },
+
+  theme: {
+    pink: 'ピンク',
+    green: '緑',
+    blue: '青',
+    red: '赤',
+    yellow: '黄色',
   },
 
   common: {

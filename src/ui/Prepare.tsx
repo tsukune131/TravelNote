@@ -7,9 +7,9 @@ import {
   clearCheckedPackItems,
   listBookedEvents,
   removePackItem,
-  setTripNote,
   togglePackItem,
 } from '../db/repo';
+import { dayLabel } from './dayLabel';
 import { PACK_TEMPLATES, PACK_TEMPLATE_EMOJI, packItemKey, packTemplateKey } from '../lib/packing';
 import type { PackTemplateId } from '../lib/packing';
 import type { Trip } from '../db/types';
@@ -19,7 +19,7 @@ import type { Trip } from '../db/types';
  *
  * 旅程そのものではないが、旅の前後で必ず要るものを1か所に集める。
  * 順番は**使う時系列**に合わせてある ── 出発前に持ち物、
- * 移動中と現地で予約まとめ、いつでもメモ。
+ * 移動中と現地で予約まとめ。旅のメモは「メモ」タブ(Day 1 の手前)にある。
  */
 export function Prepare({ trip, onClose }: { trip: Trip; onClose: () => void }) {
   const { t } = useI18n();
@@ -94,15 +94,7 @@ export function Prepare({ trip, onClose }: { trip: Trip; onClose: () => void }) 
 
       <Bookings trip={trip} />
 
-      <div className="field">
-        <label htmlFor="trip-note">{t('prepare.note')}</label>
-        <textarea
-          id="trip-note"
-          defaultValue={trip.note ?? ''}
-          placeholder={t('prepare.notePlaceholder')}
-          onBlur={(e) => void setTripNote(trip.id, e.target.value)}
-        />
-      </div>
+      {/* 旅のメモはここから「メモ」タブの下へ移した。同じメモが2か所にあると迷う */}
     </Sheet>
   );
 }
@@ -161,7 +153,7 @@ function Bookings({ trip }: { trip: Trip }) {
         booked.map((e) => (
           <div className="bookrow" key={e.id}>
             <span className="when">
-              {t('trip.dayTab', { n: e.dayIndex + 1 })}
+              {dayLabel(t, e.dayIndex)}
               {e.startMinutes !== null && ` ${time(e.startMinutes)}`}
             </span>
             <span className="what">{e.name}</span>

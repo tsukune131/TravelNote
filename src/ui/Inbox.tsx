@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
+import { dayLabel } from './dayLabel';
 import { addEvent, listTrips, updateEvent } from '../db/repo';
 import { guessLinkLabel } from '../lib/maps';
 import { openLink } from '../lib/openExternal';
@@ -94,7 +95,7 @@ export function InboxSheet({
               here ? void place(item, here.tripId, here.dayIndex) : setChoosing(item)
             }
           >
-            {here ? t('inbox.placeHere', { n: here.dayIndex + 1 }) : t('inbox.place')}
+            {here ? t('inbox.placeHere', { day: dayLabel(t, here.dayIndex) }) : t('inbox.place')}
           </button>
 
           <button

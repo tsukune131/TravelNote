@@ -1,9 +1,21 @@
 import { getSetting, setSetting } from './db';
 import type { MapProvider } from '../lib/maps';
+import { DEFAULT_THEME, isThemeId } from '../lib/theme';
+import type { ThemeId } from '../lib/theme';
 
 /** 端末固有の設定。同期しない(そもそも同期サーバーがない) */
 export const MAP_PROVIDER_KEY = 'mapProvider';
 export const DISPLAY_NAME_KEY = 'displayName';
+export const THEME_KEY = 'theme';
+
+export async function getTheme(): Promise<ThemeId> {
+  const value = await getSetting(THEME_KEY);
+  return isThemeId(value) ? value : DEFAULT_THEME;
+}
+
+export async function setTheme(theme: ThemeId): Promise<void> {
+  await setSetting(THEME_KEY, theme);
+}
 
 /**
  * 既定の地図アプリ。**未設定(null)なら初回の地図タップで一度だけ聞く。**

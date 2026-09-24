@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { LinkList } from './LinkList';
+import { DateRangePicker } from './DateRangePicker';
 import { addTripLink, createTrip, deleteTrip, removeTripLink, updateTrip } from '../db/repo';
 import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
@@ -113,37 +114,24 @@ export function TripForm({
         />
       </div>
 
-      <div className="row pair">
-        <div className="field">
-          <label htmlFor="trip-start">{t('tripForm.startDate')}</label>
-          <input
-            id="trip-start"
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              const next = e.target.value as PlainDate;
-              setStartDate(next);
-              // 出発日を後ろにずらしたら帰る日も連れていく(逆転を作らせない)
-              const nextEnd = next > endDate ? next : endDate;
-              if (next > endDate) setEndDate(next);
-              autosave({ startDate: next, endDate: nextEnd });
-            }}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="trip-end">{t('tripForm.endDate')}</label>
-          <input
-            id="trip-end"
-            type="date"
-            value={endDate}
-            min={startDate}
-            onChange={(e) => {
-              const next = e.target.value as PlainDate;
-              setEndDate(next);
-              autosave({ endDate: next });
-            }}
-          />
-        </div>
+      {/*
+        出発と帰りは1つのカレンダーで続けて選ぶ。
+        既存の旅の自動保存は**帰る日まで決まってから**。出発日を押した瞬間に
+        書くと、いったん日帰りの旅として保存されてしまう
+      */}
+      <div className="field">
+        <label>{t('tripForm.dates')}</label>
+        <DateRangePicker
+          start={startDate}
+          end={endDate}
+          maxDays={MAX_DAYS}
+          onChange={(from, to, complete) => {
+            setStartDate(from);
+            setEndDate(to);
+            setError(null);
+            if (complete) autosave({ startDate: from, endDate: to });
+          }}
+        />
       </div>
 
       {/*

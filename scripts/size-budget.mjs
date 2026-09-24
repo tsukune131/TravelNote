@@ -18,10 +18,16 @@ import { fileURLToPath } from 'node:url';
 const UNIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(UNIT, 'dist', 'assets');
 
-/** 2026-08-09 時点: JS 345 KB(gzip 112)/ CSS 13 KB(gzip 3.5)。約2割の余裕 */
+/**
+ * 2026-08-09 時点: JS 345 KB(gzip 112)/ CSS 13 KB(gzip 3.5)。約2割の余裕
+ *
+ * 2026-09-24: CSS raw を 24 → 28 KB。ベース色4種 × 明暗の配色(約4 KB)を足した。
+ * 色は起動時(スプラッシュが閉じる前)に当てるので後から読む形にできない。
+ * 変数の値を並べただけなので gzip ではほぼ増えない(6.1 KB / 7)
+ */
 const BUDGET = {
   js: { raw: 420 * 1024, gzip: 135 * 1024 },
-  css: { raw: 24 * 1024, gzip: 7 * 1024 },
+  css: { raw: 28 * 1024, gzip: 7 * 1024 },
 };
 
 function measure(ext) {

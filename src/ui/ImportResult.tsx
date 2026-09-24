@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
+import { dayLabel } from './dayLabel';
 import type { ImportOutcome } from './ShareSheet';
 
 /**
@@ -61,7 +62,7 @@ export function ImportResult({
             <ul className="changelist">
               {summary.changes.slice(0, 12).map((c, i) => (
                 <li key={`${c.name}-${i}`}>
-                  <span className="chip">Day {c.dayIndex + 1}</span>
+                  <span className="chip">{dayLabel(t, c.dayIndex)}</span>
                   <span className="changekind">{t(`importResult.${c.kind}` as 'importResult.added', { n: 1 })}</span>
                   {c.name}
                 </li>

@@ -3,15 +3,18 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
-import { addEvent, listEventsOfDay, listVariants, setEventCategory } from '../db/repo';
+import { addEvent, listEventsOfDay, listVariants, setEventCategory, setTripNote } from '../db/repo';
 import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
 import { guessCategory } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
-import { openMap } from '../lib/openExternal';
+import { openLink, openMap } from '../lib/openExternal';
 import { mapLinkOf } from '../lib/maps';
 import type { MapProvider } from '../lib/maps';
+import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
+import { linkLabelKey } from '../i18n/keys';
+import { dayLabel } from './dayLabel';
 import type { ReflowResult } from '../db/repo';
 import { Timeline } from './Timeline';
 import { EventSheet } from './EventSheet';
@@ -62,11 +65,18 @@ export function TripScreen({
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
   const [knowsLongPress, setKnowsLongPress] = useState(true); // 読み込むまでは出さない
+  const [linksEventId, setLinksEventId] = useState<string | null>(null);
+  /** ドラッグ中に指が乗っているタブ。そのタブを光らせる */
+  const [dropDay, setDropDay] = useState<number | null>(null);
+  /** タブへ落として別の日へ移したあとに出す「移しました」 */
+  const [moved, setMoved] = useState<{ name: string; dayIndex: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const ideas = dayIndex === IDEAS_DAY;
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
   const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
   const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
+  const linksEvent = events?.find((e) => e.id === linksEventId) ?? null;
 
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
@@ -93,11 +103,26 @@ export function TripScreen({
     return () => window.clearTimeout(id);
   }, [undo]);
 
+  useEffect(() => {
+    if (!moved) return;
+    const id = window.setTimeout(() => setMoved(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [moved]);
+
   // 旅の日数が縮んで、開いていた Day が範囲外になったときの保険
   const total = trip ? dayCount(trip.startDate, trip.endDate) : 1;
   useEffect(() => {
     if (trip && dayIndex >= total) onChangeDay(total - 1);
   }, [trip, dayIndex, total, onChangeDay]);
+
+  /** リンクが1本ならそのまま開く。2本以上ならどれを開くか選ばせる */
+  function handleOpenLinks(event: TripEvent) {
+    if (event.links.length === 1) {
+      void openLink(event.links[0].url);
+      return;
+    }
+    setLinksEventId(event.id);
+  }
 
   if (!trip) return <div className="screen" />;
 
@@ -183,7 +208,28 @@ export function TripScreen({
 
       {/* 線は外側に。内側に置くと横スクロールで一緒に流れて途中で切れる */}
       <div className="daytabs-wrap">
-        <div className="daytabs" role="tablist" aria-label={t('trip.dayTab', { n: total })}>
+        {/*
+          タブはドラッグの落とし先を兼ねる(data-drop-day)。
+          予定のつまみを掴んでタブに重ねて離すと、その日の末尾へ移る(Timeline.tsx)
+        */}
+        <div
+          className="daytabs"
+          role="tablist"
+          aria-label={t('trip.dayTab', { n: total })}
+          data-drop-strip=""
+        >
+          {/* 日を決めていないアイデアの置き場。Day 1 の手前に置く */}
+          <button
+            type="button"
+            role="tab"
+            className={`daytab ideas${dropDay === IDEAS_DAY ? ' drop' : ''}`}
+            aria-selected={ideas}
+            data-drop-day={IDEAS_DAY}
+            onClick={() => onChangeDay(IDEAS_DAY)}
+          >
+            <b>{t('ideas.tab')}</b>
+            <small>{t('ideas.tabSub')}</small>
+          </button>
           {Array.from({ length: total }, (_, i) => {
             const d = dateOfDay(trip.startDate, i);
             return (
@@ -191,8 +237,9 @@ export function TripScreen({
                 key={i}
                 type="button"
                 role="tab"
-                className="daytab"
+                className={`daytab${dropDay === i ? ' drop' : ''}`}
                 aria-selected={i === dayIndex}
+                data-drop-day={i}
                 onClick={() => onChangeDay(i)}
               >
                 <b>{t('trip.dayTab', { n: i + 1 })}</b>
@@ -216,23 +263,48 @@ export function TripScreen({
             <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
           )}
 
+          {ideas && events && events.length > 0 && (
+            <p className="section-label">{t('ideas.list')}</p>
+          )}
+
           {events && (
             <Timeline
               tripId={tripId}
               events={events}
               dayIndex={dayIndex}
-              isToday={dayDate === todayDate}
+              ideas={ideas}
+              isToday={!ideas && dayDate === todayDate}
               isLastDay={dayIndex === total - 1}
               mapProvider={mapProvider}
               onOpen={(e) => setOpenEventId(e.id)}
               onOpenMap={handleOpenMap}
+              onOpenLinks={handleOpenLinks}
               onLongPress={(e) => {
                 // 使えたなら、もう教える必要はない
                 dismissHint();
                 setActionEventId(e.id);
               }}
               onPickCategory={(e) => setCategoryEventId(e.id)}
+              onHoverDay={setDropDay}
+              onMovedToDay={(e, to) => setMoved({ name: e.name, dayIndex: to })}
             />
+          )}
+
+          {/*
+            旅のメモ(集合場所・連絡先など)。以前は準備(⋯)の中にあった。
+            アイデアの一覧の下に置く ── 旅の前に書き溜める場所が1つにまとまる
+          */}
+          {ideas && (
+            <div className="field ideas-note">
+              <label htmlFor="trip-note">{t('prepare.note')}</label>
+              <textarea
+                id="trip-note"
+                key={trip.id}
+                defaultValue={trip.note ?? ''}
+                placeholder={t('prepare.notePlaceholder')}
+                onBlur={(e) => void setTripNote(trip.id, e.target.value)}
+              />
+            </div>
           )}
 
           {showHint && (
@@ -281,6 +353,47 @@ export function TripScreen({
 
       {undo && (
         <UndoBar result={undo.result} deltaMinutes={undo.delta} onDismiss={() => setUndo(null)} />
+      )}
+
+      {moved && !undo && (
+        <div className="undobar" role="status">
+          <span>
+            {moved.name} — {t('timeline.movedTo', { day: dayLabel(t, moved.dayIndex) })}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              onChangeDay(moved.dayIndex);
+              setMoved(null);
+            }}
+          >
+            {t('timeline.show')}
+          </button>
+        </div>
+      )}
+
+      {linksEvent && (
+        <Sheet title={linksEvent.name} onClose={() => setLinksEventId(null)}>
+          <div>
+            {linksEvent.links.map((link) => (
+              <button
+                key={link.url}
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  void openLink(link.url);
+                  setLinksEventId(null);
+                }}
+              >
+                <span className="link-choice">
+                  <b>{link.customLabel ?? t(linkLabelKey(link.label))}</b>
+                  <small>{link.url}</small>
+                </span>
+                <span className="sub">›</span>
+              </button>
+            ))}
+          </div>
+        </Sheet>
       )}
 
       {actionEvent && events && (

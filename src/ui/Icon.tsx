@@ -90,3 +90,23 @@ export const IconShare = (p: Props) =>
 /** 並べ替えのつまみ。三本線 */
 export const IconDrag = (p: Props) =>
   svg(<path d="M4 8h16M4 12h16M4 16h16" strokeWidth="1.6" />, p);
+
+/** 複製。重なった2枚の紙 */
+export const IconCopy = (p: Props) =>
+  svg(
+    <>
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2.2" />
+      <path d="M15.5 5.6V5.2a1.7 1.7 0 0 0-1.7-1.7H5.2a1.7 1.7 0 0 0-1.7 1.7v8.6a1.7 1.7 0 0 0 1.7 1.7h.4" />
+    </>,
+    p,
+  );
+
+/** リンク。鎖の2つの輪 */
+export const IconLink = (p: Props) =>
+  svg(
+    <>
+      <path d="M10.2 13.8a3.9 3.9 0 0 0 5.5 0l3.1-3.1a3.9 3.9 0 0 0-5.5-5.5l-1.2 1.2" />
+      <path d="M13.8 10.2a3.9 3.9 0 0 0-5.5 0l-3.1 3.1a3.9 3.9 0 0 0 5.5 5.5l1.2-1.2" />
+    </>,
+    p,
+  );

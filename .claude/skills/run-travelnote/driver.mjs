@@ -49,6 +49,16 @@ const CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ].filter(Boolean);
 
+/** カレンダーの日を押す。表示中の月に無ければ次の月へ送る */
+async function pickDate(page, date) {
+  for (let i = 0; i < 3; i++) {
+    const cell = page.locator(`.range-day[data-date="${date}"]`);
+    if ((await cell.count()) > 0) return cell.first().click();
+    await page.getByRole('button', { name: '次の月' }).click();
+  }
+  throw new Error(`カレンダーに ${date} が見つかりません`);
+}
+
 function findBrowser() {
   // 明示指定は絶対。黙って別のブラウザにフォールバックすると、
   // 「指定したつもりの別物」で検証してしまう
@@ -253,12 +263,13 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
   await page.getByRole('button', { name: /旅をつくる/ }).click();
   await page.waitForSelector('#trip-name');
   await page.fill('#trip-name', title);
-  await page.fill('#trip-start', iso(s));
-  await page.fill('#trip-end', iso(e));
+  // 日程は1つのカレンダーで「出発 → 帰り」の順にタップする(DateRangePicker)
+  await pickDate(page, iso(s));
+  await pickDate(page, iso(e));
   await page.locator('.sheet').getByRole('button', { name: 'つくる', exact: true }).click();
   await page.waitForSelector('.daytabs .daytab');
 
-  const input = page.getByPlaceholder('場所の名前');
+  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
   for (const name of places) {
     await input.fill(name);
     await input.press('Enter');
@@ -269,7 +280,7 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
 
 /** すでに開いている旅の、いま見ている Day に予定を足す */
 async function seed2(page, places) {
-  const input = page.getByPlaceholder('場所の名前');
+  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
   for (const name of places) {
     await input.fill(name);
     await input.press('Enter');
@@ -345,6 +356,28 @@ async function dragRow(page, from, to) {
 }
 
 /**
+ * 行のつまみを掴んで、上の Day タブ(data-drop-day)に落とす。
+ * tab は data-drop-day の値(-1 = メモ、0 = Day 1 ...)。
+ */
+async function dropOnTab(page, from, tab) {
+  const handle = page.locator('.ev-drag').nth(from);
+  const src = await handle.boundingBox();
+  const dst = await page.locator(`[data-drop-day="${tab}"]`).boundingBox();
+  if (!src || !dst) throw new Error(`行かタブが見つかりません: ${from} → ${tab}`);
+  const x0 = src.x + src.width / 2;
+  const y0 = src.y + src.height / 2;
+  const x1 = dst.x + dst.width / 2;
+  const y1 = dst.y + dst.height / 2;
+  await page.mouse.move(x0, y0);
+  await page.mouse.down();
+  for (const k of [0.25, 0.5, 0.75, 1]) {
+    await page.mouse.move(x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, { steps: 3 });
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(350);
+}
+
+/**
  * 予定に時刻を入れる。
  *
  * 行の時刻欄を直に埋めるだけ ── **シートを開く必要が無くなった**
@@ -393,7 +426,7 @@ async function smoke() {
   await seed(page, { places: [] });
   console.log('  空状態のチップ:', (await page.locator('.seed').allTextContents()).join(' '));
   await seed2(page, ['東京駅', '二条城', '本家第一旭 たかばし本店', '清水寺', '% ARABICA 京都東山']);
-  console.log('  Day タブ:', await page.locator('.daytab').count());
+  console.log('  Day タブ:', await page.locator('.daytab:not(.ideas)').count());
   console.log('  予定:', await page.locator('.ev').count());
   const pins = await page
     .locator('.ev-rail .pin')
@@ -420,9 +453,9 @@ async function smoke() {
 
   // seed は「昨日〜3日後」で作るので、今日は必ず Day 2(index 1)
   step('今日の Day に現在時刻ライン');
-  await page.locator('.daytab').nth(1).click();
+  await page.locator('.daytab:not(.ideas)').nth(1).click();
   await page.waitForTimeout(200);
-  const input = page.getByPlaceholder('場所の名前');
+  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
   await input.fill('嵐山 竹林の小径');
   await input.press('Enter');
   await page.waitForTimeout(200);
@@ -472,7 +505,7 @@ async function perf() {
     '京都タワーホテル', '% ARABICA 京都東山', '伏見稲荷大社', '嵐山 竹林の小径', '天龍寺',
   ];
   await seed2(page, names);
-  await page.locator('.daytab').nth(1).click();
+  await page.locator('.daytab:not(.ideas)').nth(1).click();
   await page.waitForTimeout(200);
   await seed2(page, names);
   console.log('  仕込み: 2日 × 10件');
@@ -616,8 +649,8 @@ async function shareRoundTrip() {
   const a = await device('A');
   await seed(a, { title: '京都・大阪 3泊4日', places: [] });
   for (const [name] of [['9:00 二条城'], ['13:00 本家第一旭'], ['15:00 清水寺']]) {
-    await a.getByPlaceholder('場所の名前').fill(name);
-    await a.getByPlaceholder('場所の名前').press('Enter');
+    await a.getByPlaceholder('場所の名前ややりたいことなど').fill(name);
+    await a.getByPlaceholder('場所の名前ややりたいことなど').press('Enter');
     await a.waitForTimeout(120);
   }
   console.log('  A:', (await a.locator('.ev-name').allTextContents()).join(' / '));
@@ -638,10 +671,10 @@ async function shareRoundTrip() {
   await shot(b, 'share-01-b-received');
 
   step('B が Day 2 に足して、送り返す');
-  await b.locator('.daytab').nth(1).click();
+  await b.locator('.daytab:not(.ideas)').nth(1).click();
   await b.waitForTimeout(250);
-  await b.getByPlaceholder('場所の名前').fill('11:00 嵐山 竹林の小径');
-  await b.getByPlaceholder('場所の名前').press('Enter');
+  await b.getByPlaceholder('場所の名前ややりたいことなど').fill('11:00 嵐山 竹林の小径');
+  await b.getByPlaceholder('場所の名前ややりたいことなど').press('Enter');
   await b.waitForTimeout(250);
   const file2 = await exportFrom(b, 'ともき');
 
@@ -653,7 +686,7 @@ async function shareRoundTrip() {
   await shot(a, 'share-02-a-merged');
   await a.locator('.sheet .btn').last().click();
   await a.waitForTimeout(400);
-  await a.locator('.daytab').nth(1).click();
+  await a.locator('.daytab:not(.ideas)').nth(1).click();
   await a.waitForTimeout(250);
   console.log('  A の Day 2:', (await a.locator('.ev-name').allTextContents()).join(' / '));
 
@@ -662,11 +695,11 @@ async function shareRoundTrip() {
    * 衝突するのは**同じ予定を両方が別々に直した**とき。ここではそれを作る。
    */
   step('両方が同じ予定を直す → 「案」に分かれる');
-  await a.locator('.daytab').nth(0).click();
+  await a.locator('.daytab:not(.ideas)').nth(0).click();
   await a.waitForTimeout(200);
   await setTime(a, '清水寺', '16:00');
 
-  await b.locator('.daytab').nth(0).click();
+  await b.locator('.daytab:not(.ideas)').nth(0).click();
   await b.waitForTimeout(200);
   await setTime(b, '清水寺', '14:00');
 
@@ -714,6 +747,7 @@ const HELP = `
   longpress :: <selector>      長押し → 予定のアクションメニュー
   swipe :: <selector> :: right|left   右=行った / 左=削除
   drag  :: <行番号> :: <行番号>  つまみで並べ替え(0始まり)
+  droptab :: <行番号> :: <タブ>  つまみで Day タブへ落とす(タブ: -1=メモ, 0=Day 1)
   fill  :: <selector> :: <値>  入力
   press :: <selector> :: <キー> キー送信(Enter など)
   text  :: <selector>          一致した要素のテキストを全部出す
@@ -773,6 +807,9 @@ async function repl() {
         case 'drag':
           await dragRow(page, Number(args[0]), Number(args[1]));
           break;
+        case 'droptab':
+          await dropOnTab(page, Number(args[0]), Number(args[1]));
+          break;
         case 'fill':
           await page.locator(args[0]).first().fill(args[1] ?? '');
           break;
@@ -791,7 +828,7 @@ async function repl() {
           else await page.waitForSelector(args[0]);
           break;
         case 'day':
-          await page.locator('.daytab').nth(Number(args[0]) - 1).click();
+          await page.locator('.daytab:not(.ideas)').nth(Number(args[0]) - 1).click();
           await page.waitForTimeout(250);
           break;
         case 'dark':

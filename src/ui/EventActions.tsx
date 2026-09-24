@@ -12,7 +12,9 @@ import {
 } from '../db/repo';
 import type { ReflowResult } from '../db/repo';
 import { reflowPreview } from '../lib/connector';
+import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
+import { dayLabel } from './dayLabel';
 
 /** 旅程は必ず押す。15/30/60 が実際に使う刻み */
 const REFLOW_STEPS = [15, 30, 60];
@@ -129,28 +131,27 @@ export function EventActions({
         </button>
       </div>
 
-      {dayCount > 1 && (
-        <div className="field">
-          <label>{t('actions.moveToDay')}</label>
-          <div className="catgrid">
-            {Array.from({ length: dayCount }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                className="catbtn"
-                disabled={i === event.dayIndex}
-                aria-pressed={i === event.dayIndex}
-                onClick={() => {
-                  void moveEventToDay(event.id, i);
-                  onClose();
-                }}
-              >
-                {t('trip.dayTab', { n: i + 1 })}
-              </button>
-            ))}
-          </div>
+      {/* 行き先には「メモ」も入る。日を決めたけれどやっぱり未定に戻す、がある */}
+      <div className="field">
+        <label>{t('actions.moveToDay')}</label>
+        <div className="catgrid">
+          {[IDEAS_DAY, ...Array.from({ length: dayCount }, (_, i) => i)].map((i) => (
+            <button
+              key={i}
+              type="button"
+              className="catbtn"
+              disabled={i === event.dayIndex}
+              aria-pressed={i === event.dayIndex}
+              onClick={() => {
+                void moveEventToDay(event.id, i);
+                onClose();
+              }}
+            >
+              {dayLabel(t, i)}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       <button
         type="button"

@@ -63,6 +63,11 @@ export const en: DeepPartial<Messages> = {
     namePlaceholder: 'Kyoto & Osaka, 4 days',
     startDate: 'Leaving',
     endDate: 'Coming home',
+    dates: 'Dates',
+    pickStart: 'Tap the day you leave',
+    pickEnd: 'Tap the day you come home (same day for a day trip)',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
     range: '{start} – {end} · {length}',
     album: 'Photo album',
     albumHint: 'Paste a Google Photos or iCloud shared album link and open it straight from the trip list. Photos are not copied into this app.',
@@ -97,7 +102,7 @@ export const en: DeepPartial<Messages> = {
   inbox: {
     title: 'Shared links',
     waiting: '{n} shared link(s)',
-    placeHere: 'Put on Day {n}',
+    placeHere: 'Put on {day}',
     otherTrip: 'To file it under a different trip, open this from the trip list.',
     hint: 'Pick a trip and it becomes a stop on Day 1. You can move it to another day later.',
     hintHere: 'Open the Day tab you want first — it goes on the day you have open.',
@@ -105,6 +110,15 @@ export const en: DeepPartial<Messages> = {
     chooseTrip: 'Which trip?',
     noTrip: 'Create a trip first.',
     empty: 'Nothing waiting right now.',
+  },
+
+  ideas: {
+    tab: 'Notes',
+    tabSub: 'To-do',
+    list: 'Things to do, places to go',
+    empty: 'Nothing here yet',
+    emptyHint:
+      'Jot ideas down here. Once you decide, grab the handle on the right and drag it onto a Day tab above.',
   },
 
   timeline: {
@@ -121,7 +135,10 @@ export const en: DeepPartial<Messages> = {
     done: 'Done',
     delete: 'Delete',
     duplicate: 'Duplicate',
+    openLink: 'Open link',
     moveToDay: 'Move to another day',
+    movedTo: 'Moved to {day}',
+    show: 'Show',
     pinned: 'Pinned',
   },
 
@@ -172,7 +189,7 @@ export const en: DeepPartial<Messages> = {
   },
 
   event: {
-    namePlaceholder: 'Name of the place',
+    namePlaceholder: 'A place, or something to do',
     nameHint: 'Press return to keep adding. Type "9:00 Nijo Castle" to set the time too.',
     guessedCategory: 'Guessed',
     changeCategory: 'Tap to change',
@@ -316,6 +333,15 @@ export const en: DeepPartial<Messages> = {
     restore: 'Restore Purchases',
     manageSubscription: 'Manage subscription',
     version: 'Version',
+    theme: 'Base color',
+  },
+
+  theme: {
+    pink: 'Pink',
+    green: 'Green',
+    blue: 'Blue',
+    red: 'Red',
+    yellow: 'Yellow',
   },
 
   common: {

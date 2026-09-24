@@ -7,7 +7,8 @@ import { Welcome } from './ui/Welcome';
 import { ImportResult } from './ui/ImportResult';
 import type { ImportOutcome } from './ui/ShareSheet';
 import { findLandingPoint } from './db/repo';
-import { FLAGS, getDisplayName, getFlag, setFlag } from './db/settings';
+import { FLAGS, getDisplayName, getFlag, getTheme, setFlag } from './db/settings';
+import { applyTheme } from './lib/theme';
 import { importSnapshotText } from './share/apply';
 import { listenForIncomingFile } from './share/transport';
 import { drainSharedInbox } from './share/inbox';
@@ -47,6 +48,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
    */
   useEffect(() => {
     void (async () => {
+      // 色はスプラッシュが閉じる前に。桜色が一瞬見えてから替わるのを避ける
+      applyTheme(await getTheme());
       const landing = await findLandingPoint(today());
       if (landing) {
         setRoute({ screen: 'trip', tripId: landing.tripId, dayIndex: landing.dayIndex });

@@ -116,6 +116,18 @@ export type Trip = SyncFields & {
 };
 
 /**
+ * 「メモ & ToDo」タブの予定が持つ dayIndex。**日を決めていないアイデアの置き場。**
+ *
+ * 別のテーブルにしないのは、Day へドラッグで振り分けたときに
+ * **dayIndex を書き換えるだけで済む**から(名前・リンク・メモがそのまま付いていく)。
+ * 共有のマージも Day 単位の仕組みがそのまま効く(ぶつかればこのタブにも案が立つ)。
+ *
+ * ⚠️ これより前の版のアプリは -1 の Day を描かない。その版でしおりを受け取ると、
+ * メモの予定は見えないまま持ち運ばれる(消えはしない)。
+ */
+export const IDEAS_DAY = -1;
+
+/**
  * 予定。
  *
  * `dayIndex` で持つ理由(日付で持たない):
@@ -129,6 +141,7 @@ export type Trip = SyncFields & {
 export type TripEvent = SyncFields & {
   id: string;
   tripId: string;
+  /** 0 始まりの Day。**`IDEAS_DAY`(-1)はまだ日を決めていない「メモ」タブ** */
   dayIndex: number;
   /** 0:00 からの分。null = 時刻未定(リストの末尾にまとめる) */
   startMinutes: number | null;

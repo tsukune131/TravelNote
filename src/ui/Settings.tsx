@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { getDisplayName, getMapProvider, setMapProvider } from '../db/settings';
+import { getDisplayName, getMapProvider, getTheme, setMapProvider, setTheme } from '../db/settings';
+import { THEMES, THEME_SWATCH, applyTheme } from '../lib/theme';
+import type { ThemeId } from '../lib/theme';
 import { setMyDisplayName } from '../db/repo';
 import { openSubscriptionSettings, restore } from '../pro/purchases';
 import { setProStatus, useProStatus } from '../pro/store';
@@ -15,12 +17,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [provider, setProvider] = useState<MapProvider | null>(null);
   const [name, setName] = useState('');
   const [note, setNote] = useState<string | null>(null);
+  const [theme, setThemeState] = useState<ThemeId | null>(null);
   const pro = useProStatus();
 
   useEffect(() => {
     void (async () => {
       setProvider(await getMapProvider());
       setName(await getDisplayName());
+      setThemeState(await getTheme());
     })();
   }, []);
 
@@ -42,6 +46,16 @@ export function Settings({ onClose }: { onClose: () => void }) {
         onChange={(next) => {
           setProvider(next);
           void setMapProvider(next);
+        }}
+      />
+
+      <ThemeField
+        value={theme}
+        onChange={(next) => {
+          setThemeState(next);
+          // 押した瞬間に替える。保存を待たない
+          applyTheme(next);
+          void setTheme(next);
         }}
       />
 
@@ -132,6 +146,39 @@ export function MapProviderField({
         ))}
       </div>
       <p className="guess">{t('map.chooseProviderHint')}</p>
+    </div>
+  );
+}
+
+/**
+ * ベース色。**この端末の見た目だけ**が替わる(共有相手には届かない)。
+ * 色の見本を丸で見せる ── 名前だけでは選べない
+ */
+function ThemeField({
+  value,
+  onChange,
+}: {
+  value: ThemeId | null;
+  onChange: (next: ThemeId) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="field">
+      <label>{t('settings.theme')}</label>
+      <div className="theme-row">
+        {THEMES.map((id) => (
+          <button
+            key={id}
+            type="button"
+            className="theme-swatch"
+            aria-pressed={value === id}
+            onClick={() => onChange(id)}
+          >
+            <span className="dot" style={{ background: THEME_SWATCH[id] }} aria-hidden="true" />
+            <span>{t(`theme.${id}`)}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
