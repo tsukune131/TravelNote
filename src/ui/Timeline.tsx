@@ -17,7 +17,8 @@ import { IconCopy, IconDrag, IconLink, IconMap } from './Icon';
 import { SeedChips } from './SeedChips';
 import { SwipeRow } from './SwipeRow';
 import type { MapProvider } from '../lib/maps';
-import type { TripEvent } from '../db/types';
+import type { Member, TripEvent } from '../db/types';
+import { AssigneeStack } from './Assignees';
 
 /**
  * その日のタイムライン。
@@ -46,6 +47,7 @@ export function Timeline({
   onPickCategory,
   onHoverDay,
   onMovedToDay,
+  members = [],
 }: {
   tripId: string;
   events: TripEvent[];
@@ -63,6 +65,8 @@ export function Timeline({
   onHoverDay: (dayIndex: number | null) => void;
   /** Day タブに落として、別の日へ移したあと */
   onMovedToDay: (event: TripEvent, toDayIndex: number) => void;
+  /** 担当の顔を行に出すため。担当が付いていない旅では空でよい */
+  members?: Member[];
 }) {
   const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
@@ -108,6 +112,7 @@ export function Timeline({
           <Row
             event={event}
             ideas={ideas}
+            members={members}
             dragging={drag.isHeld(event.id)}
             onOpen={onOpen}
             onOpenMap={onOpenMap}
@@ -359,6 +364,7 @@ function NowLine({ now }: { now: number }) {
 type RowProps = {
   event: TripEvent;
   ideas: boolean;
+  members: Member[];
   dragging: boolean;
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
@@ -392,6 +398,7 @@ function Row({
 function EventRow({
   event,
   ideas,
+  members,
   dragging,
   onOpen,
   onOpenMap,
@@ -463,6 +470,7 @@ function EventRow({
             {event.note && <span>{firstLine(event.note)}</span>}
             {event.pinned && <span className="badge">📌 {t('timeline.pinned')}</span>}
             {event.booking?.booked && <span className="badge book">🎫 {t('event.booked')}</span>}
+            <AssigneeStack ids={event.assigneeIds ?? []} members={members} />
           </div>
         </button>
 

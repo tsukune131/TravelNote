@@ -3,7 +3,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
-import { addEvent, listEventsOfDay, listVariants, setEventCategory, setTripNote } from '../db/repo';
+import {
+  addEvent,
+  listEventsOfDay,
+  listMembers,
+  listVariants,
+  setEventCategory,
+  setTripNote,
+} from '../db/repo';
 import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
 import { guessCategory } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
@@ -32,6 +39,13 @@ import { ImportResult } from './ImportResult';
 import { VariantBar } from './VariantBar';
 import { countUnsentChanges } from '../share/snapshot';
 import { listInbox } from '../share/inbox';
+import { MembersSheet } from './MembersSheet';
+import { AssigneeFilter } from './Assignees';
+import { WeatherBar } from './WeatherBar';
+import { useTripWeather, weatherEmoji } from '../weather/weather';
+import { tripFeaturesUnlocked } from '../pro/entitlement';
+import { useProStatus } from '../pro/store';
+import { noteAdAction } from '../ads/ads';
 
 export function TripScreen({
   tripId,
@@ -50,6 +64,10 @@ export function TripScreen({
   const variants = useLiveQuery(() => listVariants(tripId, dayIndex), [tripId, dayIndex]);
   const unsent = useLiveQuery(() => countUnsentChanges(tripId), [tripId]);
   const inbox = useLiveQuery(() => listInbox(), []);
+  const members = useLiveQuery(() => listMembers(tripId), [tripId]);
+  const pro = useProStatus();
+  const unlocked = trip ? tripFeaturesUnlocked(trip, pro, Date.now()) : false;
+  const weather = useTripWeather(trip, unlocked);
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
@@ -61,6 +79,9 @@ export function TripScreen({
   const [menuOpen, setMenuOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  /** メモタブの担当での絞り込み。null = 全員、'' = 担当なし */
+  const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
@@ -73,6 +94,19 @@ export function TripScreen({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const ideas = dayIndex === IDEAS_DAY;
+  /*
+   * 絞り込みはメモタブだけ。日の予定は時刻と移動でつながっているので、
+   * 抜き出すと並びが読めなくなる。担当が1件も無い旅では絞り込みを出さない
+   */
+  const anyAssigned = ideas && (events?.some((e) => (e.assigneeIds?.length ?? 0) > 0) ?? false);
+  const shownEvents =
+    ideas && anyAssigned && assigneeFilter !== null
+      ? events?.filter((e) =>
+          assigneeFilter === ''
+            ? (e.assigneeIds?.length ?? 0) === 0
+            : (e.assigneeIds ?? []).includes(assigneeFilter),
+        )
+      : events;
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
   const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
   const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
@@ -126,6 +160,12 @@ export function TripScreen({
 
   if (!trip) return <div className="screen" />;
 
+  /** Day タブの日付の横に、その日の天気の絵文字だけ(Pro・予報のある日だけ) */
+  function dayWeather(d: string) {
+    const f = unlocked ? weather.forecast?.days.find((x) => x.date === d) : undefined;
+    return f ? ` ${weatherEmoji(f.symbol)}` : null;
+  }
+
   const todayDate = today();
   const dayDate = dateOfDay(trip.startDate, dayIndex);
 
@@ -170,6 +210,7 @@ export function TripScreen({
     const { minutes, name } = parseLeadingTime(draft);
     if (name.length === 0) return;
     await addEvent(tripId, dayIndex, name, minutes);
+    noteAdAction();
     setDraft('');
     // 連続追加。計画段階で行きたい場所をまとめて放り込めることが大事
     inputRef.current?.focus();
@@ -243,7 +284,10 @@ export function TripScreen({
                 onClick={() => onChangeDay(i)}
               >
                 <b>{t('trip.dayTab', { n: i + 1 })}</b>
-                <small>{date(toDate(d))}</small>
+                <small>
+                  {date(toDate(d))}
+                  {dayWeather(d)}
+                </small>
               </button>
             );
           })}
@@ -259,6 +303,16 @@ export function TripScreen({
           */}
           <InboxBar count={inbox?.length ?? 0} onOpen={() => setInboxOpen(true)} />
 
+          {!ideas && (
+            <WeatherBar
+              trip={trip}
+              day={dayDate}
+              unlocked={unlocked}
+              forecast={weather.forecast}
+              unavailable={weather.unavailable}
+            />
+          )}
+
           {variants && variants.length >= 2 && (
             <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
           )}
@@ -267,16 +321,24 @@ export function TripScreen({
             <p className="section-label">{t('ideas.list')}</p>
           )}
 
-          {events && (
+          {anyAssigned && members && (
+            <AssigneeFilter members={members} value={assigneeFilter} onChange={setAssigneeFilter} />
+          )}
+
+          {shownEvents && (
             <Timeline
               tripId={tripId}
-              events={events}
+              events={shownEvents}
+              members={members ?? []}
               dayIndex={dayIndex}
               ideas={ideas}
               isToday={!ideas && dayDate === todayDate}
               isLastDay={dayIndex === total - 1}
               mapProvider={mapProvider}
-              onOpen={(e) => setOpenEventId(e.id)}
+              onOpen={(e) => {
+                noteAdAction();
+                setOpenEventId(e.id);
+              }}
               onOpenMap={handleOpenMap}
               onOpenLinks={handleOpenLinks}
               onLongPress={(e) => {
@@ -467,6 +529,17 @@ export function TripScreen({
               className="menu-item"
               onClick={() => {
                 setMenuOpen(false);
+                setMembersOpen(true);
+              }}
+            >
+              👥 {t('trip.members')}
+              <span className="sub">›</span>
+            </button>
+            <button
+              type="button"
+              className="menu-item"
+              onClick={() => {
+                setMenuOpen(false);
                 setEditingTrip(true);
               }}
             >
@@ -478,6 +551,8 @@ export function TripScreen({
       )}
 
       {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
+
+      {membersOpen && <MembersSheet tripId={tripId} onClose={() => setMembersOpen(false)} />}
 
       {inboxOpen && (
         <InboxSheet here={{ tripId, dayIndex }} onClose={() => setInboxOpen(false)} />

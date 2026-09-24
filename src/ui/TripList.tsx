@@ -166,7 +166,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
         共有シートの外からの唯一の入口。ここでは「送ろうとした旅」が無いので、
         買えたあとに続ける操作が無い ── onProceed は閉じるだけでいい。
       */}
-      {showPaywall && <Paywall onClose={() => setShowPaywall(false)} onProceed={() => setShowPaywall(false)} />}
+      {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
 
       {imported && (
         <ImportResult

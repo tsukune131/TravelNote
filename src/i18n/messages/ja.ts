@@ -46,13 +46,14 @@ export const ja = {
     upcomingIn: 'あと{n}日',
     ongoing: '旅行中',
     past: '終了',
-    proBanner: '✨ 友達や恋人にしおりを送るには Pro が必要です',
+    proBanner: '✨ Pro で広告を消して、天気予報とメモの割り振りが使えます',
   },
 
   trip: {
     dayTab: 'Day {n}',
     segmentList: 'リスト',
     segmentMap: '地図',
+    members: 'メンバー',
     menu: 'メニュー',
   },
 
@@ -331,16 +332,19 @@ export const ja = {
 
   pro: {
     title: 'たびのしおり Pro',
-    lead: '**送るときだけ** Pro が要ります。\n受け取る人は、登録も支払いも要りません。',
-    /** 一度共有できていた旅が、無料で送れる期限を過ぎたとき */
-    leadExpired:
-      'この旅を**無料で送れる期間(旅の終了から60日)**が終わりました。\n旅の中身は今までどおり見られますし、直せます。',
+    /** 開いた入口ごとの一言。`**…**` は Paywall の emphasize が太字にする */
+    lead: '共有はずっと無料。\n**広告を消して**、旅を便利にする機能が使えます。',
+    leadAds: '**広告を消す**には Pro が必要です。',
+    leadWeather: '旅先の**天気予報**を各日に出すには Pro が必要です。',
+    leadAssign: 'メモの**担当を割り振る**には Pro が必要です。',
     freeTitle: '無料でできること',
     free1: '旅をいくつでも作る・編集する',
-    free2: '受け取ったしおりを開いて、直して、送り返す(旅の終了後60日まで)',
+    free2: '友達や家族としおりを共有する(送る・受け取る・直す)',
     proTitle: 'Pro でできること',
-    pro1: '自分の旅を友達に送る',
-    pro2: '一度送った旅は、解約しても送り続けられます(旅の終了後60日まで)',
+    pro1: '広告を表示しない',
+    pro2: '旅先の天気予報を各日に表示する',
+    pro3: 'メモの「やること」を、メンバーに割り振る',
+    proShared: '天気と割り振りは、あなたが作った旅なら**一緒に行く人全員**が使えます。',
     monthly: '1か月',
     yearly: '1年',
     restore: '購入を復元',
@@ -352,8 +356,60 @@ export const ja = {
     purchaseFailed: '購入は完了しませんでした。',
     nothingToRestore: '復元できる購入は見つかりませんでした。',
     restored: '購入を復元しました。',
-    proceed: 'このまま送る',
+    proceed: 'Pro として試す',
   },
+
+  members: {
+    title: 'メンバー',
+    hint: '一緒に行く人。スマホを持っていない人(子どもなど)も足せます。メモの担当を割り振るのに使います。',
+    me: 'あなた',
+    manual: '手で追加',
+    shared: '共有に参加',
+    add: 'メンバーを追加',
+    addTitle: 'メンバーを追加',
+    editTitle: 'メンバーを編集',
+    name: '名前',
+    namePlaceholder: 'たとえば「ゆうと」',
+    icon: 'アイコン',
+    photo: '写真から選ぶ',
+    photoFailed: 'この写真は読み込めませんでした',
+    remove: 'メンバーから外す',
+    removeHint: '担当になっていたメモからも外れます。',
+  },
+
+  assign: {
+    label: '担当',
+    hint: '誰がやるかを決めておけます',
+    all: '全員',
+    unassigned: '担当なし',
+    pro: 'Pro',
+    noMembers: 'メニューの「メンバー」から、一緒に行く人を足してください。',
+  },
+
+  weather: {
+    place: '旅先(天気予報)',
+    placeHint: '天気予報を出す場所を1か所。市区町村くらいの名前で探せます。',
+    placePlaceholder: 'たとえば「京都市」',
+    search: '探す',
+    notFound: '見つかりませんでした。別の名前で試してください。',
+    clear: '旅先を外す',
+    high: '最高',
+    low: '最低',
+    rain: '降水 {p}%',
+    fetchedAt: '{when} 時点',
+    tooFar: '予報は10日先までです',
+    teaser: '天気予報を表示(Pro)',
+    unavailable: 'この端末では天気を取得できません',
+    source: 'データソース',
+  },
+
+  ads: {
+    label: '広告',
+    devBanner: '広告(開発用の見本)',
+    devInterstitial: '全画面広告(開発用の見本)',
+    skip: '閉じる',
+  },
+
 
   duration: {
     hm: '{h}時間{m}分',
@@ -363,6 +419,8 @@ export const ja = {
 
   settings: {
     title: '設定',
+    pro: 'たびのしおり Pro',
+    removeAds: '広告を消す',
     mapProvider: '地図アプリ',
     displayName: '表示名',
     privacy: 'プライバシーポリシー',

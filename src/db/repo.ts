@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { db, getDeviceId, newId } from './db';
 import { setDisplayName } from './settings';
-import type { DayVariant, EventLink, Member, PackItem, Trip, TripEvent } from './types';
+import type { DayVariant, EventLink, Member, MemberIcon, PackItem, Trip, TripEvent } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
@@ -9,6 +9,9 @@ import { placeForTime } from '../lib/ordering';
 import type { TravelMode } from '../lib/maps';
 import { dayCount, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
+import { isProActive, ownerProPatch } from '../pro/entitlement';
+import type { ProStatus } from '../pro/entitlement';
+import { getProStatus } from '../pro/store';
 
 /**
  * データ操作の入口。**画面から Dexie を直接触らない。**
@@ -76,10 +79,27 @@ export async function createTrip(input: {
     order: orderKeyBetween(last, null),
     sharedAt: null,
     imported: false,
+    // 作った人の契約で、旅の全員に Pro の機能を効かせる(pro/entitlement.ts)
+    ownerDeviceId: await getDeviceId(),
+    ownerPro: isProActive(getProStatus(), Date.now()),
     ...(await stamp()),
   };
   await db.trips.add(trip);
   return trip;
+}
+
+/**
+ * 自分が作った旅の `ownerPro` を、いまの契約に合わせる。
+ * 起動時・前面復帰時・購入の直後に呼ぶ。**変わった旅だけ書く**
+ * (書くと「未送信の変更」に数えられるので、毎回書かない)。
+ */
+export async function syncOwnerPro(status: ProStatus): Promise<void> {
+  const deviceId = await getDeviceId();
+  const now = Date.now();
+  for (const trip of await listTrips()) {
+    const patch = ownerProPatch(trip, deviceId, status, now);
+    if (patch) await updateTrip(trip.id, patch);
+  }
 }
 
 export async function updateTrip(id: string, patch: Partial<Omit<Trip, 'id'>>): Promise<void> {
@@ -549,18 +569,19 @@ export async function listMembers(tripId: string): Promise<Member[]> {
 /** 旅を作った端末を作成者として登録する。アカウント登録は求めない */
 export async function ensureOwner(tripId: string, displayName: string): Promise<Member> {
   const deviceId = await getDeviceId();
-  const existing = (await listMembers(tripId)).find((m) => m.deviceId === deviceId);
-  if (existing) return existing;
-  const member: Member = {
-    id: newId(),
-    tripId,
-    deviceId,
-    displayName,
-    role: 'owner',
-    ...(await stamp()),
-  };
-  await db.members.add(member);
-  return member;
+  const s = await stamp();
+  /*
+   * **確かめて足す、を1つのトランザクションで。** メンバー画面と共有画面の
+   * 両方から呼ばれ、続けて2回呼ばれると自分が2人並んだ(実際に踏んだ)。
+   */
+  return db.transaction('rw', db.members, async () => {
+    const rows = await db.members.where('tripId').equals(tripId).toArray();
+    const existing = rows.find((m) => m.deviceId === deviceId && m.deletedAt === ALIVE);
+    if (existing) return existing;
+    const member: Member = { id: newId(), tripId, deviceId, displayName, role: 'owner', ...s };
+    await db.members.add(member);
+    return member;
+  });
 }
 
 /**
@@ -586,6 +607,69 @@ export async function setMyDisplayName(name: string): Promise<void> {
   await db.members.bulkUpdate(
     mine.map((m) => ({ key: m.id, changes: { displayName: trimmed, ...s } })),
   );
+}
+
+/**
+ * スマホを持たない人(子ども・祖父母など)をメンバーに足す。
+ * **端末IDを持たない**ので共有には参加しないが、タスクを割り振れる。
+ */
+export async function addManualMember(
+  tripId: string,
+  displayName: string,
+  icon: MemberIcon,
+): Promise<Member> {
+  const member: Member = {
+    id: newId(),
+    tripId,
+    deviceId: '',
+    displayName: displayName.trim(),
+    role: 'editor',
+    icon,
+    ...(await stamp()),
+  };
+  await db.members.add(member);
+  return member;
+}
+
+export async function updateMember(
+  id: string,
+  patch: Partial<Pick<Member, 'displayName' | 'icon'>>,
+): Promise<void> {
+  await db.members.update(id, { ...patch, ...(await stamp()) });
+}
+
+/**
+ * メンバーを外す。**割り振ってあったタスクの担当からも外す**
+ * (残すと、消えた人の担当が見えないまま残り続ける)。
+ */
+export async function removeMember(id: string): Promise<void> {
+  const member = await db.members.get(id);
+  if (!member) return;
+  const s = await stamp();
+  const events = await db.events.where('tripId').equals(member.tripId).toArray();
+  await db.transaction('rw', db.members, db.events, async () => {
+    await db.members.update(id, { ...s, deletedAt: s.updatedAt });
+    const touched = events.filter((e) => e.assigneeIds?.includes(id));
+    await db.events.bulkUpdate(
+      touched.map((e) => ({
+        key: e.id,
+        changes: { assigneeIds: (e.assigneeIds ?? []).filter((m) => m !== id), ...s },
+      })),
+    );
+  });
+}
+
+/* ────────── タスク割り振り(Pro) ────────── */
+
+/** 担当を付け外しする。同じ人をもう一度押すと外れる */
+export async function toggleAssignee(eventId: string, memberId: string): Promise<void> {
+  const event = await db.events.get(eventId);
+  if (!event) return;
+  const current = event.assigneeIds ?? [];
+  const next = current.includes(memberId)
+    ? current.filter((m) => m !== memberId)
+    : [...current, memberId];
+  await updateEvent(eventId, { assigneeIds: next });
 }
 
 /* ────────── 起動時の着地点 ────────── */

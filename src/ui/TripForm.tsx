@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { LinkList } from './LinkList';
 import { DateRangePicker } from './DateRangePicker';
+import { PlaceField } from './PlaceField';
 import { addTripLink, createTrip, deleteTrip, removeTripLink, updateTrip } from '../db/repo';
 import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
@@ -147,6 +148,9 @@ export function TripForm({
         旅の設定を開いたとき ── つまり旅が始まっているか、終わったあとにだけ。
         日付の確認行より下に置くのは、その行が上の日付欄の説明だから。
       */}
+      {/* 旅先(天気予報用)。アルバムと同じく、作ったあとの設定で決める */}
+      {trip && <PlaceField trip={trip} />}
+
       {trip && (
         <div className="field">
           <label>{t('tripForm.album')}</label>

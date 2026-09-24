@@ -36,6 +36,14 @@ export type PackItem = {
   checked: boolean;
 };
 
+export type TripPlace = {
+  name: string;
+  lat: number;
+  lng: number;
+  /** IANA のタイムゾーン名(`Asia/Tokyo`)。引けなかったときは無い */
+  timeZone?: string;
+};
+
 export type Booking = {
   booked: boolean;
   partySize?: number;
@@ -60,26 +68,30 @@ export type Trip = SyncFields & {
   sharedAt: number | null;
 
   /**
-   * **この端末が、この旅を Pro なしで送れる期限。** 絶対時刻で持つ。
-   *
-   * 立てるのは1度きり ── **自分が初めて送った時**か、**受け取った時**。
-   * 一度決めたら動かさない(`?? ` で握る)。計算は
-   * `shareWindowUntilFor()`(pro/entitlement.ts)。
-   *
-   * ## なぜ「旅の終了日」を基準にするのか
-   *
-   * 「受け取ってから1年」にしていたが、**器を作り変えて来年の旅に使えた**。
-   * 旅程の日付は普通に変わるので、日付そのものを固定するのは代償が大きい
-   * (1泊延ばす・宿が取れず1週間ずらす、は planning では日常)。
-   * そこで**期限だけをその場で凍結する** ── あとから日付を動かしても
-   * 期限は動かないので、器の使い回しに意味が無くなる。
-   *
-   * ⚠️ **ファイルに乗ってきた値は使わない。** 送り主の期限を引き継ぐと、
-   * 期限切れの旅を受け取った人が**最初から送り返せない**(往復が切れる)。
-   * ⚠️ **消して取り込み直しても更新しない。** 無条件に振り直すと、
-   * 旅を消して同じファイルを入れ直すだけで無期限になる(一人で、何度でも)。
+   * 旧方針(共有に課金していた頃)の「Pro なしで送れる期限」。
+   * **2026-09-24 に共有を無料にしたので、もう読まない。** 古い記録に残っているだけ。
    */
   shareWindowUntil?: number;
+
+  /**
+   * 旅を作った端末。**Pro の機能を旅の全員に効かせる**ために、
+   * 誰の契約を見るかをここで決める(`src/pro/entitlement.ts`)。
+   * この項目より前に作った旅には無い(受け取った旅でなければ自分が作者とみなす)。
+   */
+  ownerDeviceId?: string;
+
+  /**
+   * **作成者が Pro か。** 作成者の端末だけが書き、共有で参加者に届く。
+   * true なら、参加者も天気とタスク割り振りを使える。
+   */
+  ownerPro?: boolean;
+
+  /**
+   * 旅先。**天気予報を出すためだけ**に持つ(1か所)。
+   * 座標とタイムゾーンは端末の地名検索(Apple)で引く。予報の日付を
+   * 旅先の暦で合わせるのにタイムゾーンが要る。
+   */
+  place?: TripPlace;
 
   /**
    * 受け取った旅か。**取り込みと送り返しは無料**なので、
@@ -173,6 +185,12 @@ export type TripEvent = SyncFields & {
   /** 同じ (tripId, dayIndex) の中での並び順(fractional index) */
   order: string;
   /**
+   * 担当するメンバー(`Member.id`)。**メモタブのタスク割り振り**(Pro)。
+   * 「Aさん: 食事 / Bさん: 観光」。古い記録には無いので `?? []` で読む。
+   * ⚠️ Pro が切れても消さない・隠さない(データをロックしない)。
+   */
+  assigneeIds?: string[];
+  /**
    * 所属する案。**null が本線**(ふだんはこれしかない)。
    * 取り込みでその日が衝突したときだけ、両方の案が枝分かれして値が入る。
    */
@@ -216,15 +234,26 @@ export type Baseline = {
 export type MemberRole = 'owner' | 'editor' | 'viewer';
 
 /**
- * 共有の参加者。**アカウントではない**(App Store 5.1.1(v) を回避するため)。
- * 端末ごとに発行した匿名IDと、参加時に一度聞く表示名だけを持つ。
+ * メンバーのアイコン。**写真は小さく縮めて旅と一緒に運ぶ**(128px の JPEG。数KB)。
+ * プリセットは絵文字と色の組(`src/lib/avatar.ts`)。
+ */
+export type MemberIcon = { kind: 'preset'; id: string } | { kind: 'photo'; dataUrl: string };
+
+/**
+ * 旅のメンバー。**アカウントではない**(App Store 5.1.1(v) を回避するため)。
+ *
+ * - 共有の参加者: 端末ごとの匿名IDと、表示名だけを持つ
+ * - **手で足した人**(スマホを持たない子ども・祖父母など): `deviceId` が空文字。
+ *   タスクを割り振るために名前とアイコンだけ持つ
  */
 export type Member = SyncFields & {
   id: string;
   tripId: string;
+  /** 手で足した人は空文字(索引できるよう null にしない) */
   deviceId: string;
   displayName: string;
   role: MemberRole;
+  icon?: MemberIcon;
 };
 
 /**

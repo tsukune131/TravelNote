@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
+import { Paywall } from './Paywall';
 import { getDisplayName, getMapProvider, getTheme, setMapProvider, setTheme } from '../db/settings';
 import { THEMES, THEME_SWATCH, applyTheme } from '../lib/theme';
 import type { ThemeId } from '../lib/theme';
@@ -18,6 +19,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [note, setNote] = useState<string | null>(null);
   const [theme, setThemeState] = useState<ThemeId | null>(null);
+  const [paywall, setPaywall] = useState(false);
   const pro = useProStatus();
 
   useEffect(() => {
@@ -82,6 +84,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
           解約はアプリ内に作らず Apple の画面へ渡す ── こちらで
           止められるものではないし、途中まで作ると誤解を生む。
         */}
+        {!isProActive(pro, Date.now()) && (
+          <button type="button" className="menu-item" onClick={() => setPaywall(true)}>
+            ✨ {t('settings.removeAds')}
+            <span className="sub">{t('settings.pro')} ›</span>
+          </button>
+        )}
         <button type="button" className="menu-item" onClick={() => void doRestore()}>
           {t('settings.restore')}
           <span className="sub">›</span>
@@ -103,6 +111,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
       </div>
 
       {note && <p className="guess">{note}</p>}
+      {paywall && <Paywall reason="ads" onClose={() => setPaywall(false)} />}
     </Sheet>
   );
 

@@ -138,5 +138,37 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!--
+		広告(AdMob。ROADMAP E-4 / src/ads/)。
+
+		⚠️ **いまは Google のテスト用アプリ ID。** AdMob でアプリを登録したら
+		本番の ID(ca-app-pub-...~...)に差し替える。src/ads/config.ts の
+		広告ユニット ID と AD_TESTING も一緒に。
+	-->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<!-- ATT(トラッキング許可)のダイアログに出る文。断られても広告は出る -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>あなたに合った広告を表示するために使います。許可しなくても、アプリはすべて同じように使えます。</string>
+	<!--
+		SKAdNetwork。広告の効果測定(個人を特定しない)に要る。
+		Google 自身の ID。ほかのネットワークを足すなら Google の一覧から追記する
+	-->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
+
+	<!--
+		メンバーのアイコンを写真にするとき(src/ui/MembersSheet.tsx)。
+		写真の選択は OS のピッカーなので写真ライブラリの許可は要らないが、
+		ピッカーに「写真を撮る」が出るので、**カメラの説明文が無いと押した瞬間に落ちる。**
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>メンバーのアイコンにする写真を撮るために使います。</string>
 </dict>
 </plist>

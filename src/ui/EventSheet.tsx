@@ -4,8 +4,10 @@ import { categoryLabelKey } from '../i18n/keys';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
 import { LinkList } from './LinkList';
+import { AssigneePicker } from './Assignees';
 import { deleteEvent, renameEvent, setEventCategory, setEventTime, updateEvent } from '../db/repo';
 import { clampMinutes } from '../lib/plainDate';
+import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
 
 /** 所要時間はよく使う刻みだけ。分単位で自由入力させると入力が仕事になる */
@@ -95,6 +97,14 @@ export function EventSheet({
           {t('event.guessedCategory')}: {t(categoryLabelKey(event.category))} ・{' '}
           {t('event.changeCategory')}
         </p>
+      )}
+
+      {/*
+        担当(Pro)。メモタブの「やること」に付ける。日へ移したあとも、
+        付いていれば見せる(外せるように)
+      */}
+      {(event.dayIndex === IDEAS_DAY || (event.assigneeIds?.length ?? 0) > 0) && (
+        <AssigneePicker event={event} />
       )}
 
       <div className="field">

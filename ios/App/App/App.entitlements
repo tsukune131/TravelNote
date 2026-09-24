@@ -14,5 +14,16 @@
 	<array>
 		<string>group.com.tsukune.travelnote</string>
 	</array>
+
+	<!--
+		天気予報(ROADMAP E-6 / ios/App/App/WeatherPlugin.swift)。
+
+		⚠️ Capability の追加なので、Apple Developer ポータルで App ID の
+		**Capabilities と App Services の両方**で WeatherKit を有効にしてから
+		lane=refresh_profiles を回すこと。片方だけだと実行時に認証で落ちる。
+		⚠️ 拡張(ShareExtension)には付けない。
+	-->
+	<key>com.apple.developer.weatherkit</key>
+	<true/>
 </dict>
 </plist>

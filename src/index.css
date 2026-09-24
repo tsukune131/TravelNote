@@ -51,9 +51,19 @@
   --font-data: ui-monospace, SFMono-Regular, Consolas, monospace;
 
   --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /*
+   * 下帯広告の高さ(src/ads/ads.ts が --ad-h-live に入れる)。
+   * **--safe-bottom に足す**ので、入力欄・シート・トーストはすべて帯の上に乗る。
+   * キーボードが出ているあいだは帯が隠れるので 0 として扱う([data-kb])。
+   */
+  --ad-h: var(--ad-h-live, 0px);
+  --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ad-h));
 
   color-scheme: light dark;
+}
+
+:root[data-kb] {
+  --ad-h: 0px;
 }
 
 /* 暗いほうも中性の灰にしない。ぶどう色を含んだ暗さにして地続きにする */
@@ -2049,4 +2059,258 @@ body.sheet-open .addbar-hint {
   border-color: var(--primary);
   border-width: 2px;
   font-weight: 700;
+}
+
+/* ────────── 広告 ────────── */
+
+/* 開発中だけの見本。本物(AdMob)はネイティブの view で、ここには描かれない */
+.dev-ad-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
+  height: var(--ad-h);
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(45deg, #d9d9d9 0 8px, #cfcfcf 8px 16px);
+  color: #555;
+  font-size: 0.75rem;
+  z-index: 60;
+}
+
+.dev-ad-full {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  justify-items: center;
+  background: #333;
+  color: #eee;
+  z-index: 100;
+}
+
+/* ────────── メンバー ────────── */
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 999px;
+  object-fit: cover;
+  line-height: 1;
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+.member-list {
+  margin: 0.4rem 0 0.8rem;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid var(--rule-soft);
+  min-height: 3.2rem;
+}
+
+.member-row[disabled] {
+  opacity: 1;
+}
+
+.member-row .sub {
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+.member-name {
+  display: grid;
+}
+
+.member-name small {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+}
+
+.member-preview {
+  display: grid;
+  place-items: center;
+  padding: 0.4rem 0 0.8rem;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.avatar-choice {
+  display: grid;
+  place-items: center;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.avatar-choice[aria-pressed='true'] {
+  border-color: var(--primary);
+}
+
+/* ────────── 担当(タスク割り振り) ────────── */
+
+.pro-tag {
+  margin-left: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--sunset);
+  color: var(--on-primary);
+  vertical-align: middle;
+}
+
+.assignee-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.assignee-choice {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  min-width: 3.4rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.3rem;
+  border-radius: 0.8rem;
+  border: 1.5px solid var(--rule);
+  background: var(--surface);
+  opacity: 0.55;
+}
+
+.assignee-choice small {
+  font-size: 0.7rem;
+  max-width: 4.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assignee-choice[aria-pressed='true'] {
+  opacity: 1;
+  border-color: var(--primary);
+  border-width: 2px;
+  font-weight: 700;
+}
+
+.assignee-stack {
+  display: inline-flex;
+  align-items: center;
+}
+
+.assignee-stack .avatar + .avatar {
+  margin-left: -0.35rem;
+}
+
+.assignee-stack small {
+  margin-left: 0.2rem;
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+
+.assignee-filter {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.1rem 0 0.6rem;
+  scrollbar-width: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  min-height: 2.25rem;
+  padding: 0.2rem 0.75rem 0.2rem 0.35rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--rule);
+  background: var(--surface);
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
+.filter-chip:not(:has(.avatar)) {
+  padding-left: 0.75rem;
+}
+
+.filter-chip[aria-pressed='true'] {
+  border-color: var(--primary);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ────────── 天気 ────────── */
+
+.weather-bar {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  font-size: 0.85rem;
+}
+
+.weather-bar.muted {
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+.weather-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.6rem;
+}
+
+.weather-icon {
+  font-size: 1.3rem;
+}
+
+.weather-attr {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+
+.weather-attr img {
+  display: block;
+  height: 12px;
+}
+
+.weather-teaser {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.8rem;
+  min-height: 2.75rem;
+  border-radius: 0.9rem;
+  border: 1px dashed var(--rule);
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+.weather-teaser .sub {
+  margin-left: auto;
 }

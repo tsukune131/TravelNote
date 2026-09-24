@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { I18nProvider } from './i18n/react';
 import { useI18n } from './i18n/context';
 import { TripList } from './ui/TripList';
@@ -6,13 +7,16 @@ import { TripScreen } from './ui/TripScreen';
 import { Welcome } from './ui/Welcome';
 import { ImportResult } from './ui/ImportResult';
 import type { ImportOutcome } from './ui/ShareSheet';
-import { findLandingPoint } from './db/repo';
+import { findLandingPoint, listTrips, syncOwnerPro } from './db/repo';
 import { FLAGS, getDisplayName, getFlag, getTheme, setFlag } from './db/settings';
 import { applyTheme } from './lib/theme';
 import { importSnapshotText } from './share/apply';
 import { listenForIncomingFile } from './share/transport';
 import { drainSharedInbox } from './share/inbox';
-import { syncProStatus } from './pro/store';
+import { syncProStatus, useProStatus } from './pro/store';
+import { showsAds } from './pro/entitlement';
+import { maybeShowInterstitial, noteAdAction, startAds, stopAds } from './ads/ads';
+import { DevAdLayer } from './ui/DevAds';
 import { App as CapApp } from '@capacitor/app';
 import { today } from './lib/plainDate';
 
@@ -37,6 +41,17 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const { t } = useI18n();
   const [route, setRoute] = useState<Route | null>(null);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
+  const pro = useProStatus();
+  const adsOn = showsAds(pro, Date.now());
+
+  /**
+   * 旅行中の旅があるか。**あるあいだは全画面広告を出さない**(src/ads/policy.ts)。
+   * 旅の画面を出たり入ったりするのは、旅行中なら「次の予定を確かめる」ため。
+   */
+  const traveling = useLiveQuery(async () => {
+    const now = today();
+    return (await listTrips()).some((t) => t.startDate <= now && now <= t.endDate);
+  }, []);
 
   /**
    * 起動時の着地点。
@@ -114,6 +129,29 @@ function Shell({ onReady }: { onReady?: () => void }) {
     return () => void handle.then((h) => h.remove());
   }, []);
 
+  /**
+   * 契約が変わったら:
+   * - 自分が作った旅の「作成者は Pro」を合わせる(参加者に Pro の機能を届ける)
+   * - 広告を出す/やめる。**ようこそ画面のうちは始めない** ──
+   *   何のアプリか分かる前に ATT(トラッキング許可)を聞かない
+   */
+  const ready = route !== null && route.screen !== 'welcome';
+  useEffect(() => {
+    void syncOwnerPro(pro);
+  }, [pro]);
+  useEffect(() => {
+    if (!ready) return;
+    void (adsOn ? startAds() : stopAds());
+  }, [ready, adsOn]);
+
+  /** 旅一覧 ⇄ 旅の画面は「区切り」。全画面広告を出してよい唯一の場所 */
+  function navigate(next: Route) {
+    if (route?.screen !== next.screen) {
+      maybeShowInterstitial({ onTripInProgress: traveling !== false });
+    }
+    setRoute(next);
+  }
+
   // 着地点が決まるまでは何も描かない(旅一覧が一瞬見えてから飛ぶのを避ける)
   if (route === null) return <div className="screen" />;
 
@@ -127,17 +165,22 @@ function Shell({ onReady }: { onReady?: () => void }) {
           }}
         />
       ) : route.screen === 'list' ? (
-        <TripList onOpen={(tripId, dayIndex) => setRoute({ screen: 'trip', tripId, dayIndex })} />
+        <TripList onOpen={(tripId, dayIndex) => navigate({ screen: 'trip', tripId, dayIndex })} />
       ) : (
         <TripScreen
           tripId={route.tripId}
           dayIndex={route.dayIndex}
-          onChangeDay={(dayIndex) => setRoute({ ...route, dayIndex })}
-          onBack={() => setRoute({ screen: 'list' })}
+          onChangeDay={(dayIndex) => {
+            noteAdAction();
+            setRoute({ ...route, dayIndex });
+          }}
+          onBack={() => navigate({ screen: 'list' })}
         />
       )}
 
       {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
+
+      {import.meta.env.DEV && <DevAdLayer />}
     </>
   );
 }

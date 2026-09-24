@@ -46,13 +46,14 @@ export const en: DeepPartial<Messages> = {
     upcomingIn: 'in {n} days',
     ongoing: 'On the trip',
     past: 'Finished',
-    proBanner: "✨ Pro is needed to send a trip to friends or partners",
+    proBanner: "✨ Go Pro: no ads, weather forecasts, and note assignments",
   },
 
   trip: {
     dayTab: 'Day {n}',
     segmentList: 'List',
     segmentMap: 'Map',
+    members: 'Members',
     menu: 'Menu',
   },
 
@@ -296,15 +297,18 @@ export const en: DeepPartial<Messages> = {
 
   pro: {
     title: 'Tabi no Shiori Pro',
-    lead: '**Only sending** needs Pro.\nThe people you send to pay nothing.',
-    leadExpired:
-      'The **free sending period for this trip (60 days after the trip ended)** has ended.\nYou can still view and edit everything in it.',
+    lead: 'Sharing is always free.\n**Remove ads** and unlock handy trip features.',
+    leadAds: '**Removing ads** needs Pro.',
+    leadWeather: 'Showing the **weather forecast** for each day needs Pro.',
+    leadAssign: '**Assigning notes to people** needs Pro.',
     freeTitle: 'What you can do for free',
     free1: 'Create and edit as many trips as you like',
-    free2: 'Open an itinerary you received, edit it, send it back (until 60 days after the trip)',
+    free2: 'Share itineraries with friends and family (send, receive, edit)',
     proTitle: 'With Pro',
-    pro1: 'Send your own trips to friends',
-    pro2: 'Once sent, a trip stays sendable even after you cancel (until 60 days after the trip)',
+    pro1: 'No ads',
+    pro2: 'Weather forecast for your destination on each day',
+    pro3: 'Assign to-dos in Notes to trip members',
+    proShared: 'On trips you created, weather and assignments work for **everyone on the trip**.',
     monthly: '1 month',
     yearly: '1 year',
     restore: 'Restore Purchases',
@@ -315,8 +319,60 @@ export const en: DeepPartial<Messages> = {
     purchaseFailed: 'The purchase did not go through.',
     nothingToRestore: 'No purchases found to restore.',
     restored: 'Your purchase has been restored.',
-    proceed: 'Send anyway',
+    proceed: 'Try as Pro',
   },
+
+  members: {
+    title: 'Members',
+    hint: 'People on this trip. You can add people without a phone (like kids). Used to assign notes.',
+    me: 'You',
+    manual: 'Added by hand',
+    shared: 'Joined via sharing',
+    add: 'Add member',
+    addTitle: 'Add member',
+    editTitle: 'Edit member',
+    name: 'Name',
+    namePlaceholder: 'e.g. "Yuto"',
+    icon: 'Icon',
+    photo: 'Choose a photo',
+    photoFailed: "Couldn't read this photo",
+    remove: 'Remove from trip',
+    removeHint: 'They will also be unassigned from notes.',
+  },
+
+  assign: {
+    label: 'Assigned to',
+    hint: 'Decide who takes care of it',
+    all: 'Everyone',
+    unassigned: 'Unassigned',
+    pro: 'Pro',
+    noMembers: 'Add the people on this trip from "Members" in the menu.',
+  },
+
+  weather: {
+    place: 'Destination (for weather)',
+    placeHint: 'One place to show the forecast for. Search by city name.',
+    placePlaceholder: 'e.g. "Kyoto"',
+    search: 'Search',
+    notFound: 'Not found. Try another name.',
+    clear: 'Remove destination',
+    high: 'High',
+    low: 'Low',
+    rain: 'Rain {p}%',
+    fetchedAt: 'as of {when}',
+    tooFar: 'Forecasts cover the next 10 days',
+    teaser: 'Show weather forecast (Pro)',
+    unavailable: "Weather isn't available on this device",
+    source: 'Data sources',
+  },
+
+  ads: {
+    label: 'Ad',
+    devBanner: 'Ad (dev placeholder)',
+    devInterstitial: 'Full-screen ad (dev placeholder)',
+    skip: 'Close',
+  },
+
 
   duration: {
     hm: '{h}h {m}m',
@@ -326,6 +382,8 @@ export const en: DeepPartial<Messages> = {
 
   settings: {
     title: 'Settings',
+    pro: 'Tabi no Shiori Pro',
+    removeAds: 'Remove ads',
     mapProvider: 'Maps app',
     displayName: 'Display name',
     privacy: 'Privacy Policy',

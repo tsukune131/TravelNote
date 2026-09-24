@@ -15,7 +15,7 @@ import type { PlanId } from '../pro/entitlement';
  * 実際に `**送るときだけ** Pro が要ります。` と表示されたまま
  * TestFlight まで行った(審査で最初に見られる画面なのに)。
  *
- * 使っているのは `pro.lead` だけ。訳す人が文を分断されずに済むよう、
+ * 使っているのは `pro.lead*` と `pro.proShared`。訳す人が文を分断されずに済むよう、
  * キーを割らずにここで処理する。**他のキーで `**` を使うならここを通すこと。**
  */
 function emphasize(text: string) {
@@ -34,12 +34,22 @@ function priceOf(price: PlanPrice): string {
   return import.meta.env.DEV ? PRICE_TEXT_JPY[price.plan] : price.priceString;
 }
 
+/** どこから開いたか。冒頭の一言だけが変わる */
+export type PaywallReason = 'general' | 'ads' | 'weather' | 'assign';
+
+const LEAD = {
+  general: 'pro.lead',
+  ads: 'pro.leadAds',
+  weather: 'pro.leadWeather',
+  assign: 'pro.leadAssign',
+} as const;
+
 /**
- * 唯一の課金点 ── **自分の旅をはじめて送ろうとしたとき**だけ出る。
- * タイムラインにも詳細シートにも地図にも、課金導線は置かない。
+ * Pro の購入画面(2026-09-24 に中身を入れ替え)。
  *
- * 売り文句の主は「同行者と一緒に作れる」ではなく
- * **「相手は登録も支払いも要らない」** ── そこがこの価格設計の強み。
+ * **共有は無料。** Pro は「広告なし・天気・タスク割り振り」。
+ * 開くのは、ユーザーが自分で押したときだけ ── 旅一覧の案内・設定・
+ * 天気の「Pro で表示」・担当の「Pro」。**使っている最中に割り込んで出さない。**
  *
  * ## 3.1.2 が要求するもの(外すと差し戻される)
  *
@@ -63,13 +73,10 @@ function priceOf(price: PlanPrice): string {
  */
 export function Paywall({
   onClose,
-  onProceed,
-  expiredTrip = false,
+  reason = 'general',
 }: {
   onClose: () => void;
-  onProceed: () => void;
-  /** 一度共有できていた旅が1年を過ぎた場合。理由を説明しないと不意打ちになる */
-  expiredTrip?: boolean;
+  reason?: PaywallReason;
 }) {
   const { t } = useI18n();
   const [prices, setPrices] = useState<PlanPrice[] | null>(null);
@@ -85,7 +92,7 @@ export function Paywall({
 
   return (
     <Sheet title={t('pro.title')} onClose={onClose}>
-      <p className="paywall-lead">{emphasize(t(expiredTrip ? 'pro.leadExpired' : 'pro.lead'))}</p>
+      <p className="paywall-lead">{emphasize(t(LEAD[reason]))}</p>
 
       <div className="field">
         <label>{t('pro.freeTitle')}</label>
@@ -100,7 +107,9 @@ export function Paywall({
         <ul className="welcome-points">
           <li>{t('pro.pro1')}</li>
           <li>{t('pro.pro2')}</li>
+          <li>{t('pro.pro3')}</li>
         </ul>
+        <p className="guess">{emphasize(t('pro.proShared'))}</p>
       </div>
 
       {/* 3.1.2: 名称・期間・価格 */}
@@ -130,10 +139,17 @@ export function Paywall({
       {/*
         開発中だけの抜け道。**本番のビルドには入らない**(Vite が
         import.meta.env.DEV の分岐ごと落とす)。
-        ブラウザでは StoreKit が無く、これが無いと共有の動作確認ができない。
+        ブラウザでは StoreKit が無く、これが無いと Pro の画面を確かめられない。
       */}
       {import.meta.env.DEV && (
-        <button type="button" className="btn ghost wide" onClick={onProceed}>
+        <button
+          type="button"
+          className="btn ghost wide"
+          onClick={() => {
+            setProStatus({ active: true });
+            onClose();
+          }}
+        >
           [dev] {t('pro.proceed')}
         </button>
       )}
@@ -170,8 +186,7 @@ export function Paywall({
     try {
       const status = await purchase(plan);
       setProStatus(status);
-      // 買えたら、そのまま元々やろうとしていたこと(送る)へ進む
-      if (isProActive(status, Date.now())) onProceed();
+      if (isProActive(status, Date.now())) onClose();
     } catch {
       // 取り消しも失敗もここに来る。取り消しを「失敗」と言わない文言にしてある
       setError(t('pro.purchaseFailed'));
@@ -186,7 +201,7 @@ export function Paywall({
     try {
       const status = await restore();
       setProStatus(status);
-      if (isProActive(status, Date.now())) onProceed();
+      if (isProActive(status, Date.now())) onClose();
       else setError(t('pro.nothingToRestore'));
     } catch {
       setError(t('pro.nothingToRestore'));

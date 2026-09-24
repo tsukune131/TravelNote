@@ -2,14 +2,11 @@ import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { Paywall } from './Paywall';
 import { getDisplayName } from '../db/settings';
 import { ensureOwner, listMembers, setMyDisplayName } from '../db/repo';
 import { countUnsentChanges } from '../share/snapshot';
 import { commitShared, exportSnapshotText, importSnapshotText } from '../share/apply';
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
-import { canShare } from '../pro/entitlement';
-import { useProStatus } from '../pro/store';
 import type { MergeSummary } from '../share/merge';
 import type { Trip } from '../db/types';
 
@@ -22,7 +19,7 @@ export type ImportOutcome =
  * しおりの受け渡し画面。
  *
  * **サーバーは無い。** 送るのはファイルで、経路は使う人が選ぶ。
- * 受け取る側は無料 ── ここを有料にすると共有そのものが死ぬ(docs/pricing.md §4)。
+ * **送るのも受け取るのも無料**(2026-09-24)。
  */
 export function ShareSheet({
   trip,
@@ -37,21 +34,16 @@ export function ShareSheet({
   const [name, setName] = useState('');
   const [unsent, setUnsent] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const [paywall, setPaywall] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const members = useLiveQuery(() => listMembers(trip.id), [trip.id]);
-  const pro = useProStatus();
 
   useEffect(() => {
     void getDisplayName().then(setName);
     void countUnsentChanges(trip.id).then(setUnsent);
   }, [trip.id]);
 
-  const gate = canShare(trip, pro, Date.now());
-
-  /** `force` はペイウォールから戻ってきたとき。付けないと同じ関門で永久に跳ね返る */
-  async function send(force = false) {
-    if (!gate.allowed && !force) return setPaywall(true);
+  /** 共有は無料(2026-09-24)。ペイウォールは挟まない */
+  async function send() {
     setBusy(true);
     try {
       const myName = name.trim() || t('share.displayNameDefault');
@@ -66,8 +58,7 @@ export function ShareSheet({
       const result = await sendSnapshot(trip, text);
       /*
        * **送れたときだけ記録する。** 共有シートを閉じただけ('cancelled')で
-       * 「送った」ことにすると、一度も送っていないのに無料期間の時計が動き、
-       * 未送信バッジまで消える(監査で見つかった)。
+       * 「送った」ことにすると、未送信バッジが消えてしまう(監査で見つかった)。
        */
       if (result === 'cancelled') return;
       await commitShared(trip.id, snapshot);
@@ -161,17 +152,6 @@ export function ShareSheet({
         {note && <p className="guess">{note}</p>}
       </Sheet>
 
-      {paywall && (
-        <Paywall
-          /* 一度は共有できていた旅なら、なぜ今さら出たのかを説明する */
-          expiredTrip={!gate.allowed && gate.reason === 'window-expired'}
-          onClose={() => setPaywall(false)}
-          onProceed={() => {
-            setPaywall(false);
-            void send(true);
-          }}
-        />
-      )}
     </>
   );
 }
