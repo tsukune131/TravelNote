@@ -32,12 +32,26 @@ function svg(path: React.ReactNode, { size = 22, className }: Props) {
 
 export const IconBack = (p: Props) => svg(<path d="M15 5 8 12l7 7" />, p);
 
-export const IconMore = (p: Props) =>
+/** 準備。チェックの付いた持ち物リスト */
+export const IconChecklist = (p: Props) =>
   svg(
     <>
-      <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <path d="m3.8 6.2 1.6 1.6 2.8-3" />
+      <path d="m3.8 13.2 1.6 1.6 2.8-3" />
+      <path d="M11.5 6.5h8.5M11.5 13.5h8.5M11.5 19.5h8.5" />
+      <circle cx="5.8" cy="19.5" r="1.1" fill="currentColor" stroke="none" />
+    </>,
+    p,
+  );
+
+/** メンバー。並んだ2人 */
+export const IconPeople = (p: Props) =>
+  svg(
+    <>
+      <circle cx="9" cy="8.2" r="3.2" />
+      <path d="M3 19.5c0-3.4 2.7-5.8 6-5.8s6 2.4 6 5.8" />
+      <path d="M15.2 5.3a3.2 3.2 0 0 1 0 5.8" />
+      <path d="M17.3 14.1c2.2.7 3.7 2.7 3.7 5.4" />
     </>,
     p,
   );

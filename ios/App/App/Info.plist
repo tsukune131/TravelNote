@@ -142,12 +142,10 @@
 	<!--
 		広告(AdMob。ROADMAP E-4 / src/ads/)。
 
-		⚠️ **いまは Google のテスト用アプリ ID。** AdMob でアプリを登録したら
-		本番の ID(ca-app-pub-...~...)に差し替える。src/ads/config.ts の
-		広告ユニット ID と AD_TESTING も一緒に。
+		本番のアプリ ID。変えるときは src/ads/config.ts の広告ユニット ID も一緒に。
 	-->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-5400380982443361~4357517098</string>
 	<!-- ATT(トラッキング許可)のダイアログに出る文。断られても広告は出る -->
 	<key>NSUserTrackingUsageDescription</key>
 	<string>あなたに合った広告を表示するために使います。許可しなくても、アプリはすべて同じように使えます。</string>

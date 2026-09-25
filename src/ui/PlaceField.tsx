@@ -1,19 +1,39 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
-import { updateTrip } from '../db/repo';
 import { searchPlace } from '../weather/weather';
-import type { Trip, TripPlace } from '../db/types';
+import type { TripPlace } from '../db/types';
 
 /**
- * 旅先(天気予報を出す場所)。旅の設定の中。
+ * 旅先(天気予報を出す場所)。旅をつくるときと、旅の設定の中。
  *
  * 地名で探して、候補から1つ選ぶ。座標を手で入れさせない。
  * 探すのは Apple の地名検索なので、**入れた名前は Apple に送られる**
  * (プライバシーポリシーに書く。ROADMAP E-8)。
  *
+ * 保存先は呼び出し側が決める(つくるときは手元に持って作成時に、
+ * 設定では即時に書く)。
+ *
  * 旅先は無料で決められる。予報を見るのが Pro(WeatherBar)。
+ *
+ * Day ごとの切り替え(DayPlaceSheet)でも使う。そのときは見出し・説明・
+ * 外すボタンの文言を差し替える(`clearLabel` が null なら外すボタンを出さない)。
  */
-export function PlaceField({ trip }: { trip: Trip }) {
+export function PlaceField({
+  value,
+  onChange,
+  label,
+  hint,
+  note,
+  clearLabel,
+}: {
+  value: TripPlace | undefined;
+  onChange: (place: TripPlace | undefined) => void;
+  label?: string;
+  hint?: string;
+  /** いまの場所の横に添える一言(「Day 1 から続いています」など) */
+  note?: string;
+  clearLabel?: string | null;
+}) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TripPlace[] | null>(null);
@@ -37,26 +57,27 @@ export function PlaceField({ trip }: { trip: Trip }) {
     }
   }
 
-  async function pick(place: TripPlace) {
-    await updateTrip(trip.id, { place });
+  function pick(place: TripPlace) {
+    onChange(place);
     setResults(null);
     setQuery('');
   }
 
   return (
     <div className="field">
-      <label htmlFor="trip-place">{t('weather.place')}</label>
-      {trip.place && (
+      <label htmlFor="trip-place">{label ?? t('weather.place')}</label>
+      {value && (
         <div className="linkrow">
           <span className="lbl">📍</span>
-          <span className="url">{trip.place.name}</span>
-          <button
-            type="button"
-            className="linklike"
-            onClick={() => void updateTrip(trip.id, { place: undefined })}
-          >
-            {t('weather.clear')}
-          </button>
+          <span className="url">
+            {value.name}
+            {note && <small className="place-note"> {note}</small>}
+          </span>
+          {clearLabel !== null && (
+            <button type="button" className="linklike" onClick={() => onChange(undefined)}>
+              {clearLabel ?? t('weather.clear')}
+            </button>
+          )}
         </div>
       )}
       <div className="row">
@@ -75,13 +96,13 @@ export function PlaceField({ trip }: { trip: Trip }) {
         </button>
       </div>
       {results?.map((p) => (
-        <button key={`${p.lat},${p.lng}`} type="button" className="menu-item" onClick={() => void pick(p)}>
+        <button key={`${p.lat},${p.lng}`} type="button" className="menu-item" onClick={() => pick(p)}>
           📍 {p.name}
           <span className="sub">›</span>
         </button>
       ))}
       {error && <p className="err">{error}</p>}
-      <p className="guess">{t('weather.placeHint')}</p>
+      <p className="guess">{hint ?? t('weather.placeHint')}</p>
     </div>
   );
 }

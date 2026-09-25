@@ -54,7 +54,6 @@ export const en: DeepPartial<Messages> = {
     segmentList: 'List',
     segmentMap: 'Map',
     members: 'Members',
-    menu: 'Menu',
   },
 
   tripForm: {
@@ -346,12 +345,21 @@ export const en: DeepPartial<Messages> = {
     all: 'Everyone',
     unassigned: 'Unassigned',
     pro: 'Pro',
-    noMembers: 'Add the people on this trip from "Members" in the menu.',
+    noMembers: 'Add the people on this trip from "Members" at the top.',
   },
 
   weather: {
     place: 'Destination (for weather)',
-    placeHint: 'One place to show the forecast for. Search by city name.',
+    placeHint: "Where to show the forecast for. Search by city name. If you move on during the trip, switch it from that day's weather row.",
+    placeFromDay1: 'Destination (weather, from Day 1)',
+    setPlace: 'Choose a place for the weather',
+    dayPlaceTitle: 'Weather place for Day {n}',
+    dayPlaceLabel: 'From Day {n} onward',
+    dayPlaceHint: 'This place is used until the next day you switch.',
+    continuedFrom: '(since Day {n})',
+    stopChange: 'Stop switching',
+    changes: 'Weather places along the way',
+    fromDay: 'Day {n}+',
     placePlaceholder: 'e.g. "Kyoto"',
     search: 'Search',
     notFound: 'Not found. Try another name.',

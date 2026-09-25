@@ -4,10 +4,11 @@ import { Sheet } from './Sheet';
 import { LinkList } from './LinkList';
 import { DateRangePicker } from './DateRangePicker';
 import { PlaceField } from './PlaceField';
+import { withPlaceFrom } from '../weather/places';
 import { addTripLink, createTrip, deleteTrip, removeTripLink, updateTrip } from '../db/repo';
 import { addDays, dayCount, isPlainDate, toDate, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
-import type { Trip } from '../db/types';
+import type { Trip, TripPlace } from '../db/types';
 
 const MAX_DAYS = 60;
 
@@ -35,6 +36,8 @@ export function TripForm({
   const [endDate, setEndDate] = useState<PlainDate>(trip?.endDate ?? addDays(today(), 2));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** つくるときの旅先。まだ旅が無いので手元に持ち、作成時に一緒に書く */
+  const [place, setPlace] = useState<TripPlace | undefined>(undefined);
 
   /**
    * 入れたものが正しいか。**正しくないものは保存しない**(自動保存でも同じ)。
@@ -74,7 +77,12 @@ export function TripForm({
     const problem = validate(title, startDate, endDate);
     if (problem) return setError(problem);
     setBusy(true);
-    const created = await createTrip({ title: title.trim(), startDate, endDate });
+    const created = await createTrip({
+      title: title.trim(),
+      startDate,
+      endDate,
+      place,
+    });
     onCreated?.(created.id);
   }
 
@@ -148,8 +156,44 @@ export function TripForm({
         旅の設定を開いたとき ── つまり旅が始まっているか、終わったあとにだけ。
         日付の確認行より下に置くのは、その行が上の日付欄の説明だから。
       */}
-      {/* 旅先(天気予報用)。アルバムと同じく、作ったあとの設定で決める */}
-      {trip && <PlaceField trip={trip} />}
+      {/*
+        旅先(天気予報用)。つくるときから決められる。**決めるのは無料**で、
+        予報を見るのが Pro(Day の WeatherBar が無料の人に案内を出す)
+      */}
+      {trip ? (
+        <PlaceField
+          value={trip.place}
+          label={trip.placeChanges?.length ? t('weather.placeFromDay1') : undefined}
+          onChange={(next) => void updateTrip(trip.id, withPlaceFrom(trip, 0, next))}
+        />
+      ) : (
+        <PlaceField value={place} onChange={setPlace} />
+      )}
+
+      {/*
+        途中で変わる天気の場所。**切り替えるのは Day の天気の行から**(その日の予報を
+        見ながら決めるほうが迷わない)。ここでは一覧と取り消しだけ
+      */}
+      {trip && (trip.placeChanges?.length ?? 0) > 0 && (
+        <div className="field">
+          <label>{t('weather.changes')}</label>
+          {[...(trip.placeChanges ?? [])]
+            .sort((a, b) => a.fromDay - b.fromDay)
+            .map((c) => (
+              <div className="linkrow" key={c.fromDay}>
+                <span className="lbl">{t('weather.fromDay', { n: c.fromDay + 1 })}</span>
+                <span className="url">📍 {c.place.name}</span>
+                <button
+                  type="button"
+                  className="linklike"
+                  onClick={() => void updateTrip(trip.id, withPlaceFrom(trip, c.fromDay, undefined))}
+                >
+                  {t('weather.stopChange')}
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
 
       {trip && (
         <div className="field">

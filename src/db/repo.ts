@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { db, getDeviceId, newId } from './db';
 import { setDisplayName } from './settings';
-import type { DayVariant, EventLink, Member, MemberIcon, PackItem, Trip, TripEvent } from './types';
+import type { DayVariant, EventLink, Member, MemberIcon, PackItem, Trip, TripEvent, TripPlace } from './types';
 import { guessCategory } from '../lib/category';
 import type { CategoryId } from '../lib/category';
 import { compareOrder, orderKeyBetween, orderKeysAfter } from '../lib/fractionalIndex';
@@ -68,6 +68,7 @@ export async function createTrip(input: {
   title: string;
   startDate: PlainDate;
   endDate: PlainDate;
+  place?: TripPlace;
 }): Promise<Trip> {
   const trips = await listTrips();
   const last = trips.length > 0 ? trips[trips.length - 1].order : null;
@@ -76,6 +77,7 @@ export async function createTrip(input: {
     title: input.title,
     startDate: input.startDate,
     endDate: input.endDate,
+    ...(input.place && { place: input.place }),
     order: orderKeyBetween(last, null),
     sharedAt: null,
     imported: false,

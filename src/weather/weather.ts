@@ -4,6 +4,7 @@ import { getSetting, setSetting } from '../db/db';
 import { addDays, today } from '../lib/plainDate';
 import type { PlainDate } from '../lib/plainDate';
 import type { Trip, TripPlace } from '../db/types';
+import { placeForDay, placeKey, placesInUse } from './places';
 
 /**
  * 天気予報(Apple の WeatherKit)。**Pro の機能。**
@@ -65,13 +66,15 @@ export class WeatherUnavailable extends Error {}
 /* ────────── 開発用 ────────── */
 
 /** ブラウザでは WeatherKit が無い。画面を確かめられるよう、それらしい予報を返す */
-function devForecast(): Forecast {
+function devForecast(place: TripPlace): Forecast {
   const symbols = ['sun.max', 'cloud.sun', 'cloud', 'cloud.rain', 'sun.max', 'cloud.drizzle'];
+  // 場所で少しずらす。日ごとに場所を切り替えたのが見てわかるように
+  const shift = Math.round(place.lat * 10) % symbols.length;
   return {
     days: Array.from({ length: FORECAST_DAYS }, (_, i) => ({
       date: addDays(today(), i),
-      symbol: symbols[i % symbols.length],
-      high: 24 - (i % 4),
+      symbol: symbols[(i + shift) % symbols.length],
+      high: 24 - ((i + shift) % 4),
       low: 15 - (i % 3),
       precip: (i % 5) / 5,
     })),
@@ -88,7 +91,11 @@ function devForecast(): Forecast {
 
 export async function searchPlace(query: string): Promise<TripPlace[]> {
   if (!native) {
-    if (import.meta.env.DEV) return [{ name: query, lat: 35.0116, lng: 135.7681, timeZone: 'Asia/Tokyo' }];
+    // 名前ごとに座標を変える(同じ座標だと別の場所として扱えない)
+    if (import.meta.env.DEV) {
+      const n = [...query].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 1000, 0);
+      return [{ name: query, lat: 33 + n / 500, lng: 135.7681, timeZone: 'Asia/Tokyo' }];
+    }
     throw new WeatherUnavailable();
   }
   const { places } = await Weather.geocode({ query });
@@ -97,18 +104,17 @@ export async function searchPlace(query: string): Promise<TripPlace[]> {
 
 /* ────────── 予報 ────────── */
 
-const cacheKey = (tripId: string) => `weather.${tripId}`;
-const placeKey = (p: TripPlace) => `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
+/*
+ * 予報は**場所ごと**に持つ(旅ごとではない)。日によって場所が変わる旅でも、
+ * 取りに行くのは使っている場所の数だけ。別の旅と同じ町なら記録を使い回す。
+ */
+const cacheKey = (p: TripPlace) => `weather.at.${placeKey(p)}`;
 
-type Cached = Forecast & { place: string };
-
-async function readCache(trip: Trip): Promise<Forecast | null> {
-  const raw = await getSetting(cacheKey(trip.id));
-  if (!raw || !trip.place) return null;
+async function readCache(place: TripPlace): Promise<Forecast | null> {
+  const raw = await getSetting(cacheKey(place));
+  if (!raw) return null;
   try {
-    const cached = JSON.parse(raw) as Cached;
-    // 旅先を変えたら古い場所の予報は使わない
-    return cached.place === placeKey(trip.place) ? cached : null;
+    return JSON.parse(raw) as Forecast;
   } catch {
     return null;
   }
@@ -116,7 +122,7 @@ async function readCache(trip: Trip): Promise<Forecast | null> {
 
 async function fetchForecast(place: TripPlace): Promise<Forecast> {
   if (!native) {
-    if (import.meta.env.DEV) return devForecast();
+    if (import.meta.env.DEV) return devForecast(place);
     throw new WeatherUnavailable();
   }
   try {
@@ -130,45 +136,56 @@ async function fetchForecast(place: TripPlace): Promise<Forecast> {
 }
 
 /**
- * 旅の予報。手元の記録をまず返し、古ければ取り直す。
+ * 旅の予報。日ごとの場所(weather/places.ts)ぶんを取り、**その日の場所の予報**を返す。
+ * 手元の記録をまず返し、古ければ取り直す。
  * **取り直しに失敗しても手元の記録は捨てない**(圏外で予報が消えるのが一番困る)。
  */
 export function useTripWeather(
   trip: Trip | undefined,
+  days: number,
   enabled: boolean,
-): { forecast: Forecast | null; unavailable: boolean } {
-  const [forecast, setForecast] = useState<Forecast | null>(null);
+): { forecastFor: (dayIndex: number) => Forecast | null; unavailable: boolean } {
+  const [byPlace, setByPlace] = useState<ReadonlyMap<string, Forecast>>(new Map());
   const [unavailable, setUnavailable] = useState(false);
-  const place = trip?.place;
-  const key = trip && place ? `${trip.id}|${placeKey(place)}` : null;
+  const places = trip ? placesInUse(trip, days) : [];
+  const key = places.map(placeKey).sort().join('|');
 
   useEffect(() => {
-    setForecast(null);
+    setByPlace(new Map());
     setUnavailable(false);
-    if (!enabled || !trip || !place) return;
+    if (!enabled || places.length === 0) return;
     let alive = true;
-    void (async () => {
-      const cached = await readCache(trip);
-      if (alive && cached) setForecast(cached);
-      if (cached && Date.now() - cached.fetchedAt < FRESH_MS) return;
-      try {
-        const fresh = await fetchForecast(place);
-        const toSave: Cached = { ...fresh, place: placeKey(place) };
-        await setSetting(cacheKey(trip.id), JSON.stringify(toSave));
-        if (alive) setForecast(fresh);
-      } catch (err) {
-        if (alive && !cached && err instanceof WeatherUnavailable) setUnavailable(true);
-        // 圏外などは黙って手元の記録のまま
-      }
-    })();
+    const put = (p: TripPlace, f: Forecast) => {
+      if (alive) setByPlace((prev) => new Map(prev).set(placeKey(p), f));
+    };
+    for (const place of places) {
+      void (async () => {
+        const cached = await readCache(place);
+        if (cached) put(place, cached);
+        if (cached && Date.now() - cached.fetchedAt < FRESH_MS) return;
+        try {
+          const fresh = await fetchForecast(place);
+          await setSetting(cacheKey(place), JSON.stringify(fresh));
+          put(place, fresh);
+        } catch (err) {
+          if (alive && !cached && err instanceof WeatherUnavailable) setUnavailable(true);
+          // 圏外などは黙って手元の記録のまま
+        }
+      })();
+    }
     return () => {
       alive = false;
     };
-    // key が旅と場所をまとめて表している
+    // key が使っている場所をまとめて表している
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, enabled]);
 
-  return { forecast, unavailable };
+  function forecastFor(dayIndex: number): Forecast | null {
+    const place = trip && placeForDay(trip, dayIndex);
+    return (place && byPlace.get(placeKey(place))) ?? null;
+  }
+
+  return { forecastFor, unavailable };
 }
 
 /* ────────── 表示 ────────── */

@@ -54,7 +54,6 @@ export const ja = {
     segmentList: 'リスト',
     segmentMap: '地図',
     members: 'メンバー',
-    menu: 'メニュー',
   },
 
   tripForm: {
@@ -383,12 +382,21 @@ export const ja = {
     all: '全員',
     unassigned: '担当なし',
     pro: 'Pro',
-    noMembers: 'メニューの「メンバー」から、一緒に行く人を足してください。',
+    noMembers: '上の「メンバー」から、一緒に行く人を足してください。',
   },
 
   weather: {
     place: '旅先(天気予報)',
-    placeHint: '天気予報を出す場所を1か所。市区町村くらいの名前で探せます。',
+    placeHint: '天気予報を出す場所。市区町村くらいの名前で探せます。途中で場所が変わる日は、その Day の天気の行から切り替えられます。',
+    placeFromDay1: '旅先(天気予報・Day 1〜)',
+    setPlace: '天気の場所を決める',
+    dayPlaceTitle: 'Day {n} の天気の場所',
+    dayPlaceLabel: 'Day {n} から先の場所',
+    dayPlaceHint: 'ここで決めた場所が、次に切り替える日まで続きます。',
+    continuedFrom: '(Day {n} から)',
+    stopChange: '切り替えをやめる',
+    changes: '途中で変わる天気の場所',
+    fromDay: 'Day {n}〜',
     placePlaceholder: 'たとえば「京都市」',
     search: '探す',
     notFound: '見つかりませんでした。別の名前で試してください。',

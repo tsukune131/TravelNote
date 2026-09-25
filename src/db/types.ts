@@ -44,6 +44,12 @@ export type TripPlace = {
   timeZone?: string;
 };
 
+/** 「Day N(0 始まり)から、天気の場所はここ」。次の切り替えまで続く(weather/places.ts) */
+export type TripPlaceChange = {
+  fromDay: number;
+  place: TripPlace;
+};
+
 export type Booking = {
   booked: boolean;
   partySize?: number;
@@ -92,6 +98,13 @@ export type Trip = SyncFields & {
    * 旅先の暦で合わせるのにタイムゾーンが要る。
    */
   place?: TripPlace;
+
+  /**
+   * 旅の途中で天気の場所が変わる日。`place` が Day 1 からで、
+   * ここに「Day N から◯◯」を並べる。次に切り替える日まで続く。
+   * 解釈は `src/weather/places.ts` だけに置く。
+   */
+  placeChanges?: TripPlaceChange[];
 
   /**
    * 受け取った旅か。**取り込みと送り返しは無料**なので、

@@ -2283,6 +2283,26 @@ body.sheet-open .addbar-hint {
   font-size: 1.3rem;
 }
 
+/* 天気の行の場所の名前。押すと、この日からの場所を切り替える */
+.weather-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  min-height: 2rem;
+}
+
+.weather-place .sub {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.place-note {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+}
+
 .weather-attr {
   display: flex;
   align-items: center;

@@ -32,7 +32,7 @@ import { InboxBar, InboxSheet } from './Inbox';
 import { MapProviderPrompt } from './Settings';
 import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
-import { IconBack, IconMore, IconShare } from './Icon';
+import { IconBack, IconChecklist, IconPeople, IconSettings, IconShare } from './Icon';
 import { ShareSheet } from './ShareSheet';
 import type { ImportOutcome } from './ShareSheet';
 import { ImportResult } from './ImportResult';
@@ -67,7 +67,7 @@ export function TripScreen({
   const members = useLiveQuery(() => listMembers(tripId), [tripId]);
   const pro = useProStatus();
   const unlocked = trip ? tripFeaturesUnlocked(trip, pro, Date.now()) : false;
-  const weather = useTripWeather(trip, unlocked);
+  const weather = useTripWeather(trip, trip ? dayCount(trip.startDate, trip.endDate) : 0, unlocked);
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
@@ -76,7 +76,6 @@ export function TripScreen({
   const [sharing, setSharing] = useState(false);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
@@ -161,8 +160,8 @@ export function TripScreen({
   if (!trip) return <div className="screen" />;
 
   /** Day タブの日付の横に、その日の天気の絵文字だけ(Pro・予報のある日だけ) */
-  function dayWeather(d: string) {
-    const f = unlocked ? weather.forecast?.days.find((x) => x.date === d) : undefined;
+  function dayWeather(i: number, d: string) {
+    const f = unlocked ? weather.forecastFor(i)?.days.find((x) => x.date === d) : undefined;
     return f ? ` ${weatherEmoji(f.symbol)}` : null;
   }
 
@@ -224,6 +223,26 @@ export function TripScreen({
             <IconBack />
           </button>
           <h1>{trip.title}</h1>
+          {/*
+            準備・メンバー・旅の設定は**トップバーに直接並べる**(以前は ⋯ のメニュー)。
+            1段深いメニューは、旅行中に片手で探すには遠い
+          */}
+          <button
+            type="button"
+            className="iconbtn plain"
+            onClick={() => setPreparing(true)}
+            aria-label={t('prepare.title')}
+          >
+            <IconChecklist />
+          </button>
+          <button
+            type="button"
+            className="iconbtn plain"
+            onClick={() => setMembersOpen(true)}
+            aria-label={t('trip.members')}
+          >
+            <IconPeople />
+          </button>
           <button
             type="button"
             className="iconbtn"
@@ -239,10 +258,10 @@ export function TripScreen({
           <button
             type="button"
             className="iconbtn plain"
-            onClick={() => setMenuOpen(true)}
-            aria-label={t('trip.menu')}
+            onClick={() => setEditingTrip(true)}
+            aria-label={t('tripForm.editTitle')}
           >
-            <IconMore />
+            <IconSettings />
           </button>
         </div>
       </header>
@@ -286,7 +305,7 @@ export function TripScreen({
                 <b>{t('trip.dayTab', { n: i + 1 })}</b>
                 <small>
                   {date(toDate(d))}
-                  {dayWeather(d)}
+                  {dayWeather(i, d)}
                 </small>
               </button>
             );
@@ -306,9 +325,10 @@ export function TripScreen({
           {!ideas && (
             <WeatherBar
               trip={trip}
+              dayIndex={dayIndex}
               day={dayDate}
               unlocked={unlocked}
-              forecast={weather.forecast}
+              forecast={weather.forecastFor(dayIndex)}
               unavailable={weather.unavailable}
             />
           )}
@@ -504,51 +524,6 @@ export function TripScreen({
       )}
 
       {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
-
-      {/*
-        ⋯ は**メニュー**(docs/ux-design.md §2.1)。
-        以前は旅の設定へ直行していたが、準備の置き場所が無かった。
-        下タブは置かない方針なので、旅程以外はここに集める。
-      */}
-      {menuOpen && (
-        <Sheet title={t('trip.menu')} onClose={() => setMenuOpen(false)}>
-          <div>
-            <button
-              type="button"
-              className="menu-item"
-              onClick={() => {
-                setMenuOpen(false);
-                setPreparing(true);
-              }}
-            >
-              🎒 {t('prepare.title')}
-              <span className="sub">›</span>
-            </button>
-            <button
-              type="button"
-              className="menu-item"
-              onClick={() => {
-                setMenuOpen(false);
-                setMembersOpen(true);
-              }}
-            >
-              👥 {t('trip.members')}
-              <span className="sub">›</span>
-            </button>
-            <button
-              type="button"
-              className="menu-item"
-              onClick={() => {
-                setMenuOpen(false);
-                setEditingTrip(true);
-              }}
-            >
-              ⚙️ {t('tripForm.editTitle')}
-              <span className="sub">›</span>
-            </button>
-          </div>
-        </Sheet>
-      )}
 
       {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
 
