@@ -1,10 +1,12 @@
 import Capacitor
 import CoreLocation
 import Foundation
+import MapKit
 import WeatherKit
 
 /**
- 天気予報(WeatherKit)と地名検索(CLGeocoder)。JS 側は `src/weather/weather.ts`。
+ 天気予報(WeatherKit)と地名検索(MapKit の検索 → だめなら CLGeocoder)。
+ JS 側は `src/weather/weather.ts`。
 
  ## 前提(ROADMAP E-6)
 
@@ -42,6 +44,12 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
 
      返す名前は「京都市 京都府」のように市区町村と都道府県まで。
      候補は最大5つ(同名の地名を選べるように)。
+
+     ⚠️ **先に MapKit の検索(`MKLocalSearch`)で引く。** 以前は `CLGeocoder` だけで、
+     これは住所の変換なので「ニューヨーク」のようなカタカナの海外の都市名を
+     引けなかった(「アメリカ合衆国」は引けた。実機で確認)。マップの検索は
+     地図アプリと同じ引き方なので、日本語の海外地名も通る。
+     何も返らなかったときだけ `CLGeocoder` に回す。
      */
     @objc func geocode(_ call: CAPPluginCall) {
         let query = call.getString("query") ?? ""
@@ -49,6 +57,30 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["places": []])
             return
         }
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        // 地名だけ。店や施設まで混ぜると「ニューヨーク」で同名の店が並ぶ
+        request.resultTypes = .address
+        // 端末のいる場所に寄せない。旅先は海外のこともある
+        request.region = MKCoordinateRegion(MKMapRect.world)
+
+        MKLocalSearch(request: request).start { response, _ in
+            var found: [(CLPlacemark, TimeZone?)] = []
+            for item in response?.mapItems ?? [] {
+                let placemark: CLPlacemark = item.placemark
+                found.append((placemark, item.timeZone))
+            }
+            if !found.isEmpty {
+                call.resolve(["places": self.places(from: found, query: query)])
+                return
+            }
+            self.geocodeAddress(query, call)
+        }
+    }
+
+    /** 住所としての変換。MapKit の検索で何も出なかったときの控え */
+    private func geocodeAddress(_ query: String, _ call: CAPPluginCall) {
         let locale = Locale(identifier: Locale.preferredLanguages.first ?? "ja_JP")
         CLGeocoder().geocodeAddressString(query, in: nil, preferredLocale: locale) { placemarks, error in
             if error != nil {
@@ -56,27 +88,42 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.resolve(["places": []])
                 return
             }
-            var places: [[String: Any]] = []
-            for placemark in (placemarks ?? []).prefix(5) {
-                guard let coordinate = placemark.location?.coordinate else { continue }
-                var parts: [String] = []
-                for part in [placemark.locality ?? placemark.name, placemark.administrativeArea] {
-                    if let part = part, !part.isEmpty, !parts.contains(part) {
-                        parts.append(part)
-                    }
-                }
-                var place: [String: Any] = [
-                    "name": parts.isEmpty ? query : parts.joined(separator: " "),
-                    "lat": coordinate.latitude,
-                    "lng": coordinate.longitude
-                ]
-                if let tz = placemark.timeZone?.identifier {
-                    place["timeZone"] = tz
-                }
-                places.append(place)
+            var found: [(CLPlacemark, TimeZone?)] = []
+            for placemark in placemarks ?? [] {
+                found.append((placemark, placemark.timeZone))
             }
-            call.resolve(["places": places])
+            call.resolve(["places": self.places(from: found, query: query)])
         }
+    }
+
+    /** JS に返す形にする。同じ座標の候補は1つにまとめ、最大5つ */
+    private func places(from found: [(CLPlacemark, TimeZone?)], query: String) -> [[String: Any]] {
+        var places: [[String: Any]] = []
+        var seen = Set<String>()
+        for (placemark, timeZone) in found {
+            if places.count >= 5 { break }
+            guard let coordinate = placemark.location?.coordinate else { continue }
+            let key = String(format: "%.3f,%.3f", coordinate.latitude, coordinate.longitude)
+            if seen.contains(key) { continue }
+            seen.insert(key)
+
+            var parts: [String] = []
+            for part in [placemark.locality ?? placemark.name, placemark.administrativeArea] {
+                if let part = part, !part.isEmpty, !parts.contains(part) {
+                    parts.append(part)
+                }
+            }
+            var place: [String: Any] = [
+                "name": parts.isEmpty ? query : parts.joined(separator: " "),
+                "lat": coordinate.latitude,
+                "lng": coordinate.longitude
+            ]
+            if let tz = timeZone?.identifier {
+                place["timeZone"] = tz
+            }
+            places.append(place)
+        }
+        return places
     }
 
     /* ────────── 予報 ────────── */
