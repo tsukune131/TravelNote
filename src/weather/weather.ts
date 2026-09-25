@@ -42,9 +42,19 @@ export type Forecast = {
   fetchedAt: number;
 };
 
+/**
+ * 地名検索の候補。`detail` は一覧の2行目(「カナダ オンタリオ州」)で、**保存しない**
+ * (選んだら `toPlace` で外す)。同じ名前の町を見分けるためだけのもの
+ */
+export type PlaceCandidate = TripPlace & { detail?: string };
+
+export function toPlace({ name, lat, lng, timeZone }: PlaceCandidate): TripPlace {
+  return timeZone ? { name, lat, lng, timeZone } : { name, lat, lng };
+}
+
 type WeatherPlugin = {
   /** `debug` はそれぞれの検索が何を返したか(「mapkit: 0件 / geocoder: 2件」)。診断用 */
-  geocode(options: { query: string }): Promise<{ places: TripPlace[]; debug?: string }>;
+  geocode(options: { query: string }): Promise<{ places: PlaceCandidate[]; debug?: string }>;
   forecast(options: {
     lat: number;
     lng: number;
@@ -115,12 +125,12 @@ function logSearch(next: PlaceSearchLog) {
   for (const l of searchListeners) l();
 }
 
-export async function searchPlace(query: string): Promise<TripPlace[]> {
+export async function searchPlace(query: string): Promise<PlaceCandidate[]> {
   if (!native) {
     // 名前ごとに座標を変える(同じ座標だと別の場所として扱えない)
     if (import.meta.env.DEV) {
       const n = [...query].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 1000, 0);
-      return [{ name: query, lat: 33 + n / 500, lng: 135.7681, timeZone: 'Asia/Tokyo' }];
+      return [{ name: query, detail: 'dev', lat: 33 + n / 500, lng: 135.7681, timeZone: 'Asia/Tokyo' }];
     }
     throw new WeatherUnavailable();
   }

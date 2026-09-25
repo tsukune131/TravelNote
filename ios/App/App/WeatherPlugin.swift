@@ -96,14 +96,19 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
         _ call: CAPPluginCall,
         debug: String
     ) {
-        var results = [(CLPlacemark, TimeZone?)?](repeating: nil, count: completions.count)
+        var results = [FoundPlace?](repeating: nil, count: completions.count)
         let group = DispatchGroup()
         for (index, completion) in completions.enumerated() {
             group.enter()
             MKLocalSearch(request: MKLocalSearch.Request(completion: completion)).start { response, _ in
                 if let item = response?.mapItems.first {
-                    let placemark: CLPlacemark = item.placemark
-                    results[index] = (placemark, item.timeZone)
+                    // 候補の見出し(「トロント」)と2行目(「カナダ オンタリオ州」)も持っておく
+                    results[index] = FoundPlace(
+                        placemark: item.placemark,
+                        timeZone: item.timeZone,
+                        title: completion.title,
+                        subtitle: completion.subtitle
+                    )
                 }
                 group.leave()
             }
@@ -127,10 +132,9 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
         request.resultTypes = .address
 
         MKLocalSearch(request: request).start { response, error in
-            var found: [(CLPlacemark, TimeZone?)] = []
+            var found: [FoundPlace] = []
             for item in response?.mapItems ?? [] {
-                let placemark: CLPlacemark = item.placemark
-                found.append((placemark, item.timeZone))
+                found.append(FoundPlace(placemark: item.placemark, timeZone: item.timeZone))
             }
             let step = debug + " / mapkit: " + self.describe(count: found.count, error: error)
             if !found.isEmpty {
@@ -145,9 +149,9 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
     private func geocodeAddress(_ query: String, _ call: CAPPluginCall, debug: String) {
         let locale = Locale(identifier: Locale.preferredLanguages.first ?? "ja_JP")
         CLGeocoder().geocodeAddressString(query, in: nil, preferredLocale: locale) { placemarks, error in
-            var found: [(CLPlacemark, TimeZone?)] = []
+            var found: [FoundPlace] = []
             for placemark in placemarks ?? [] {
-                found.append((placemark, placemark.timeZone))
+                found.append(FoundPlace(placemark: placemark, timeZone: placemark.timeZone))
             }
             // 見つからないときもエラーで返ってくる。JS では「見つかりませんでした」
             let all = debug + " / geocoder: " + self.describe(count: found.count, error: error)
@@ -164,29 +168,57 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
         return "\(count)件"
     }
 
-    /** JS に返す形にする。同じ座標の候補は1つにまとめ、最大5つ */
-    private func places(from found: [(CLPlacemark, TimeZone?)], query: String) -> [[String: Any]] {
+    /**
+     JS に返す形にする。同じ座標の候補は1つにまとめ、最大5つ。
+
+     - `name`(保存して天気の行に出す): 日本は「京都市 京都府」、
+       **海外は「トロント(カナダ)」**。州の略号だけ(「トロント ON」「トロント OH」)では
+       どの国の町か分からなかった(実機で確認)
+     - `detail`(候補の一覧の2行目だけ。保存しない): 補完の2行目
+       (「カナダ オンタリオ州」)。無ければ国と州
+     */
+    private func places(from found: [FoundPlace], query: String) -> [[String: Any]] {
         var places: [[String: Any]] = []
         var seen = Set<String>()
-        for (placemark, timeZone) in found {
+        for item in found {
             if places.count >= 5 { break }
+            let placemark = item.placemark
             guard let coordinate = placemark.location?.coordinate else { continue }
             let key = String(format: "%.3f,%.3f", coordinate.latitude, coordinate.longitude)
             if seen.contains(key) { continue }
             seen.insert(key)
 
-            var parts: [String] = []
-            for part in [placemark.locality ?? placemark.name, placemark.administrativeArea] {
-                if let part = part, !part.isEmpty, !parts.contains(part) {
-                    parts.append(part)
+            let country = placemark.country ?? ""
+            let region = placemark.administrativeArea ?? ""
+            var name: String
+            if placemark.isoCountryCode == nil || placemark.isoCountryCode == "JP" {
+                var parts: [String] = []
+                for part in [placemark.locality ?? placemark.name, placemark.administrativeArea] {
+                    if let part = part, !part.isEmpty, !parts.contains(part) {
+                        parts.append(part)
+                    }
+                }
+                name = parts.isEmpty ? query : parts.joined(separator: " ")
+            } else {
+                let base = item.title ?? placemark.locality ?? placemark.name ?? query
+                name = base
+                if !country.isEmpty && country != base {
+                    name += "(\(country))"
                 }
             }
+
+            var detail = item.subtitle ?? ""
+            if detail.isEmpty {
+                detail = [country, region].filter { !$0.isEmpty }.joined(separator: " ")
+            }
+
             var place: [String: Any] = [
-                "name": parts.isEmpty ? query : parts.joined(separator: " "),
+                "name": name,
+                "detail": detail,
                 "lat": coordinate.latitude,
                 "lng": coordinate.longitude
             ]
-            if let tz = timeZone?.identifier {
+            if let tz = item.timeZone?.identifier {
                 place["timeZone"] = tz
             }
             places.append(place)
@@ -286,4 +318,12 @@ private final class PlaceCompleter: NSObject, MKLocalSearchCompleterDelegate {
         completer.cancel()
         done(results, error)
     }
+}
+
+/** 見つかった場所1件。補完から来たときは、候補の見出しと2行目も持つ */
+private struct FoundPlace {
+    let placemark: CLPlacemark
+    let timeZone: TimeZone?
+    var title: String? = nil
+    var subtitle: String? = nil
 }

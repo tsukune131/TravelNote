@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/context';
-import { searchPlace } from '../weather/weather';
+import { searchPlace, toPlace } from '../weather/weather';
+import type { PlaceCandidate } from '../weather/weather';
 import type { TripPlace } from '../db/types';
 
 /**
@@ -36,7 +37,7 @@ export function PlaceField({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<TripPlace[] | null>(null);
+  const [results, setResults] = useState<PlaceCandidate[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,8 +58,8 @@ export function PlaceField({
     }
   }
 
-  function pick(place: TripPlace) {
-    onChange(place);
+  function pick(candidate: PlaceCandidate) {
+    onChange(toPlace(candidate));
     setResults(null);
     setQuery('');
   }
@@ -97,7 +98,12 @@ export function PlaceField({
       </div>
       {results?.map((p) => (
         <button key={`${p.lat},${p.lng}`} type="button" className="menu-item" onClick={() => pick(p)}>
-          📍 {p.name}
+          📍
+          {/* 2行目に国と州。「トロント」がカナダかアメリカかを選ぶ前に見分けられるように */}
+          <span className="link-choice">
+            <b>{p.name}</b>
+            {p.detail && <small>{p.detail}</small>}
+          </span>
           <span className="sub">›</span>
         </button>
       ))}
