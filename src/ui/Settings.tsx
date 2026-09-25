@@ -11,6 +11,8 @@ import { setProStatus, useProStatus } from '../pro/store';
 import { isProActive } from '../pro/entitlement';
 import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
+import { useAdDiagnostics } from '../ads/ads';
+import { useLastPlaceSearch } from '../weather/weather';
 
 
 export function Settings({ onClose }: { onClose: () => void }) {
@@ -20,6 +22,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [note, setNote] = useState<string | null>(null);
   const [theme, setThemeState] = useState<ThemeId | null>(null);
   const [paywall, setPaywall] = useState(false);
+  /** バージョンの行を押した回数。5回で広告の診断を出す(下のコメント) */
+  const [versionTaps, setVersionTaps] = useState(0);
   const pro = useProStatus();
 
   useEffect(() => {
@@ -104,11 +108,18 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <span className="sub">›</span>
           </button>
         )}
-        <div className="menu-item">
+        {/*
+          バージョンの行を**5回押すと広告の診断**が出る(隠し)。
+          広告は読めなくても黙って帯を 0 にするので、実機で出ないときに
+          AdMob が何を返したかを見る手段がここしかない。普段は誰にも見せない
+        */}
+        <button type="button" className="menu-item" onClick={() => setVersionTaps((n) => n + 1)}>
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
-        </div>
+        </button>
       </div>
+
+      {versionTaps >= 5 && <AdDiagnosticsPanel />}
 
       {note && <p className="guess">{note}</p>}
       {paywall && <Paywall reason="ads" onClose={() => setPaywall(false)} />}
@@ -205,5 +216,40 @@ export function MapProviderPrompt({
     <Sheet title={t('map.chooseProvider')} onClose={onClose}>
       <MapProviderField value={null} onChange={onPick} />
     </Sheet>
+  );
+}
+
+/**
+ * 診断(隠し)。AdMob と地名検索の返事をそのまま出す。値は訳さない(エラーの文言など)。
+ * どちらも実機でしか確かめられず、出ないときに理由がどこにも残らなかった
+ */
+function AdDiagnosticsPanel() {
+  const { t } = useI18n();
+  const d = useAdDiagnostics();
+  const search = useLastPlaceSearch();
+  const rows: Array<[string, string]> = [
+    [t('settings.adDiag.stage'), d.stage],
+    [t('settings.adDiag.att'), d.att ?? '—'],
+    [t('settings.adDiag.banner'), d.banner ?? '—'],
+    [t('settings.adDiag.interstitial'), d.interstitial ?? '—'],
+    [t('settings.adDiag.testing'), String(d.testing)],
+    [t('settings.adDiag.updated'), d.updatedAt ? new Date(d.updatedAt).toLocaleTimeString() : '—'],
+    [
+      t('settings.adDiag.placeSearch'),
+      search ? `"${search.query}" → ${search.count} / ${search.debug || '—'}` : '—',
+    ],
+  ];
+  return (
+    <div className="field">
+      <label>{t('settings.adDiag.title')}</label>
+      <dl className="ad-diag">
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

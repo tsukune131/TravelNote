@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { getSetting, setSetting } from '../db/db';
 import { addDays, today } from '../lib/plainDate';
@@ -43,7 +43,8 @@ export type Forecast = {
 };
 
 type WeatherPlugin = {
-  geocode(options: { query: string }): Promise<{ places: TripPlace[] }>;
+  /** `debug` はそれぞれの検索が何を返したか(「mapkit: 0件 / geocoder: 2件」)。診断用 */
+  geocode(options: { query: string }): Promise<{ places: TripPlace[]; debug?: string }>;
   forecast(options: {
     lat: number;
     lng: number;
@@ -89,6 +90,31 @@ function devForecast(place: TripPlace): Forecast {
 
 /* ────────── 地名検索 ────────── */
 
+/**
+ * 最後の地名検索の記録。設定の隠し表示(Settings.tsx の診断)で見る。
+ * 海外の地名が出ない件は実機でしか確かめられず、どの検索が何を返したかが要った
+ */
+export type PlaceSearchLog = { query: string; count: number; debug: string } | null;
+
+let lastSearch: PlaceSearchLog = null;
+const searchListeners = new Set<() => void>();
+
+export function useLastPlaceSearch(): PlaceSearchLog {
+  return useSyncExternalStore(
+    (l) => {
+      searchListeners.add(l);
+      return () => searchListeners.delete(l);
+    },
+    () => lastSearch,
+    () => lastSearch,
+  );
+}
+
+function logSearch(next: PlaceSearchLog) {
+  lastSearch = next;
+  for (const l of searchListeners) l();
+}
+
 export async function searchPlace(query: string): Promise<TripPlace[]> {
   if (!native) {
     // 名前ごとに座標を変える(同じ座標だと別の場所として扱えない)
@@ -98,8 +124,14 @@ export async function searchPlace(query: string): Promise<TripPlace[]> {
     }
     throw new WeatherUnavailable();
   }
-  const { places } = await Weather.geocode({ query });
-  return places;
+  try {
+    const { places, debug } = await Weather.geocode({ query });
+    logSearch({ query, count: places.length, debug: debug ?? '' });
+    return places;
+  } catch (err) {
+    logSearch({ query, count: 0, debug: `error: ${String((err as Error)?.message ?? err)}` });
+    throw err;
+  }
 }
 
 /* ────────── 予報 ────────── */

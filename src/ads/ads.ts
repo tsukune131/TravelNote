@@ -63,6 +63,64 @@ export function closeDevInterstitial(): void {
   setDev({ interstitial: false });
 }
 
+/* ────────── 診断(設定の隠し表示) ────────── */
+
+/**
+ * 広告がいまどうなっているか。**推測ではなく AdMob の返事を見る**ための記録。
+ *
+ * 広告は読めなくても黙って帯を 0 にする作りなので、出ないときに理由が
+ * どこにも残らなかった(本番の ID に替えて帯が消え、原因を当て推量するしかなかった)。
+ * 設定のバージョンの行を5回押すと出る(Settings.tsx)。普段は誰にも見せない。
+ */
+export type AdDiagnostics = {
+  /** 'off' = 出していない(Pro など)/ 'web' / 'starting' / 'started' / 'error' */
+  stage: string;
+  /** ATT の状態(authorized / denied / notDetermined / restricted) */
+  att: string | null;
+  /** 帯の最後の結果。'loaded' か、AdMob のエラー(コード: 文言) */
+  banner: string | null;
+  /** 全画面の最後の結果。'ready' か、エラー */
+  interstitial: string | null;
+  testing: boolean;
+  updatedAt: number | null;
+};
+
+let diag: AdDiagnostics = {
+  stage: 'off',
+  att: null,
+  banner: null,
+  interstitial: null,
+  testing: AD_TESTING,
+  updatedAt: null,
+};
+const diagListeners = new Set<() => void>();
+
+function setDiag(next: Partial<AdDiagnostics>) {
+  diag = { ...diag, ...next, updatedAt: Date.now() };
+  for (const l of diagListeners) l();
+}
+
+/** エラーを「コード: 文言」に。プラグインの返すものは形がまちまちなので広めに拾う */
+function describeError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { code?: unknown; message?: unknown };
+    const code = e.code !== undefined ? `${String(e.code)}: ` : '';
+    return `${code}${String(e.message ?? JSON.stringify(err))}`;
+  }
+  return String(err);
+}
+
+export function useAdDiagnostics(): AdDiagnostics {
+  return useSyncExternalStore(
+    (l) => {
+      diagListeners.add(l);
+      return () => diagListeners.delete(l);
+    },
+    () => diag,
+    () => diag,
+  );
+}
+
 /* ────────── 帯の高さ ────────── */
 
 function setBannerHeight(px: number) {
@@ -107,6 +165,7 @@ export async function startAds(): Promise<void> {
   state ??= await loadState();
 
   if (!native) {
+    setDiag({ stage: 'web' });
     if (import.meta.env.DEV) {
       setBannerHeight(50);
       setDev({ banner: true });
@@ -114,6 +173,7 @@ export async function startAds(): Promise<void> {
     return;
   }
 
+  setDiag({ stage: 'starting' });
   try {
     if (!initialized) {
       initialized = true;
@@ -125,11 +185,17 @@ export async function startAds(): Promise<void> {
        */
       const { status } = await AdMob.trackingAuthorizationStatus();
       if (status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+      // 聞いたあとの状態を記録する(テストデバイスの判定は許可が無いと効かない)
+      setDiag({ att: (await AdMob.trackingAuthorizationStatus()).status });
 
       await AdMob.addListener(BannerAdPluginEvents.SizeChanged, (size) =>
         setBannerHeight(running ? size.height : 0),
       );
-      await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, () => setBannerHeight(0));
+      await AdMob.addListener(BannerAdPluginEvents.Loaded, () => setDiag({ banner: 'loaded' }));
+      await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (info) => {
+        setBannerHeight(0);
+        setDiag({ banner: describeError(info) });
+      });
       await AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
         interstitialReady = false;
         void prepareInterstitial();
@@ -142,10 +208,12 @@ export async function startAds(): Promise<void> {
       margin: 0,
       isTesting: AD_TESTING,
     });
+    setDiag({ stage: 'started' });
     void prepareInterstitial();
-  } catch {
+  } catch (err) {
     // 出せないなら出さないだけ。画面は帯なしのまま
     setBannerHeight(0);
+    setDiag({ stage: 'error', banner: describeError(err) });
   }
 }
 
@@ -155,6 +223,7 @@ export async function stopAds(): Promise<void> {
   running = false;
   setBannerHeight(0);
   setDev({ banner: false, interstitial: false });
+  setDiag({ stage: 'off' });
   if (!native) return;
   try {
     await AdMob.removeBanner();
@@ -168,8 +237,10 @@ async function prepareInterstitial() {
   try {
     await AdMob.prepareInterstitial({ adId: AD_UNITS.interstitial, isTesting: AD_TESTING });
     interstitialReady = true;
-  } catch {
+    setDiag({ interstitial: 'ready' });
+  } catch (err) {
     interstitialReady = false;
+    setDiag({ interstitial: describeError(err) });
   }
 }
 

@@ -436,6 +436,16 @@ export const ja = {
     restore: '購入を復元',
     manageSubscription: 'サブスクリプションの管理',
     version: 'バージョン',
+    adDiag: {
+      title: '診断(広告・地名検索)',
+      stage: '状態',
+      att: 'トラッキング',
+      banner: '帯',
+      interstitial: '全画面',
+      testing: 'テスト広告',
+      updated: '更新',
+      placeSearch: '地名検索',
+    },
     theme: 'ベース色',
   },
 

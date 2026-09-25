@@ -50,6 +50,14 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
      引けなかった(「アメリカ合衆国」は引けた。実機で確認)。マップの検索は
      地図アプリと同じ引き方なので、日本語の海外地名も通る。
      何も返らなかったときだけ `CLGeocoder` に回す。
+
+     ⚠️ **検索範囲(region)は付けない。** 「世界全体」(`MKMapRect.world`)を渡していた版では
+     「ハワイ」「釜山」は出るのに「トロント」「ニューヨーク」が出なかった ──
+     MapKit の検索が毎回空で、`CLGeocoder` に落ちていたとみられる(緯度の幅 170° 超の
+     範囲を無効として扱う疑い)。範囲なしなら端末の近くに寄るだけで、世界中を探す。
+
+     返り値の `debug` に、それぞれの検索が何を返したか(件数かエラー)を入れる。
+     設定の隠し表示(広告の診断と同じ場所)で見られる。実機でしか確かめられないため。
      */
     @objc func geocode(_ call: CAPPluginCall) {
         let query = call.getString("query") ?? ""
@@ -62,38 +70,43 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
         request.naturalLanguageQuery = query
         // 地名だけ。店や施設まで混ぜると「ニューヨーク」で同名の店が並ぶ
         request.resultTypes = .address
-        // 端末のいる場所に寄せない。旅先は海外のこともある
-        request.region = MKCoordinateRegion(MKMapRect.world)
 
-        MKLocalSearch(request: request).start { response, _ in
+        MKLocalSearch(request: request).start { response, error in
             var found: [(CLPlacemark, TimeZone?)] = []
             for item in response?.mapItems ?? [] {
                 let placemark: CLPlacemark = item.placemark
                 found.append((placemark, item.timeZone))
             }
+            let mapkit = "mapkit: " + self.describe(count: found.count, error: error)
             if !found.isEmpty {
-                call.resolve(["places": self.places(from: found, query: query)])
+                call.resolve(["places": self.places(from: found, query: query), "debug": mapkit])
                 return
             }
-            self.geocodeAddress(query, call)
+            self.geocodeAddress(query, call, debug: mapkit)
         }
     }
 
     /** 住所としての変換。MapKit の検索で何も出なかったときの控え */
-    private func geocodeAddress(_ query: String, _ call: CAPPluginCall) {
+    private func geocodeAddress(_ query: String, _ call: CAPPluginCall, debug: String) {
         let locale = Locale(identifier: Locale.preferredLanguages.first ?? "ja_JP")
         CLGeocoder().geocodeAddressString(query, in: nil, preferredLocale: locale) { placemarks, error in
-            if error != nil {
-                // 見つからないときもエラーで返ってくる。JS では「見つかりませんでした」
-                call.resolve(["places": []])
-                return
-            }
             var found: [(CLPlacemark, TimeZone?)] = []
             for placemark in placemarks ?? [] {
                 found.append((placemark, placemark.timeZone))
             }
-            call.resolve(["places": self.places(from: found, query: query)])
+            // 見つからないときもエラーで返ってくる。JS では「見つかりませんでした」
+            let all = debug + " / geocoder: " + self.describe(count: found.count, error: error)
+            call.resolve(["places": self.places(from: found, query: query), "debug": all])
         }
+    }
+
+    /** 検索の結果を1語で。「3件」か「MKErrorDomain 4」 */
+    private func describe(count: Int, error: Error?) -> String {
+        if let error = error {
+            let e = error as NSError
+            return "\(e.domain) \(e.code)"
+        }
+        return "\(count)件"
     }
 
     /** JS に返す形にする。同じ座標の候補は1つにまとめ、最大5つ */

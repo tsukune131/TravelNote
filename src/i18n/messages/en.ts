@@ -399,6 +399,16 @@ export const en: DeepPartial<Messages> = {
     restore: 'Restore Purchases',
     manageSubscription: 'Manage subscription',
     version: 'Version',
+    adDiag: {
+      title: 'Diagnostics (ads, place search)',
+      stage: 'Stage',
+      att: 'Tracking',
+      banner: 'Banner',
+      interstitial: 'Full-screen',
+      testing: 'Test ads',
+      updated: 'Updated',
+      placeSearch: 'Place search',
+    },
     theme: 'Base color',
   },
 

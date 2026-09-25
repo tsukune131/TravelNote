@@ -128,9 +128,9 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
           })}
 
           {/*
-            Pro の存在自体を、共有しようとするまで誰も知らない設計だった
-            (課金導線は共有シートの奥にしか無い)。一覧の最後に軽く出しておく ──
-            共有を試すより前に「そもそも送れる」と知ってもらうため。
+            Pro の案内(購入画面の入口の1つ。docs/ux-design.md §9.1)。
+            一覧の最後に軽く出すだけで、押した人にだけ購入画面を出す。
+            Pro の中身(広告なし・天気・割り振り)を、使う場面より前に知ってもらうため。
           */}
           {trips !== undefined && trips.length > 0 && !isProActive(pro, Date.now()) && (
             <button type="button" className="probanner" onClick={() => setShowPaywall(true)}>
