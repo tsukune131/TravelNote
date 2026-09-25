@@ -45,19 +45,22 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
      返す名前は「京都市 京都府」のように市区町村と都道府県まで。
      候補は最大5つ(同名の地名を選べるように)。
 
-     ⚠️ **先に MapKit の検索(`MKLocalSearch`)で引く。** 以前は `CLGeocoder` だけで、
-     これは住所の変換なので「ニューヨーク」のようなカタカナの海外の都市名を
-     引けなかった(「アメリカ合衆国」は引けた。実機で確認)。マップの検索は
-     地図アプリと同じ引き方なので、日本語の海外地名も通る。
-     何も返らなかったときだけ `CLGeocoder` に回す。
+     ## 3段で引く(上から、見つかったところで止める)
 
-     ⚠️ **検索範囲(region)は付けない。** 「世界全体」(`MKMapRect.world`)を渡していた版では
-     「ハワイ」「釜山」は出るのに「トロント」「ニューヨーク」が出なかった ──
-     MapKit の検索が毎回空で、`CLGeocoder` に落ちていたとみられる(緯度の幅 170° 超の
-     範囲を無効として扱う疑い)。範囲なしなら端末の近くに寄るだけで、世界中を探す。
+     1. **補完(`MKLocalSearchCompleter`)** … マップアプリで打ち込むと出る候補と同じもの。
+        候補を `MKLocalSearch.Request(completion:)` で座標に直す
+     2. **住所検索(`MKLocalSearch`、住所だけ)**
+     3. **住所の変換(`CLGeocoder`)**
 
-     返り値の `debug` に、それぞれの検索が何を返したか(件数かエラー)を入れる。
-     設定の隠し表示(広告の診断と同じ場所)で見られる。実機でしか確かめられないため。
+     ⚠️ **経緯(実機で確認):** `CLGeocoder` だけの版と、2 → 3 の版では、
+     「ハワイ」「釜山」は出るのに「ニューヨーク」「トロント」が出なかった。
+     診断の表示は `mapkit: MKErrorDomain 4`(placemarkNotFound)/
+     `geocoder: kCLErrorDomain 8`(結果なし)── どちらも**探して見つからなかった**。
+     カタカナの海外の都市名は、住所としては引けない。マップアプリが候補を出せるのは
+     補完のほうなので、それを先に使う。(その前に疑った「検索範囲が広すぎる」は外れ)
+
+     返り値の `debug` に、それぞれの段が何を返したか(件数かエラー)を入れる。
+     設定の隠し表示で見られる。実機でしか確かめられないため。
      */
     @objc func geocode(_ call: CAPPluginCall) {
         let query = call.getString("query") ?? ""
@@ -66,6 +69,58 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        // 補完はメインスレッドで使う(プラグインのメソッドは別のスレッドで呼ばれる)
+        DispatchQueue.main.async {
+            let completer = PlaceCompleter()
+            // 返事が来るまで持っておく。持たないと結果が返る前に解放される
+            self.completers.append(completer)
+            completer.run(query) { completions, error in
+                self.completers.removeAll { $0 === completer }
+                let step = "completer: " + self.describe(count: completions.count, error: error)
+                if completions.isEmpty {
+                    self.searchAddress(query, call, debug: step)
+                    return
+                }
+                self.resolveCompletions(Array(completions.prefix(5)), query: query, call, debug: step)
+            }
+        }
+    }
+
+    /** 実行中の補完。同時に2回探されても、それぞれ最後まで返事を待てるように配列で持つ */
+    private var completers: [PlaceCompleter] = []
+
+    /** 補完の候補を座標に直す。順番は候補の並びのまま */
+    private func resolveCompletions(
+        _ completions: [MKLocalSearchCompletion],
+        query: String,
+        _ call: CAPPluginCall,
+        debug: String
+    ) {
+        var results = [(CLPlacemark, TimeZone?)?](repeating: nil, count: completions.count)
+        let group = DispatchGroup()
+        for (index, completion) in completions.enumerated() {
+            group.enter()
+            MKLocalSearch(request: MKLocalSearch.Request(completion: completion)).start { response, _ in
+                if let item = response?.mapItems.first {
+                    let placemark: CLPlacemark = item.placemark
+                    results[index] = (placemark, item.timeZone)
+                }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) {
+            let found = results.compactMap { $0 }
+            let step = debug + " → \(found.count)件"
+            if found.isEmpty {
+                self.searchAddress(query, call, debug: step)
+                return
+            }
+            call.resolve(["places": self.places(from: found, query: query), "debug": step])
+        }
+    }
+
+    /** 住所検索。補完で何も出なかったとき */
+    private func searchAddress(_ query: String, _ call: CAPPluginCall, debug: String) {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         // 地名だけ。店や施設まで混ぜると「ニューヨーク」で同名の店が並ぶ
@@ -77,16 +132,16 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
                 let placemark: CLPlacemark = item.placemark
                 found.append((placemark, item.timeZone))
             }
-            let mapkit = "mapkit: " + self.describe(count: found.count, error: error)
+            let step = debug + " / mapkit: " + self.describe(count: found.count, error: error)
             if !found.isEmpty {
-                call.resolve(["places": self.places(from: found, query: query), "debug": mapkit])
+                call.resolve(["places": self.places(from: found, query: query), "debug": step])
                 return
             }
-            self.geocodeAddress(query, call, debug: mapkit)
+            self.geocodeAddress(query, call, debug: step)
         }
     }
 
-    /** 住所としての変換。MapKit の検索で何も出なかったときの控え */
+    /** 住所としての変換。最後の控え */
     private func geocodeAddress(_ query: String, _ call: CAPPluginCall, debug: String) {
         let locale = Locale(identifier: Locale.preferredLanguages.first ?? "ja_JP")
         CLGeocoder().geocodeAddressString(query, in: nil, preferredLocale: locale) { placemarks, error in
@@ -192,5 +247,43 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(error.localizedDescription, "failed")
             }
         }
+    }
+}
+
+/**
+ 地名の補完(マップアプリで打ち込むと出る候補)。デリゲートで返ってくるので、
+ 1回ぶんの問い合わせをこのクラスに閉じ込めて、完了ハンドラの形にする。
+
+ - 最初に返ってきた候補の一覧で終える(打ち込み途中の更新を待たない。文字列は確定している)
+ - **5秒で打ち切る。** 返事が来ないことがあるので、次の段へ進ませる
+ - 地名だけ(`.address`)。店や施設は混ぜない
+ */
+private final class PlaceCompleter: NSObject, MKLocalSearchCompleterDelegate {
+    private let completer = MKLocalSearchCompleter()
+    private var done: (([MKLocalSearchCompletion], Error?) -> Void)?
+
+    func run(_ query: String, done: @escaping ([MKLocalSearchCompletion], Error?) -> Void) {
+        self.done = done
+        completer.delegate = self
+        completer.resultTypes = .address
+        completer.queryFragment = query
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.finish([], NSError(domain: "timeout", code: 0))
+        }
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        finish(completer.results, nil)
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        finish([], error)
+    }
+
+    private func finish(_ results: [MKLocalSearchCompletion], _ error: Error?) {
+        guard let done = done else { return }
+        self.done = nil
+        completer.cancel()
+        done(results, error)
     }
 }
