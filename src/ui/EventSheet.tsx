@@ -100,10 +100,10 @@ export function EventSheet({
       )}
 
       {/*
-        担当(Pro)。メモタブの「やること」に付ける。日へ移したあとも、
-        付いていれば見せる(外せるように)
+        担当(Pro)。**メモタブでは行の担当ボタンから付ける**ので、ここには出さない。
+        日へ移したあとも付いていれば見せる(日の行にはボタンが無いので、外す場所がここだけ)
       */}
-      {(event.dayIndex === IDEAS_DAY || (event.assigneeIds?.length ?? 0) > 0) && (
+      {event.dayIndex !== IDEAS_DAY && (event.assigneeIds?.length ?? 0) > 0 && (
         <AssigneePicker event={event} />
       )}
 

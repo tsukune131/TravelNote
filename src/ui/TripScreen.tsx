@@ -40,7 +40,7 @@ import { VariantBar } from './VariantBar';
 import { countUnsentChanges } from '../share/snapshot';
 import { listInbox } from '../share/inbox';
 import { MembersSheet } from './MembersSheet';
-import { AssigneeFilter } from './Assignees';
+import { AssigneeFilter, AssigneePicker } from './Assignees';
 import { WeatherBar } from './WeatherBar';
 import { useTripWeather, weatherEmoji } from '../weather/weather';
 import { tripFeaturesUnlocked } from '../pro/entitlement';
@@ -86,6 +86,7 @@ export function TripScreen({
   const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
   const [knowsLongPress, setKnowsLongPress] = useState(true); // 読み込むまでは出さない
   const [linksEventId, setLinksEventId] = useState<string | null>(null);
+  const [assignEventId, setAssignEventId] = useState<string | null>(null);
   /** ドラッグ中に指が乗っているタブ。そのタブを光らせる */
   const [dropDay, setDropDay] = useState<number | null>(null);
   /** タブへ落として別の日へ移したあとに出す「移しました」 */
@@ -110,6 +111,7 @@ export function TripScreen({
   const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
   const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
   const linksEvent = events?.find((e) => e.id === linksEventId) ?? null;
+  const assignEvent = events?.find((e) => e.id === assignEventId) ?? null;
 
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
@@ -361,6 +363,7 @@ export function TripScreen({
               }}
               onOpenMap={handleOpenMap}
               onOpenLinks={handleOpenLinks}
+              onAssign={ideas ? (e) => setAssignEventId(e.id) : undefined}
               onLongPress={(e) => {
                 // 使えたなら、もう教える必要はない
                 dismissHint();
@@ -452,6 +455,13 @@ export function TripScreen({
             {t('timeline.show')}
           </button>
         </div>
+      )}
+
+      {/* 担当はメモタブの行から。複数付けられるので、選んでも閉じない */}
+      {assignEvent && (
+        <Sheet title={assignEvent.name} onClose={() => setAssignEventId(null)}>
+          <AssigneePicker event={assignEvent} />
+        </Sheet>
       )}
 
       {linksEvent && (

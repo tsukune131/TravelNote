@@ -2222,6 +2222,11 @@ body.sheet-open .addbar-hint {
   font-size: 0.7rem;
 }
 
+/* メモの行の担当ボタン。顔が並ぶと幅が要るので、アイコンのときより広げる */
+.ev-act.assign .assignee-stack {
+  padding: 0 0.15rem;
+}
+
 .assignee-filter {
   display: flex;
   gap: 0.35rem;

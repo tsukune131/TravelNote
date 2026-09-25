@@ -13,7 +13,7 @@ import {
   toggleDone,
 } from '../db/repo';
 import { Connector } from './Connector';
-import { IconCopy, IconDrag, IconLink, IconMap } from './Icon';
+import { IconAssign, IconCopy, IconDrag, IconLink, IconMap } from './Icon';
 import { SeedChips } from './SeedChips';
 import { SwipeRow } from './SwipeRow';
 import type { MapProvider } from '../lib/maps';
@@ -43,6 +43,7 @@ export function Timeline({
   onOpen,
   onOpenMap,
   onOpenLinks,
+  onAssign,
   onLongPress,
   onPickCategory,
   onHoverDay,
@@ -59,6 +60,8 @@ export function Timeline({
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
   onOpenLinks: (event: TripEvent) => void;
+  /** メモタブの行の「担当」ボタン。メモタブでだけ渡す */
+  onAssign?: (event: TripEvent) => void;
   onLongPress: (event: TripEvent) => void;
   onPickCategory: (event: TripEvent) => void;
   /** ドラッグ中に指が乗っている Day タブ。離れたら null */
@@ -117,6 +120,7 @@ export function Timeline({
             onOpen={onOpen}
             onOpenMap={onOpenMap}
             onOpenLinks={onOpenLinks}
+            onAssign={onAssign}
             onLongPress={onLongPress}
             onPickCategory={onPickCategory}
             onDragStart={(x, y) => drag.begin(i, x, y)}
@@ -369,6 +373,7 @@ type RowProps = {
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
   onOpenLinks: (event: TripEvent) => void;
+  onAssign?: (event: TripEvent) => void;
   onPickCategory: (event: TripEvent) => void;
   onDragStart: (clientX: number, clientY: number) => void;
   onDragMove: (clientX: number, clientY: number) => void;
@@ -403,6 +408,7 @@ function EventRow({
   onOpen,
   onOpenMap,
   onOpenLinks,
+  onAssign,
   onPickCategory,
   onDragStart,
   onDragMove,
@@ -470,7 +476,8 @@ function EventRow({
             {event.note && <span>{firstLine(event.note)}</span>}
             {event.pinned && <span className="badge">📌 {t('timeline.pinned')}</span>}
             {event.booking?.booked && <span className="badge book">🎫 {t('event.booked')}</span>}
-            <AssigneeStack ids={event.assigneeIds ?? []} members={members} />
+            {/* メモタブでは担当ボタンに顔が出るので、ここには出さない */}
+            {!onAssign && <AssigneeStack ids={event.assigneeIds ?? []} members={members} />}
           </div>
         </button>
 
@@ -487,6 +494,24 @@ function EventRow({
           >
             <IconLink size={19} />
             {event.links.length > 1 && <span className="ev-count">{event.links.length}</span>}
+          </button>
+        )}
+        {/*
+          担当(メモタブだけ)。**詳細シートを開かずに行から割り振る。**
+          付いていれば顔、無ければ「人 +」。押すと選ぶシート(TripScreen)
+        */}
+        {onAssign && (
+          <button
+            type="button"
+            className="ev-act assign"
+            onClick={() => onAssign(event)}
+            aria-label={`${event.name} — ${t('assign.label')}`}
+          >
+            {(event.assigneeIds ?? []).some((id) => members.some((m) => m.id === id)) ? (
+              <AssigneeStack ids={event.assigneeIds ?? []} members={members} />
+            ) : (
+              <IconAssign size={19} />
+            )}
           </button>
         )}
         <button

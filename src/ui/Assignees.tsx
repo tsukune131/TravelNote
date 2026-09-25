@@ -10,7 +10,8 @@ import { useProStatus } from '../pro/store';
 import type { Member, TripEvent } from '../db/types';
 
 /**
- * メモの担当を割り振る(詳細シートの中)。**Pro**。
+ * メモの担当を割り振る。**Pro**。メモタブでは行の担当ボタンから開くシートの中、
+ * 日へ移した予定では詳細シートの中(外すため)。
  *
  * 旅の作成者が Pro なら、参加者全員が使える(pro/entitlement.ts)。
  * 使えないときは担当の並びを見せたうえで、押したら購入画面 ──

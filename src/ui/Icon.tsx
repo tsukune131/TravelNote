@@ -105,6 +105,17 @@ export const IconShare = (p: Props) =>
 export const IconDrag = (p: Props) =>
   svg(<path d="M4 8h16M4 12h16M4 16h16" strokeWidth="1.6" />, p);
 
+/** 担当を付ける。人と + */
+export const IconAssign = (p: Props) =>
+  svg(
+    <>
+      <circle cx="10" cy="8" r="3.4" />
+      <path d="M3.5 19.8c0-3.6 2.9-6.1 6.5-6.1 1.3 0 2.5.3 3.5.9" />
+      <path d="M18 14.2v6M15 17.2h6" />
+    </>,
+    p,
+  );
+
 /** 複製。重なった2枚の紙 */
 export const IconCopy = (p: Props) =>
   svg(
