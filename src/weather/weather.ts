@@ -60,17 +60,34 @@ type WeatherPlugin = {
     lng: number;
     timeZone?: string;
   }): Promise<{ days: DayForecast[]; attribution: Attribution }>;
+  /** 1時間ごと・今から10日ぶん。時刻はその土地の壁掛け時計(eventWeather.ts) */
+  hourly(options: { lat: number; lng: number; timeZone?: string }): Promise<{ hours: HourForecast[] }>;
+  /** 予定の名前で、その地点の近くを探す。見つからなければ空 */
+  searchNear(options: { query: string; lat: number; lng: number }): Promise<{ lat?: number; lng?: number }>;
+  /** 短縮リンクのリダイレクトで通った URL */
+  expandLink(options: { url: string }): Promise<{ urls: string[] }>;
 };
 
-const Weather = registerPlugin<WeatherPlugin>('TravelNoteWeather');
+/** 1時間ぶんの予報。`date` と `hour` は旅先の壁掛け時計 */
+export type HourForecast = {
+  date: PlainDate;
+  /** 0〜23 */
+  hour: number;
+  symbol: string;
+  temp: number;
+  /** 降水確率 0〜1 */
+  precip: number;
+};
 
-const native = Capacitor.isNativePlatform();
+export const Weather = registerPlugin<WeatherPlugin>('TravelNoteWeather');
+
+export const native = Capacitor.isNativePlatform();
 
 /** WeatherKit が 10 日先まで返す。11 日目以降は出さない */
 export const FORECAST_DAYS = 10;
 
 /** これより新しい予報は取り直さない。開くたびに通信しない */
-const FRESH_MS = 3 * 60 * 60 * 1000;
+export const FRESH_MS = 3 * 60 * 60 * 1000;
 
 export class WeatherUnavailable extends Error {}
 
@@ -244,6 +261,8 @@ export function weatherEmoji(symbol: string): string {
   if (s.includes('fog') || s.includes('haze') || s.includes('smoke')) return '🌫️';
   if (s.includes('wind') || s.includes('tornado') || s.includes('hurricane')) return '🌬️';
   if (s.includes('cloud')) return s.includes('sun') || s.includes('moon') ? '⛅' : '☁️';
-  if (s.includes('sun') || s.includes('moon')) return '☀️';
+  // 月は1時間ごとの予報(予定の時刻)でだけ出る。夜の予定に ☀️ は嘘になる
+  if (s.includes('moon')) return '🌙';
+  if (s.includes('sun')) return '☀️';
   return '🌡️';
 }

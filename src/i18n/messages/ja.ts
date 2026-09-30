@@ -408,6 +408,7 @@ export const ja = {
     tooFar: '予報は10日先までです',
     teaser: '天気予報を表示(Pro)',
     unavailable: 'この端末では天気を取得できません',
+    atEvent: '{time}の天気 {temp}° 降水 {p}%',
     source: 'データソース',
   },
 

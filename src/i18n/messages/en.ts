@@ -371,6 +371,7 @@ export const en: DeepPartial<Messages> = {
     tooFar: 'Forecasts cover the next 10 days',
     teaser: 'Show weather forecast (Pro)',
     unavailable: "Weather isn't available on this device",
+    atEvent: 'Weather at {time}: {temp}°, rain {p}%',
     source: 'Data sources',
   },
 

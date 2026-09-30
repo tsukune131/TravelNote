@@ -1061,6 +1061,14 @@ button {
   place-items: center;
 }
 
+/* 予定の時刻の天気。押せないので地図より詰めて、地図に寄せて置く */
+.ev-wx {
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  line-height: 1;
+  margin-right: -0.2rem;
+}
+
 /* 複製・リンク。地図より一段控えめな色にして、主役(地図)を目立たせたまま置く */
 .ev-act {
   flex: 0 0 auto;

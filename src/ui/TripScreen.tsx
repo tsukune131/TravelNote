@@ -43,6 +43,7 @@ import { MembersSheet } from './MembersSheet';
 import { AssigneeFilter, AssigneePicker } from './Assignees';
 import { WeatherBar } from './WeatherBar';
 import { useTripWeather, weatherEmoji } from '../weather/weather';
+import { useEventWeather } from '../weather/eventWeather';
 import { tripFeaturesUnlocked } from '../pro/entitlement';
 import { useProStatus } from '../pro/store';
 import { noteAdAction } from '../ads/ads';
@@ -68,6 +69,7 @@ export function TripScreen({
   const pro = useProStatus();
   const unlocked = trip ? tripFeaturesUnlocked(trip, pro, Date.now()) : false;
   const weather = useTripWeather(trip, trip ? dayCount(trip.startDate, trip.endDate) : 0, unlocked);
+  const eventWeather = useEventWeather(trip, dayIndex, events, unlocked);
 
   const [draft, setDraft] = useState('');
   const [openEventId, setOpenEventId] = useState<string | null>(null);
@@ -372,6 +374,7 @@ export function TripScreen({
               onPickCategory={(e) => setCategoryEventId(e.id)}
               onHoverDay={setDropDay}
               onMovedToDay={(e, to) => setMoved({ name: e.name, dayIndex: to })}
+              weatherFor={unlocked ? eventWeather : undefined}
             />
           )}
 

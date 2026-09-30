@@ -33,7 +33,10 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "TravelNoteWeather"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "geocode", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "forecast", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "forecast", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "hourly", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "searchNear", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "expandLink", returnType: CAPPluginReturnPromise)
     ]
 
     /* ────────── 地名検索 ────────── */
@@ -279,6 +282,151 @@ public class WeatherPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(error.localizedDescription, "failed")
             }
         }
+    }
+
+    /**
+     1時間ごとの予報(今から10日ぶん)。**予定の時刻の天気**に使う。
+
+     時刻は**その土地のタイムゾーンの壁掛け時計**で `date`(yyyy-MM-dd)と
+     `hour`(0〜23)に分けて返す。予定の時刻も壁掛け時計の分で持っているので、
+     そのまま突き合わせられる。
+     */
+    @objc func hourly(_ call: CAPPluginCall) {
+        guard #available(iOS 16.0, *) else {
+            call.reject("WeatherKit requires iOS 16", "unavailable")
+            return
+        }
+        guard let lat = call.getDouble("lat"), let lng = call.getDouble("lng") else {
+            call.reject("lat and lng are required")
+            return
+        }
+        let timeZone = call.getString("timeZone").flatMap { TimeZone(identifier: $0) } ?? TimeZone.current
+        let location = CLLocation(latitude: lat, longitude: lng)
+        let start = Date()
+        let end = start.addingTimeInterval(10 * 24 * 60 * 60)
+
+        Task {
+            do {
+                let hours = try await WeatherService.shared.weather(
+                    for: location,
+                    including: .hourly(startDate: start, endDate: end)
+                )
+
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = timeZone
+                let formatter = DateFormatter()
+                formatter.calendar = calendar
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = timeZone
+                formatter.dateFormat = "yyyy-MM-dd"
+
+                var out: [[String: Any]] = []
+                for hour in hours {
+                    out.append([
+                        "date": formatter.string(from: hour.date),
+                        "hour": calendar.component(.hour, from: hour.date),
+                        "symbol": hour.symbolName,
+                        "temp": hour.temperature.converted(to: .celsius).value,
+                        "precip": hour.precipitationChance
+                    ])
+                }
+                call.resolve(["hours": out])
+            } catch {
+                call.reject(error.localizedDescription, "failed")
+            }
+        }
+    }
+
+    /* ────────── 予定の場所 ────────── */
+
+    /**
+     予定の名前(「一蘭 本店」「清水寺」)で、**その日の天気の場所の近く**を探す。
+     店や施設も含める(旅先の地名検索とは違う)。いちばん上の1件の座標を返す。
+     **入れた文字列は Apple に送られる。**
+
+     近くに絞っても、遠い同名の店が返ることはある。距離で捨てるのは JS 側
+     (`src/weather/eventWeather.ts`)。
+     */
+    @objc func searchNear(_ call: CAPPluginCall) {
+        let query = call.getString("query") ?? ""
+        guard let lat = call.getDouble("lat"), let lng = call.getDouble("lng"),
+              !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            call.resolve([:])
+            return
+        }
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = [.pointOfInterest, .address]
+        request.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: lat, longitude: lng),
+            latitudinalMeters: 40_000,
+            longitudinalMeters: 40_000
+        )
+        MKLocalSearch(request: request).start { response, error in
+            guard let coordinate = response?.mapItems.first?.placemark.location?.coordinate else {
+                // 見つからない(MKErrorDomain)は「無い」として返す。通信の失敗だけ reject
+                if let e = error as NSError?, e.domain != MKErrorDomain {
+                    call.reject(e.localizedDescription, "failed")
+                } else {
+                    call.resolve([:])
+                }
+                return
+            }
+            call.resolve(["lat": coordinate.latitude, "lng": coordinate.longitude])
+        }
+    }
+
+    /**
+     地図の短縮リンク(`maps.app.goo.gl/...`)の行き先。リダイレクトを1段ずつたどり、
+     **通った URL を全部**返す(座標がどの段に出てくるかは決まっていない)。
+     短縮リンクのホストを抜けたところで止める ── 地図のページ本体は読まない。
+
+     ⚠️ リンクの URL が Google(または Apple)に送られる。
+     */
+    @objc func expandLink(_ call: CAPPluginCall) {
+        guard let raw = call.getString("url"), let url = URL(string: raw) else {
+            call.resolve(["urls": []])
+            return
+        }
+        let collector = RedirectCollector()
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 10
+        let session = URLSession(configuration: config, delegate: collector, delegateQueue: nil)
+        let task = session.dataTask(with: url) { _, response, error in
+            var urls = collector.urls
+            if let last = response?.url?.absoluteString, !urls.contains(last) {
+                urls.append(last)
+            }
+            session.finishTasksAndInvalidate()
+            if urls.isEmpty, let error = error {
+                call.reject(error.localizedDescription, "failed")
+                return
+            }
+            call.resolve(["urls": urls])
+        }
+        task.resume()
+    }
+}
+
+/** 短縮リンクのリダイレクトを記録する。短縮のホストを抜けたら、その先へは行かない */
+private final class RedirectCollector: NSObject, URLSessionTaskDelegate {
+    private(set) var urls: [String] = []
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        guard let next = request.url else {
+            completionHandler(nil)
+            return
+        }
+        urls.append(next.absoluteString)
+        let host = next.host ?? ""
+        let shortener = host.hasSuffix("goo.gl") || host == "maps.apple"
+        completionHandler(shortener ? request : nil)
     }
 }
 

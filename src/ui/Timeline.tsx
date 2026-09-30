@@ -18,6 +18,8 @@ import { SeedChips } from './SeedChips';
 import { SwipeRow } from './SwipeRow';
 import type { MapProvider } from '../lib/maps';
 import type { Member, TripEvent } from '../db/types';
+import { weatherEmoji } from '../weather/weather';
+import type { HourForecast } from '../weather/weather';
 import { AssigneeStack } from './Assignees';
 
 /**
@@ -48,6 +50,7 @@ export function Timeline({
   onPickCategory,
   onHoverDay,
   onMovedToDay,
+  weatherFor,
   members = [],
 }: {
   tripId: string;
@@ -70,6 +73,8 @@ export function Timeline({
   onMovedToDay: (event: TripEvent, toDayIndex: number) => void;
   /** 担当の顔を行に出すため。担当が付いていない旅では空でよい */
   members?: Member[];
+  /** 予定の時刻の天気(Pro)。出さないときは渡さない */
+  weatherFor?: (event: TripEvent) => HourForecast | undefined;
 }) {
   const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
@@ -116,6 +121,7 @@ export function Timeline({
             event={event}
             ideas={ideas}
             members={members}
+            weather={ideas ? undefined : weatherFor?.(event)}
             dragging={drag.isHeld(event.id)}
             onOpen={onOpen}
             onOpenMap={onOpenMap}
@@ -369,6 +375,7 @@ type RowProps = {
   event: TripEvent;
   ideas: boolean;
   members: Member[];
+  weather?: HourForecast;
   dragging: boolean;
   onOpen: (event: TripEvent) => void;
   onOpenMap: (event: TripEvent) => void;
@@ -404,6 +411,7 @@ function EventRow({
   event,
   ideas,
   members,
+  weather,
   dragging,
   onOpen,
   onOpenMap,
@@ -414,7 +422,7 @@ function EventRow({
   onDragMove,
   onDragEnd,
 }: RowProps) {
-  const { t, duration } = useI18n();
+  const { t, duration, time } = useI18n();
   const category = CATEGORIES[event.category];
 
   return (
@@ -522,6 +530,24 @@ function EventRow({
         >
           <IconCopy size={18} />
         </button>
+
+        {/*
+          予定の時刻の、予定の場所の天気(Pro)。地図の隣に置く ──
+          「そこへ行くとき降っているか」を地図を開く前に見られるように
+        */}
+        {weather && event.startMinutes !== null && (
+          <span
+            className="ev-wx"
+            role="img"
+            aria-label={t('weather.atEvent', {
+              time: time(event.startMinutes),
+              temp: Math.round(weather.temp),
+              p: Math.round(weather.precip * 100),
+            })}
+          >
+            {weatherEmoji(weather.symbol)}
+          </span>
+        )}
 
         {/* 旅行中の最頻操作なので、地図だけは常設して1タップで届かせる */}
         <button
