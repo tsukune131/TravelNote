@@ -6,6 +6,7 @@ import { loadPrices, purchase, restore } from '../pro/purchases';
 import type { PlanPrice } from '../pro/purchases';
 import { setProStatus } from '../pro/store';
 import { isProActive, PRICE_TEXT_JPY } from '../pro/entitlement';
+import { suppressBanner } from '../ads/ads';
 import type { PlanId } from '../pro/entitlement';
 
 /**
@@ -90,6 +91,12 @@ export function Paywall({
 
   useEffect(() => {
     void loadPrices().then(setPrices);
+  }, []);
+
+  // 購入画面を開いているあいだは広告の帯を隠す(規約・復元の行に重なっていた)
+  useEffect(() => {
+    void suppressBanner(true);
+    return () => void suppressBanner(false);
   }, []);
 
   /** 価格が1つも取れていないなら買わせない */
