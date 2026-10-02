@@ -118,11 +118,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
         <button type="button" className="menu-item" onClick={() => setVersionTaps((n) => n + 1)}>
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
-        </div>
+        </button>
         {/*
-          ROADMAP E-0 の確認用。**main には入れない。**
-          main は 1.0 の提出候補なので、診断画面を混ぜない
-          (`screenshot-jpy` と同じやり方)。E-1 に進むときに消す。
+          ROADMAP E-0 の確認用(CloudKit の疎通と cloudkit.share の生成)。
+          E-1 に進むときに消す。
         */}
         <button type="button" className="menu-item" onClick={() => setProbe(true)}>
           {t('cloudProbe.title')}
