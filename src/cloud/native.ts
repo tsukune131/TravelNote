@@ -52,7 +52,8 @@ export type CloudDiagnostics = {
 };
 
 type CloudSyncPlugin = {
-  status(): Promise<{ account: AccountStatus; error: string }>;
+  /** `reset`: CloudKit の環境(開発/本番)が変わって、同期の記憶を捨てた */
+  status(): Promise<{ account: AccountStatus; error: string; environment: string; reset: boolean }>;
   diagnostics(): Promise<CloudDiagnostics>;
   enqueue(options: { items: OutgoingRecord[] }): Promise<{ accepted: number }>;
   pull(): Promise<{ items: InboundItem[] }>;

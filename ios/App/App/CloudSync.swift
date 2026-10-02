@@ -72,7 +72,22 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
         var zones: Set<String> = []
         var privateState: CKSyncEngine.State.Serialization?
         var sharedState: CKSyncEngine.State.Serialization?
+        /// どの CloudKit 環境の状態か。違えば捨てる(下の `environment`)
+        var environment: String?
     }
+
+    /**
+     デバッグビルドは Development、TestFlight と App Store は Production を見る。
+     **同じ端末で両方を入れ替えると、片方の変更タグやゾーンの記憶をもう片方に
+     持ち込んでしまう**(アプリの入れ物は Bundle ID が同じなので残る)。
+     環境が変わったら同期の記憶を捨て、旅は JS 側で上げ直させる(`status().reset`)。
+     */
+    #if DEBUG
+    static let environment = "development"
+    #else
+    static let environment = "production"
+    #endif
+    private(set) var environmentReset = false
 
     private var storeURL: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -100,6 +115,13 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
         if started { lock.unlock(); return }
         started = true
         load()
+        if store.environment != Self.environment {
+            // はじめて起動したときも通る。そのときは捨てるものが無いだけ
+            environmentReset = store.environment != nil
+            store = Store()
+            store.environment = Self.environment
+            save()
+        }
         let privateState = store.privateState
         let sharedState = store.sharedState
         lock.unlock()
@@ -555,7 +577,12 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
             case .couldNotDetermine: name = "couldNotDetermine"
             @unknown default: name = "unknown"
             }
-            call.resolve(["account": name, "error": error?.localizedDescription ?? ""])
+            call.resolve([
+                "account": name,
+                "error": error?.localizedDescription ?? "",
+                "environment": CloudSync.environment,
+                "reset": CloudSync.shared.environmentReset,
+            ])
         }
     }
 

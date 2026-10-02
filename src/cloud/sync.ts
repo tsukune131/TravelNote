@@ -296,8 +296,24 @@ export async function shareTrip(trip: Trip): Promise<'presented' | 'unavailable'
 
 /* ────────── 起動 ────────── */
 
+let resetHandled = false;
+
 async function refreshAccount() {
-  const { account } = await CloudSync.status();
+  const { account, reset } = await CloudSync.status();
+  if (reset && !resetHandled) {
+    /*
+     * 開発用ビルドと TestFlight を入れ替えた。前の環境のゾーンはこちらに無いので、
+     * 旅を全部「まだ iCloud に無い」に戻して上げ直す。受け取った旅も自分の旅として残す
+     * (前の環境の共有には、こちらからは参加できない)。
+     */
+    resetHandled = true;
+    await db.transaction('rw', db.trips, async (tx) => {
+      REMOTE.add(tx);
+      const trips = await db.trips.toArray();
+      for (const trip of trips) if (trip.cloud) await db.trips.update(trip.id, { cloud: undefined });
+    });
+    accountReady = false;
+  }
   const was = accountReady;
   accountReady = account === 'available';
   if (accountReady && !was) {
