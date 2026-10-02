@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
-import { FLAGS, getFlag, setFlag } from '../db/settings';
 
 /**
  * 「Safari や地図アプリから送れます」と、共有シートの先頭に固定する方法。
@@ -24,32 +23,22 @@ function ShareTipBody() {
   );
 }
 
-/** 旅一覧に**1回だけ**出すカード。「わかった」で二度と出さない */
-export function ShareTipCard() {
+/**
+ * 旅一覧のいちばん下に置く**1行の Tips**。押すと手順が開く。
+ * 一覧の上にカードで出していたが、うるさかった(ユーザー判断 2026-10-02)。
+ * 小さく、ずっとそこにある形にした
+ */
+export function ShareTipLine() {
   const { t } = useI18n();
-  // 読み込むまでは出さない(出てすぐ消えるのを避ける)
-  const [known, setKnown] = useState(true);
-
-  useEffect(() => {
-    void getFlag(FLAGS.knowsShareSheet).then(setKnown);
-  }, []);
-
-  if (known) return null;
+  const [open, setOpen] = useState(false);
   return (
-    <div className="tipcard" role="note">
-      <b>📮 {t('shareTip.title')}</b>
-      <ShareTipBody />
-      <button
-        type="button"
-        className="btn ghost small"
-        onClick={() => {
-          setKnown(true);
-          void setFlag(FLAGS.knowsShareSheet);
-        }}
-      >
-        {t('shareTip.gotIt')}
+    <>
+      <button type="button" className="tipline" onClick={() => setOpen(true)}>
+        💡 {t('shareTip.line')}
+        {'\u00a0›'}
       </button>
-    </div>
+      {open && <ShareTipSheet onClose={() => setOpen(false)} />}
+    </>
   );
 }
 

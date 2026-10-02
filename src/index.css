@@ -2424,18 +2424,14 @@ body.sheet-open .addbar-hint {
   text-align: center;
 }
 
-/* 一度きりの案内のカード(共有シートから送る方法など) */
-.tipcard {
-  margin: 0 0 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  background: var(--surface);
-  border: 1.5px solid var(--rule);
-  font-size: 0.9rem;
-}
-
-.tipcard p {
-  margin: 0.4rem 0;
+/* 旅一覧のいちばん下の1行の Tips(共有シートから送る方法)。目立たせない */
+.tipline {
+  display: block;
+  margin: 1.2rem auto 0;
+  padding: 0.4rem 0.6rem;
+  color: var(--ink-3);
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 .steps {

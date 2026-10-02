@@ -50,8 +50,6 @@ export async function setDisplayName(name: string): Promise<void> {
 export const FLAGS = {
   /** ようこそ画面を見終わった */
   onboarded: 'flag.onboarded',
-  /** 共有シートからつばメイトへ送れること(と先頭に固定する方法)の案内を閉じた */
-  knowsShareSheet: 'flag.knowsShareSheet',
 } as const;
 
 export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
