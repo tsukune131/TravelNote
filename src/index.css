@@ -1185,6 +1185,12 @@ button {
   margin-top: 1.2rem;
 }
 
+/* 高さは AutoGrowTextarea が中身に合わせる。手で縮められると中でスクロールしてしまう */
+.field.ideas-note textarea {
+  resize: none;
+  overflow-y: hidden;
+}
+
 .link-choice {
   display: flex;
   flex-direction: column;

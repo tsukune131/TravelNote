@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useI18n } from '../i18n/context';
 import { linkLabelKey } from '../i18n/keys';
 import { guessLinkLabel } from '../lib/maps';
-import { normalizeUrl, openLink } from '../lib/openExternal';
+import { extractUrl, normalizeUrl, openLink } from '../lib/openExternal';
 import type { EventLink } from '../db/types';
 
 /**
@@ -109,7 +109,8 @@ export function LinkList({
     try {
       const text = await navigator.clipboard.readText();
       if (text.trim().length > 0) {
-        setDraft(text.trim());
+        // 「ページ名 + URL」で入っていたら URL だけにして見せる
+        setDraft(extractUrl(text) ?? text.trim());
         return;
       }
     } catch {

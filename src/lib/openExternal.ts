@@ -83,9 +83,27 @@ export async function openLink(url: string): Promise<void> {
   }
 }
 
+/**
+ * 文の中から URL を1本だけ取り出す。見つからなければ null。
+ *
+ * 共有メニューやブラウザによっては「ページ名 + URL」の形でコピーされる
+ * (例: 「〇〇旅館 公式サイト\nhttps://...」)。名前を手で消させないために、
+ * 最初に見つかった URL だけを拾う。
+ *
+ * 区切りは空白と、日本語の文で URL の直後に来やすい括弧・句読点。
+ * 末尾の `.` `,` や、対応する `(` の無い `)` は文の一部とみなして落とす。
+ */
+export function extractUrl(input: string): string | null {
+  const m = /(?:https?:\/\/|www\.)[^\s<>"「」『』【】（）、。]+/i.exec(input);
+  if (!m) return null;
+  let url = m[0].replace(/[.,;:!?'\]]+$/, '');
+  if (url.endsWith(')') && !url.includes('(')) url = url.slice(0, -1);
+  return url;
+}
+
 /** ユーザーが打ったものを URL として扱えるように整える */
 export function normalizeUrl(input: string): string | null {
-  const text = input.trim();
+  const text = extractUrl(input) ?? input.trim();
   if (text.length === 0) return null;
   const withScheme = /^https?:\/\//i.test(text) ? text : `https://${text}`;
   try {

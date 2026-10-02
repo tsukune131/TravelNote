@@ -37,6 +37,7 @@ import { ShareSheet } from './ShareSheet';
 import type { ImportOutcome } from './ShareSheet';
 import { ImportResult } from './ImportResult';
 import { VariantBar } from './VariantBar';
+import { AutoGrowTextarea } from './AutoGrowTextarea';
 import { countUnsentChanges } from '../share/snapshot';
 import { listInbox } from '../share/inbox';
 import { MembersSheet } from './MembersSheet';
@@ -385,7 +386,7 @@ export function TripScreen({
           {ideas && (
             <div className="field ideas-note">
               <label htmlFor="trip-note">{t('prepare.note')}</label>
-              <textarea
+              <AutoGrowTextarea
                 id="trip-note"
                 key={trip.id}
                 defaultValue={trip.note ?? ''}
