@@ -319,7 +319,8 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 
 > **2026-09-24 に再編。** 1.0 は**このフェーズを全部終えてから出す**(ユーザー判断)。
 > 方針は「現在地」2026-09-24、CloudKit の経緯は 2026-08-13 を見ること。
-> ⚠️ **E-0 の関門(③ `cloudkit.share`)を越えるまで、E-1 以降に着手しない。**
+> ✅ **E-0 の関門(③ `cloudkit.share`)は 2026-10-02 に越えた。** 作業ブランチは `feature/cloudkit-sync`
+> (`cloudkit-e0` の試作を今の main に載せ直したもの)。
 
 - [ ] E-0 **実現可能性の確認**(⚠️ ここで方針ごと止まる可能性がある)
       **作業は `cloudkit-e0` ブランチ。main には入れない**(main は 1.0 の提出候補で、
@@ -335,7 +336,7 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
         - 型・lint・build・size・deps すべて通過。ブラウザで画面を出し、
           **押すと「not implemented on web」を画面に出す**ところまで確認
           (C-5 の教訓どおり黙らせない)
-  - [ ] ⚠️ **Mac 無しでの反復コストの実測。** push → CI → TestFlight → 実機で1往復。
+  - [x] ~~Mac 無しでの反復コストの実測~~ ── 2026-10-02 に Mac を常用にしたので不要。 push → CI → TestFlight → 実機で1往復。
         同期の挙動は往復回数がものを言うので、ここが耐えられないなら見直す
         - **⚠️ 先に Apple Developer ポータルの作業が要る**(手順 docs/ios-release-setup.md §7.7):
           iCloud コンテナ `iCloud.com.tsukune.travelnote` を作る →
@@ -368,7 +369,11 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
           レコード型を新しく作れないので、**E-1 で設計を変えるたびに
           「コンソールでデプロイ」がリリース手順に挟まる。**
           忘れると**実機でだけ動かない**
-  - [ ] ⚠️⚠️ **③ 共有リンクの作成で止まっている(2026-08-13)。E-0 の関門はここ**
+  - [x] **③ 共有リンクの作成 ── 2026-10-02 に越えた。** Mac の Xcode からデバッグビルドを
+        実機に入れ(Development 環境)、確認画面の ③ で共有リンクが出た →
+        CloudKit コンソールで Deploy Schema Changes → **Production に `cloudkit.share` が出た**。
+        Web Services 用の API トークン `schema-seed` は削除。以下は越えるまでの経緯
+  - ~~③ 共有リンクの作成で止まっている(2026-08-13)。E-0 の関門はここ~~
         - 症状: `createShare NG / share / invalidArguments / ck12:`
           **`Cannot create new type cloudkit.share in production schema`**
         - `cloudkit.share` は CKShare が使う**システム型**。②で踏んだ
@@ -854,3 +859,6 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 - 2026-10-02 アプリ名を「たびのしおり」から**「つばメイト」(TsubaMate)**に変更し、
   アイコンを2羽のつばめと飛行ルートの絵に差し替えた。Bundle ID・データの識別子は据え置き。
   App Store Connect のアプリ名とサブスクの表示名は、次の提出で手で直す
+- 2026-10-02 **E-0 の関門を越えた。** Mac を常用にし、Xcode のデバッグビルドで共有リンクを作って
+  `cloudkit.share` を Production に生やした。対応 iOS を 17 に上げ、同期は `CKSyncEngine`、
+  同時編集は**項目ごとのあと勝ち**と決めた(ユーザー判断)

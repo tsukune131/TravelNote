@@ -73,8 +73,8 @@ React + TypeScript + Vite + Capacitor の iOSアプリ。
 データは利用者自身の iCloud に置き、自前のサーバーは持たない。
 共有相手も**編集できる**(読み書き)。経緯と未解決の穴は ROADMAP フェーズE。
 
-⚠️ **E-0 の関門(`cloudkit.share` を Production に生やす)が未解決。**
-Mac を常用にしたので Xcode のデバッグビルドで越える(冒頭の注記)。**ここが越えられないと 1.0 が出せない。**
+✅ **E-0 の関門(`cloudkit.share` を Production に生やす)は 2026-10-02 に越えた。**
+Mac の Xcode からデバッグビルドで共有を1回作り、コンソールで Deploy した。
 
 - **アカウントは作らせない。** 識別は Apple ID(CloudKit)と表示名・アイコンだけ。
   5.1.1(v)(アカウント作成をさせるならアプリ内削除が必須)を発生させないため。
