@@ -1,18 +1,19 @@
 # つばメイト(旧: たびのしおり)
 
 React + TypeScript + Vite + Capacitor の iOSアプリ。
-Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
+**開発は Mac(Xcode)、配布は GitHub Actions**(TestFlight は CI から出す)。
+**対応 iOS は 17 以上**(CloudKit の同期に `CKSyncEngine` を使うため。2026-10-02 に 15 から上げた)。
 
-> ⚠️ **2026-08-13、この原則を1回だけ破る判断をした**(ROADMAP E-0)。
-> CloudKit の `cloudkit.share` は **Production では作れず、コンソールでも
-> 手作りできず、Development で1度動かす以外に生やす方法が無い**。
-> そして Development に入る道は Xcode のデバッグビルドだけ
-> (TestFlight を向ける逃げ道は Apple が明確に禁止。検証済み)。
+> **2026-10-02 に Mac を常用に切り替えた**(それまでは Windows + Actions のみ)。
+> きっかけは CloudKit: `cloudkit.share` は Development で1度動かさないと
+> Production に生やせず、Development に入れるのは Xcode のデバッグビルドだけ
+> (ROADMAP E-0 ③)。同期は試す回数がものを言うので、TestFlight 往復では回らない。
 >
-> **これは「スキーマを1回生やす」ためだけの例外で、開発と配布は Windows のまま。**
-> ⚠️ **常用に戻さないこと。** 次に同じ壁が来たら、まず
-> 「本当に Mac でしかできないのか」を疑う ── 通常のレコード型は
-> **コンソールで手作りできる**ので、この壁はシステム型に限った話。
+> - **Windows で作ったものが残っている。** `ios/App/CapApp-SPM/Package.swift` は
+>   `\` 区切りのパスで壊れていた ── Mac では先に `npm run build && npx cap sync ios`
+> - Mac の **Bash から Chrome を直接起動すると即死する**(VS Code の Claude Code 拡張の
+>   子プロセスになるため)。`open -na` で起動して `TN_CDP` でつなぐ
+>   (`.claude/skills/run-travelnote/SKILL.md` の Gotchas)
 
 ## 不変の識別子(表示名が変わっても据え置く)
 
@@ -73,7 +74,7 @@ Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
 共有相手も**編集できる**(読み書き)。経緯と未解決の穴は ROADMAP フェーズE。
 
 ⚠️ **E-0 の関門(`cloudkit.share` を Production に生やす)が未解決。**
-Mac を1回だけ借りる判断済み(冒頭の注記)。**ここが越えられないと 1.0 が出せない。**
+Mac を常用にしたので Xcode のデバッグビルドで越える(冒頭の注記)。**ここが越えられないと 1.0 が出せない。**
 
 - **アカウントは作らせない。** 識別は Apple ID(CloudKit)と表示名・アイコンだけ。
   5.1.1(v)(アカウント作成をさせるならアプリ内削除が必須)を発生させないため。
