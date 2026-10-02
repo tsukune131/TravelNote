@@ -45,7 +45,9 @@ const ACTION =
 
 export type IdeaGroup = 'place' | 'todo';
 
-export function ideaGroupOf(event: { name: string; category: CategoryId }): IdeaGroup {
+export function ideaGroupOf(event: { name: string; category: CategoryId; ideaGroup?: IdeaGroup }): IdeaGroup {
+  // 手で決めたものが最優先(推定は外れるので、直す道を残す)
+  if (event.ideaGroup) return event.ideaGroup;
   if (ACTION.test(event.name.trim())) return 'todo';
   return event.category === 'activity' ? 'todo' : 'place';
 }

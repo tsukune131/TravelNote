@@ -215,6 +215,8 @@ export const ja = {
     up: 'ひとつ上へ',
     down: 'ひとつ下へ',
     moveToDay: '別の日へ移す',
+    toTodos: '「やりたいこと」へ移す',
+    toPlaces: '「行きたいところ」へ移す',
     reorder: '並べ替え',
     pin: '📌 固定する(ずらさない)',
     unpin: '📌 固定をやめる',

@@ -136,6 +136,23 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
             stateSerialization: sharedState,
             delegate: self
         ))
+        requeueLeftovers()
+    }
+
+    /// 送れずに残っている欄を、もう一度送る予定に入れる(前回の起動で失敗したぶん)
+    private func requeueLeftovers() {
+        var byScope: [String: [CKRecord.ID]] = [:]
+        lock.withLock {
+            for (key, entry) in store.entries where !entry.pending.isEmpty {
+                let parts = key.split(separator: "|", maxSplits: 3).map(String.init)
+                guard parts.count == 4 else { continue }
+                let zoneID = CKRecordZone.ID(zoneName: parts[2], ownerName: parts[1])
+                byScope[parts[0], default: []].append(CKRecord.ID(recordName: parts[3], zoneID: zoneID))
+            }
+        }
+        for (scope, ids) in byScope {
+            engine(for: scope)?.state.add(pendingRecordZoneChanges: ids.map { .saveRecord($0) })
+        }
     }
 
     private func engine(for scope: String) -> CKSyncEngine? {
@@ -446,9 +463,18 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
                  .requestRateLimited, .notAuthenticated, .quotaExceeded, .operationCancelled:
                 // CKSyncEngine が自分で再送する
                 break
-            default:
-                // 権限が無い(読むだけの参加者)など。送っても通らないので捨てる
+            case .permissionFailure:
+                // 読むだけの参加者。送っても通らないので捨てる
                 store.entries[k]?.pending = [:]
+            default:
+                /*
+                 **捨てない。** 本番に無い欄を送った(スキーマの Deploy 忘れ)などは
+                 serverRejectedRequest / invalidArguments で返る。ここで捨てると、
+                 Deploy して直したあとも**その記録のほかの欄まで二度と届かない**。
+                 残しておけば、次に起動したとき(`start`)にもう一度送る。
+                 原因は lastError で設定に出る
+                 */
+                break
             }
         }
         save()

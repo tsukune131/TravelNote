@@ -58,7 +58,7 @@ export const SCHEMA: Record<RecordType, readonly string[]> = {
   Event: [
     'tripId', 'dayIndex', 'startMinutes', 'durationMinutes', 'category', 'categoryLocked', 'name', 'note',
     'lat', 'lng', 'address', 'links', 'booking', 'travelMinutes', 'travelMode', 'pinned', 'done', 'costYen',
-    'order', 'assigneeIds', 'variantId', 'updatedAt', 'updatedBy', 'deletedAt',
+    'order', 'assigneeIds', 'variantId', 'updatedAt', 'updatedBy', 'deletedAt', 'ideaGroup',
   ],
   Member: ['tripId', 'deviceId', 'displayName', 'role', 'icon', 'updatedAt', 'updatedBy', 'deletedAt'],
   DayVariant: ['tripId', 'dayIndex', 'label', 'createdBy', 'active', 'updatedAt', 'updatedBy', 'deletedAt'],

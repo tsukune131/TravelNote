@@ -183,6 +183,8 @@ export const en: DeepPartial<Messages> = {
     up: 'Move up',
     down: 'Move down',
     moveToDay: 'Move to another day',
+    toTodos: 'Move to Things to do',
+    toPlaces: 'Move to Places to go',
     reorder: 'Reorder',
     pin: '📌 Pin (never reflow)',
     unpin: '📌 Unpin',

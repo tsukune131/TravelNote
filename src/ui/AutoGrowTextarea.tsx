@@ -12,14 +12,25 @@ export function AutoGrowTextarea(props: TextareaHTMLAttributes<HTMLTextAreaEleme
   const fit = () => {
     const el = ref.current;
     if (!el) return;
-    // 一度縮めてから測らないと、行を消したときに縮まない
+    /*
+     * 一度縮めてから測らないと、行を消したときに縮まない。ただし**縮めた一瞬に
+     * スクロールの位置が押し戻され、書いている欄が跳ねる**(実機で「メモ欄が動く」)。
+     * 包んでいるスクロール領域の位置を覚えておいて戻す
+     */
+    const scroller = el.closest('.scroller');
+    const top = scroller?.scrollTop;
     el.style.height = 'auto';
     // box-sizing: border-box なので枠線のぶんを足す
     const border = el.offsetHeight - el.clientHeight;
     el.style.height = `${el.scrollHeight + border}px`;
+    if (scroller && top !== undefined) scroller.scrollTop = top;
   };
 
-  useLayoutEffect(fit);
+  /*
+   * 測るのは**最初と、打ったときだけ。** 描き直しのたびに測ると、iCloud で
+   * 誰かの変更が届くたび(打っていないときも)に欄が動いた
+   */
+  useLayoutEffect(fit, []);
 
   return (
     <textarea

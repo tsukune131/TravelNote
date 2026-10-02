@@ -15,6 +15,7 @@ import { reflowPreview } from '../lib/connector';
 import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
 import { dayLabel } from './dayLabel';
+import { ideaGroupOf } from '../lib/category';
 
 /** 旅程は必ず押す。15/30/60 が実際に使う刻み */
 const REFLOW_STEPS = [15, 30, 60];
@@ -129,6 +130,21 @@ export function EventActions({
         <button type="button" className="menu-item" onClick={onEdit}>
           ✎ {t('actions.edit')}
         </button>
+
+        {/* メモタブの見出しの付け替え。自動の振り分けが外れたときに直す */}
+        {event.dayIndex === IDEAS_DAY && (
+          <button
+            type="button"
+            className="menu-item"
+            onClick={() => {
+              const next = ideaGroupOf(event) === 'place' ? 'todo' : 'place';
+              void updateEvent(event.id, { ideaGroup: next });
+              onClose();
+            }}
+          >
+            ⇄ {t(ideaGroupOf(event) === 'place' ? 'actions.toTodos' : 'actions.toPlaces')}
+          </button>
+        )}
       </div>
 
       {/* 行き先には「メモ」も入る。日を決めたけれどやっぱり未定に戻す、がある */}
