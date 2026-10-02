@@ -95,7 +95,7 @@ platform :ios do
       configuration: "Release",
       export_method: "app-store",
       output_directory: "build",
-      # 表示名は日本語(たびのしおり)だが、成果物名はASCIIに固定する
+      # 表示名は日本語(つばメイト)だが、成果物名はASCIIに固定する
       output_name: "TravelNote.ipa",
       export_options: {
         provisioningProfiles: {

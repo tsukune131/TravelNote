@@ -8,7 +8,7 @@ import type { DeepPartial, Messages } from '../types';
  */
 export const en: DeepPartial<Messages> = {
   app: {
-    name: 'Tabi no Shiori',
+    name: 'TsubaMate',
   },
 
   welcome: {
@@ -295,7 +295,7 @@ export const en: DeepPartial<Messages> = {
   },
 
   pro: {
-    title: 'Tabi no Shiori Pro',
+    title: 'TsubaMate Pro',
     lead: 'Sharing is always free.\n**Remove ads** and unlock handy trip features.',
     leadAds: '**Removing ads** needs Pro.',
     leadWeather: 'Showing the **weather forecast** for each day needs Pro.',
@@ -391,7 +391,7 @@ export const en: DeepPartial<Messages> = {
 
   settings: {
     title: 'Settings',
-    pro: 'Tabi no Shiori Pro',
+    pro: 'TsubaMate Pro',
     removeAds: 'Remove ads',
     mapProvider: 'Maps app',
     displayName: 'Display name',

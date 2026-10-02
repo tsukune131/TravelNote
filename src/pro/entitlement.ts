@@ -1,7 +1,7 @@
 import type { Trip } from '../db/types';
 
 /**
- * 「たびのしおり Pro」の判定。
+ * 「つばメイト Pro」の判定。
  *
  * ## 線引き(2026-09-24 に変更。ROADMAP 現在地)
  *

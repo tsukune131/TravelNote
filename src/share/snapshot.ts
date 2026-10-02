@@ -73,7 +73,7 @@ export function parseSnapshot(text: string): Snapshot {
   const s = parsed as Partial<Snapshot>;
 
   if (s.format !== SNAPSHOT_FORMAT) {
-    throw new SnapshotParseError('たびのしおりのファイルではないようです');
+    throw new SnapshotParseError('つばメイトのファイルではないようです');
   }
   if (typeof s.version !== 'number' || s.version > SNAPSHOT_VERSION) {
     throw new SnapshotParseError('新しいバージョンで作られたファイルです。アプリを更新してください');
@@ -137,7 +137,7 @@ export async function loadBaseline(tripId: string): Promise<Snapshot | null> {
  */
 export function snapshotFileName(trip: Trip): string {
   const safeTitle = trip.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'trip';
-  return `たびのしおり_${safeTitle}_${trip.startDate}.json`;
+  return `つばメイト_${safeTitle}_${trip.startDate}.json`;
 }
 
 export const SNAPSHOT_MIME = 'application/json';

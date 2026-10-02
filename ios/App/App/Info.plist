@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ja</string>
 	<key>CFBundleDisplayName</key>
-        <string>たびのしおり</string>
+        <string>つばメイト</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -31,7 +31,7 @@
 	<!--
 	  しおりファイル(.tabishiori)を受け取れるようにする。
 	  これが無いと、LINE や AirDrop で送られたファイルの「共有」に
-	  たびのしおり が出てこない ── 共有機能そのものが片道になる。
+	  つばメイト が出てこない ── 共有機能そのものが片道になる。
 
 	  UTExportedTypeDeclarations: この形式は自分たちが定義したものだと宣言する
 	  CFBundleDocumentTypes:      その形式を開けるアプリだと宣言する
@@ -46,7 +46,7 @@
 			<key>UTTypeIdentifier</key>
 			<string>com.tsukune.travelnote.shiori</string>
 			<key>UTTypeDescription</key>
-			<string>たびのしおり</string>
+			<string>つばメイト</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.json</string>
@@ -68,7 +68,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>たびのしおり</string>
+			<string>つばメイト</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>

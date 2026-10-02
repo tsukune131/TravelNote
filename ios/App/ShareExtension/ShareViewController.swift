@@ -2,7 +2,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 /**
- 共有シートの「たびのしおり」。
+ 共有シートの「つばメイト」。
 
  受け取って、App Group のファイルに追記して、閉じる。
  **旅や Day は選ばせない** ── ここで選ばせると「共有 → 終わり」の速さが消える
@@ -74,7 +74,7 @@ final class ShareViewController: UIViewController {
         provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { [weak self] value, _ in
             let url = (value as? URL)?.absoluteString ?? (value as? String) ?? ""
             let saved = self?.save(url: url, title: title) ?? false
-            self?.finish(message: saved ? "たびのしおりに入れました" : "保存できませんでした")
+            self?.finish(message: saved ? "つばメイトに入れました" : "保存できませんでした")
         }
     }
 

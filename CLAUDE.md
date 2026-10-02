@@ -1,4 +1,4 @@
-# たびのしおり
+# つばメイト(旧: たびのしおり)
 
 React + TypeScript + Vite + Capacitor の iOSアプリ。
 Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
@@ -19,8 +19,10 @@ Windows + GitHub Actions のみで開発・配布する(Macは使わない)。
 - Bundle ID: `com.tsukune.travelnote`(**変更禁止**。変えるとTestFlight配布が切れる)
 - GitHubリポジトリ: `tsukune131/TravelNote`(Public。macOSランナーを無料で使うため)
 - 証明書リポジトリ: `tsukune131/TravelNote-certificates`(Private)
-- 表示名「たびのしおり」は日本語。**ASCIIが要る箇所(ipa名・Artifact名・
+- 表示名「つばメイト」は日本語(英語は TsubaMate。2026-10-02 に「たびのしおり」から改名)。**ASCIIが要る箇所(ipa名・Artifact名・
   リポジトリ名)は `TravelNote` を使う**
+- **データの識別子は旧名のまま据え置く**: DB 名 `tabinoshiori`・共有ファイルの形式
+  `tabinoshiori.trip`・拡張子 `.tabishiori`。変えると既存のデータと送ったファイルが読めなくなる
 
 > ⚠️ **`docs/` は git 管理外**(`.gitignore`)。競合分析と価格戦略が含まれるため、
 > Public リポジトリには入れていない。**開発機の手元にだけある。**

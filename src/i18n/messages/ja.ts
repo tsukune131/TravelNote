@@ -8,7 +8,7 @@
  */
 export const ja = {
   app: {
-    name: 'たびのしおり',
+    name: 'つばメイト',
   },
 
   welcome: {
@@ -330,7 +330,7 @@ export const ja = {
   },
 
   pro: {
-    title: 'たびのしおり Pro',
+    title: 'つばメイト Pro',
     /** 開いた入口ごとの一言。`**…**` は Paywall の emphasize が太字にする */
     lead: '共有はずっと無料。\n**広告を消して**、旅を便利にする機能が使えます。',
     leadAds: '**広告を消す**には Pro が必要です。',
@@ -428,7 +428,7 @@ export const ja = {
 
   settings: {
     title: '設定',
-    pro: 'たびのしおり Pro',
+    pro: 'つばメイト Pro',
     removeAds: '広告を消す',
     mapProvider: '地図アプリ',
     displayName: '表示名',

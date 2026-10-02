@@ -1,7 +1,12 @@
 /**
- * store/icon.svg から、iOSのアプリアイコンと起動画面を焼く。
+ * store/icon.png から、iOSのアプリアイコンと起動画面を焼く。
  *
+ *   node store/icon-compose.mjs   (原画を組み直すときだけ)
  *   node store/make-icon.mjs
+ *
+ * 2026-10-02 につばメイトへ改名したとき、原画を SVG(store/icon.svg)から
+ * PNG に替えた。ChatGPT で作った絵が元なので、SVG に描き起こすと線の
+ * 雰囲気が変わる。iOS が要るのは 1024 の PNG 1枚だけなので、PNG のまま持つ。
  *
  * sharp は入れていない(Windows だとネイティブビルドで詰まる)。代わりに
  * 開発でもう使っている Chrome / Edge に描かせて撮る。playwright-core は
@@ -21,7 +26,7 @@ import { chromium } from 'playwright-core';
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
-const SRC = 'store/icon.svg';
+const SRC = 'store/icon.png';
 const OUT = 'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png';
 const SIZE = 1024;
 
@@ -44,16 +49,24 @@ const CANDIDATES = [
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
   '/usr/bin/google-chrome',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ].filter(Boolean);
 
-const exe = CANDIDATES.find((p) => existsSync(p));
-if (!exe) {
+// Mac の VS Code から起動すると Chrome が即死するので、起動済みのものに
+// つなぐ道を残す(.claude/skills/run-travelnote/SKILL.md の Gotchas)
+const CDP = process.env.TN_CDP;
+const exe = CDP ? null : CANDIDATES.find((p) => existsSync(p));
+if (!CDP && !exe) {
   console.error('Chrome も Edge も見つかりませんでした。TN_BROWSER にパスを渡してください');
   process.exit(1);
 }
 
-const svg = await readFile(SRC, 'utf8');
-const browser = await chromium.launch({ executablePath: exe });
+const png = await readFile(SRC);
+const img = (px) =>
+  `<img src="data:image/png;base64,${png.toString('base64')}" width="${px}" height="${px}" style="display:block">`;
+const browser = CDP
+  ? await chromium.connectOverCDP(CDP)
+  : await chromium.launch({ executablePath: exe });
 
 /** 焼いたものが注文どおりか、PNG のヘッダを直接読んで確かめる */
 function check(png, size, { needsOpaque }) {
@@ -68,10 +81,10 @@ function check(png, size, { needsOpaque }) {
 }
 
 async function shoot(size, body) {
-  const page = await browser.newPage({ viewport: { width: size, height: size } });
+  const page = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
   // 余白と背景を混ぜないため、body ごと潰してから中身を置く
   await page.setContent(
-    `<style>html,body{margin:0;padding:0}svg{display:block}</style><body>${body}</body>`,
+    `<style>html,body{margin:0;padding:0}</style><body>${body}</body>`,
   );
   const png = await page.screenshot({ omitBackground: false });
   await page.close();
@@ -79,20 +92,19 @@ async function shoot(size, body) {
 }
 
 // ── アプリアイコン(角丸にしない・透明を入れない) ──
-const icon = await shoot(SIZE, `<style>body{background:#fff}</style>${svg}`);
+const icon = await shoot(SIZE, `<style>body{background:#fff}</style>${img(SIZE)}`);
 check(icon, SIZE, { needsOpaque: true });
 await writeFile(OUT, icon);
 console.log(`✓ ${OUT}  ${SIZE}x${SIZE}  ${(icon.length / 1024).toFixed(0)}KB  アルファなし`);
 
 // ── 起動画面(紙の色の上に、角を丸めたアイコンを1つ) ──
-const mark = svg.replace('width="1024" height="1024"', `width="${MARK}" height="${MARK}"`);
 const splash = await shoot(
   SPLASH_SIZE,
   `<style>
      body{background:${PAPER};display:grid;place-items:center;height:${SPLASH_SIZE}px}
      .mark{width:${MARK}px;height:${MARK}px;border-radius:${Math.round(MARK * 0.22)}px;overflow:hidden}
    </style>
-   <div class="mark">${mark}</div>`,
+   <div class="mark">${img(MARK)}</div>`,
 );
 check(splash, SPLASH_SIZE, { needsOpaque: false });
 for (const name of SPLASH_FILES) await writeFile(`${SPLASH_DIR}/${name}`, splash);

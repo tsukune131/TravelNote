@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tsukune.travelnote',
-  appName: 'たびのしおり',
+  appName: 'つばメイト',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

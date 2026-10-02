@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * たびのしおり を実際に起動して触るためのドライバ。
+ * つばメイト を実際に起動して触るためのドライバ。
  *
  *   node .claude/skills/run-travelnote/driver.mjs smoke
  *   node .claude/skills/run-travelnote/driver.mjs repl <<'EOF' ... EOF
