@@ -453,7 +453,7 @@ export function TripScreen({
         <input
           ref={inputRef}
           value={draft}
-          placeholder={t('event.namePlaceholder')}
+          placeholder={t('event.addPlaceholder')}
           enterKeyHint="done"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

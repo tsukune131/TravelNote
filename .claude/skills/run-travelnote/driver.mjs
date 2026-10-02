@@ -277,7 +277,7 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
   await page.locator('.sheet').getByRole('button', { name: 'つくる', exact: true }).click();
   await page.waitForSelector('.daytabs .daytab');
 
-  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
+  const input = page.locator('.addbar input');
   for (const name of places) {
     await input.fill(name);
     await input.press('Enter');
@@ -288,7 +288,7 @@ async function seed(page, { title = '京都・大阪 3泊4日', places = [], off
 
 /** すでに開いている旅の、いま見ている Day に予定を足す */
 async function seed2(page, places) {
-  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
+  const input = page.locator('.addbar input');
   for (const name of places) {
     await input.fill(name);
     await input.press('Enter');
@@ -472,7 +472,7 @@ async function smoke() {
   step('今日の Day に現在時刻ライン');
   await page.locator('.daytab:not(.ideas)').nth(1).click();
   await page.waitForTimeout(200);
-  const input = page.getByPlaceholder('場所の名前ややりたいことなど');
+  const input = page.locator('.addbar input');
   await input.fill('嵐山 竹林の小径');
   await input.press('Enter');
   await page.waitForTimeout(200);
@@ -666,8 +666,8 @@ async function shareRoundTrip() {
   const a = await device('A');
   await seed(a, { title: '京都・大阪 3泊4日', places: [] });
   for (const [name] of [['9:00 二条城'], ['13:00 本家第一旭'], ['15:00 清水寺']]) {
-    await a.getByPlaceholder('場所の名前ややりたいことなど').fill(name);
-    await a.getByPlaceholder('場所の名前ややりたいことなど').press('Enter');
+    await a.locator('.addbar input').fill(name);
+    await a.locator('.addbar input').press('Enter');
     await a.waitForTimeout(120);
   }
   console.log('  A:', (await a.locator('.ev-name').allTextContents()).join(' / '));
@@ -690,8 +690,8 @@ async function shareRoundTrip() {
   step('B が Day 2 に足して、送り返す');
   await b.locator('.daytab:not(.ideas)').nth(1).click();
   await b.waitForTimeout(250);
-  await b.getByPlaceholder('場所の名前ややりたいことなど').fill('11:00 嵐山 竹林の小径');
-  await b.getByPlaceholder('場所の名前ややりたいことなど').press('Enter');
+  await b.locator('.addbar input').fill('11:00 嵐山 竹林の小径');
+  await b.locator('.addbar input').press('Enter');
   await b.waitForTimeout(250);
   const file2 = await exportFrom(b, 'ともき');
 
