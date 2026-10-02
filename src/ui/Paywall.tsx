@@ -30,8 +30,13 @@ function emphasize(text: string) {
  */
 function priceOf(price: PlanPrice): string {
   if (price.currencyCode === 'JPY') return price.priceString;
-  // 本番では**必ず StoreKit の値**。表示と請求額がずれるほうが害が大きい
-  return import.meta.env.DEV ? PRICE_TEXT_JPY[price.plan] : price.priceString;
+  /*
+   * ⚠️ **撮影用ブランチ(screenshot-jpy)だけの変更。main に入れない。**
+   * Sandbox が米国のストアになってドルで返るので、スクリーンショット用に日本の定価を出す。
+   * 本番(main)は必ず StoreKit の値 ── 審査が米国の Sandbox で試すと、
+   * 「¥300 と表示して $2.99 を請求」になり 3.1.2 で差し戻されうる
+   */
+  return PRICE_TEXT_JPY[price.plan];
 }
 
 /** どこから開いたか。冒頭の一言だけが変わる */
