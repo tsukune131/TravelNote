@@ -515,6 +515,17 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
         }
     }
 
+    /// 旅のゾーンの共有。まだ無ければ nil
+    func existingShare(zone: String) async throws -> CKShare? {
+        let zoneID = Self.zoneID(owner: "", zone: zone)
+        let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
+        do {
+            return try await container.privateCloudDatabase.record(for: shareID) as? CKShare
+        } catch let error as CKError where error.code == .unknownItem || error.code == .zoneNotFound {
+            return nil
+        }
+    }
+
     /// 旅のゾーンの共有を用意する(無ければ作る)。先に旅の中身を送り切っておく
     func prepareShare(zone: String, title: String) async throws -> CKShare {
         let zoneID = Self.zoneID(owner: "", zone: zone)
@@ -567,6 +578,7 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
         CAPPluginMethod(name: "syncNow", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "deleteZone", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "manageShare", returnType: CAPPluginReturnPromise),
     ]
 
     private var shareTitle = ""
@@ -644,12 +656,13 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
     }
 
     /**
-     共有の画面を出す。招待の送り方(メッセージ・LINE・リンクのコピー)と、
-     参加者の管理・共有の停止は iOS 標準の画面に任せる。
+     招待を送る。**いつもの共有シート**(LINE・メッセージ・メール…)に、招待の文とリンクを渡す。
 
-     **画面を出した時点で resolve する。** 標準の画面は閉じ方がいくつもあり
-     (完了・共有の停止・下へスワイプ)、全部で呼ばれる delegate が無い。
-     返事を待たせると JS が止まるので、その後のことはイベントで知らせる。
+     iOS の共有管理画面(`UICloudSharingController`)は、共有ができたあとは
+     「管理」の画面になり、送り先のアプリを選べない(リンクをコピーして自分で
+     LINE を開く必要があった)。だから送るのは共有シート、管理は `manageShare` に分けた。
+
+     **シートを出した時点で resolve する。** その後どこへ送ったかはアプリに関係ない。
      */
     @objc func share(_ call: CAPPluginCall) {
         guard let zone = call.getString("zone") else {
@@ -657,9 +670,47 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
             return
         }
         let title = call.getString("title") ?? ""
+        let message = call.getString("message") ?? title
         Task {
             do {
                 let share = try await CloudSync.shared.prepareShare(zone: zone, title: title)
+                guard let url = share.url else {
+                    call.reject("share has no url", "noUrl")
+                    return
+                }
+                await MainActor.run {
+                    let sheet = UIActivityViewController(activityItems: [message, url], applicationActivities: nil)
+                    // iPad では吹き出しの出どころが要る(無いと落ちる)
+                    if let view = self.bridge?.viewController?.view {
+                        sheet.popoverPresentationController?.sourceView = view
+                        sheet.popoverPresentationController?.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0)
+                    }
+                    self.bridge?.viewController?.present(sheet, animated: true)
+                    call.resolve(["result": "presented"])
+                }
+            } catch {
+                let code = (error as? CKError).map { "ck\($0.code.rawValue)" } ?? "unknown"
+                call.reject(error.localizedDescription, code)
+            }
+        }
+    }
+
+    /**
+     共有の管理(参加している人・共有オプション・共有の停止)。iOS 標準の画面に任せる。
+     まだ共有していなければ `noShare` で断る(作るのは `share` だけ)。
+     */
+    @objc func manageShare(_ call: CAPPluginCall) {
+        guard let zone = call.getString("zone") else {
+            call.reject("zone is required")
+            return
+        }
+        let title = call.getString("title") ?? ""
+        Task {
+            do {
+                guard let share = try await CloudSync.shared.existingShare(zone: zone) else {
+                    call.reject("not shared yet", "noShare")
+                    return
+                }
                 await MainActor.run {
                     self.shareTitle = title
                     let controller = UICloudSharingController(share: share, container: CloudSync.shared.container)

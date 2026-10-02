@@ -9,7 +9,7 @@ import { commitShared, exportSnapshotText, importSnapshotText } from '../share/a
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
 import type { MergeSummary } from '../share/merge';
 import type { Trip } from '../db/types';
-import { shareTrip } from '../cloud/sync';
+import { manageTripShare, shareTrip } from '../cloud/sync';
 import { cloudAvailable } from '../cloud/native';
 
 export type ImportOutcome =
@@ -80,12 +80,27 @@ export function ShareSheet({
     setNote(null);
     try {
       await ensureOwner(trip.id, name.trim() || t('share.displayNameDefault'));
-      const result = await shareTrip(trip);
+      const result = await shareTrip(trip, t('share.icloudMessage', { title: trip.title }));
       if (result === 'unavailable') setNote(t('share.icloudUnavailable'));
       if (result === 'notOwner') setNote(t('share.icloudNotOwner'));
     } catch (err) {
       const code = (err as { code?: string }).code ?? '';
       setNote(code === 'ck25' ? t('settings.cloudQuota') : t('share.icloudFailed', { code }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function manageShare() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const result = await manageTripShare(trip);
+      if (result === 'noShare') setNote(t('share.icloudNotYet'));
+      if (result === 'unavailable') setNote(t('share.icloudUnavailable'));
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? '';
+      setNote(t('share.icloudFailed', { code }));
     } finally {
       setBusy(false);
     }
@@ -136,6 +151,9 @@ export function ShareSheet({
                   ☁️ {t('share.icloud')}
                 </button>
                 <p className="guess">{t('share.icloudHint')}</p>
+                <button type="button" className="btn ghost" onClick={() => void manageShare()} disabled={busy}>
+                  {t('share.icloudManage')}
+                </button>
               </>
             )}
           </div>

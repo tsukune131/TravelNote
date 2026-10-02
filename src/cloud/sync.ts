@@ -284,14 +284,26 @@ async function softDeleteTrip(tripId: string) {
  * 旅の共有画面(iOS 標準)を出す。共有できるのは**自分の旅だけ**
  * (受け取った旅の招待は作成者が出す)。
  */
-export async function shareTrip(trip: Trip): Promise<'presented' | 'unavailable' | 'notOwner'> {
+export async function shareTrip(trip: Trip, message: string): Promise<'presented' | 'unavailable' | 'notOwner'> {
   if (!cloudAvailable() || !accountReady) return 'unavailable';
   if (!trip.cloud) await adoptTrip(trip.id);
   const fresh = await db.trips.get(trip.id);
   if (!fresh?.cloud) return 'unavailable';
   if (fresh.cloud.scope !== 'private') return 'notOwner';
-  await CloudSync.share({ zone: fresh.cloud.zone, title: fresh.title });
+  await CloudSync.share({ zone: fresh.cloud.zone, title: fresh.title, message });
   return 'presented';
+}
+
+/** 共有の管理画面(参加者・共有オプション・停止)。まだ共有していなければ 'noShare' */
+export async function manageTripShare(trip: Trip): Promise<'presented' | 'noShare' | 'unavailable'> {
+  if (!cloudAvailable() || !accountReady || trip.cloud?.scope !== 'private') return 'unavailable';
+  try {
+    await CloudSync.manageShare({ zone: trip.cloud.zone, title: trip.title });
+    return 'presented';
+  } catch (err) {
+    if ((err as { code?: string }).code === 'noShare') return 'noShare';
+    throw err;
+  }
 }
 
 /* ────────── 起動 ────────── */

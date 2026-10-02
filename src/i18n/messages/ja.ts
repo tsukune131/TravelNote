@@ -311,6 +311,9 @@ export const ja = {
     icloudJoined: '共有中の旅です。直したことは参加している全員に届きます。',
     icloudFailed: '共有を始められませんでした({code})。電波のよいところでもう一度お試しください。',
     fileSection: 'ファイルで送る(これまでの方法)',
+    icloudMessage: 'つばメイトで「{title}」のしおりを一緒に作りましょう。リンクを開くと参加できます(アプリが必要です)。',
+    icloudManage: '参加している人・共有の管理',
+    icloudNotYet: 'まだ共有していません。上のボタンから招待を送ると、ここで参加している人を確認できます。',
   },
 
   sharedEnded: {

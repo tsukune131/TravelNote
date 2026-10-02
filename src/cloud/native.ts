@@ -60,7 +60,10 @@ type CloudSyncPlugin = {
   ack(options: { upTo: number }): Promise<void>;
   syncNow(): Promise<void>;
   deleteZone(options: CloudLocation): Promise<void>;
-  share(options: { zone: string; title: string }): Promise<{ result: string }>;
+  /** 招待を送る共有シートを出す(無ければ共有を作る) */
+  share(options: { zone: string; title: string; message: string }): Promise<{ result: string }>;
+  /** 参加者・共有オプション・停止。まだ共有していなければ code `noShare` で reject */
+  manageShare(options: { zone: string; title: string }): Promise<{ result: string }>;
   addListener(
     event: 'changes' | 'account' | 'shareStopped' | 'shareError',
     handler: (data: Record<string, string>) => void,

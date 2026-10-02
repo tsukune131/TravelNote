@@ -278,6 +278,9 @@ export const en: DeepPartial<Messages> = {
     icloudJoined: 'This trip is shared. Your changes reach everyone in it.',
     icloudFailed: 'Could not start sharing ({code}). Please try again with a better connection.',
     fileSection: 'Send as a file (the old way)',
+    icloudMessage: 'Let us plan "{title}" together in TsubaMate. Open the link to join (the app is required).',
+    icloudManage: 'People and sharing settings',
+    icloudNotYet: 'Not shared yet. Send an invite above, then you can see who joined here.',
   },
 
   sharedEnded: {
