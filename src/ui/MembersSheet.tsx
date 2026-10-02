@@ -17,7 +17,7 @@ import type { Member, MemberIcon } from '../db/types';
  * - アイコンは写真か、用意した絵柄から
  *
  * **登録・ログインは無い**(アカウントを作らせない方針。5.1.1(v))。
- * 誰の名前も端末の外へは出ない ── 旅を共有したときに、しおりと一緒に運ばれるだけ。
+ * 名前とアイコンは端末と利用者自身の iCloud にだけ置かれ、共有した旅の参加者に届く(運営者は受け取らない)。
  */
 export function MembersSheet({ tripId, onClose }: { tripId: string; onClose: () => void }) {
   const { t } = useI18n();
