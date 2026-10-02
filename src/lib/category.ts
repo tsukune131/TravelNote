@@ -30,6 +30,31 @@ export type CategoryId = keyof typeof CATEGORIES;
 
 export const CATEGORY_IDS = Object.keys(CATEGORIES) as CategoryId[];
 
+/**
+ * メモタブの2つの見出し。**場所か、体験・用事か**で分ける(ユーザー判断 2026-10-02)。
+ * 「景福宮」「広蔵市場」は行きたいところ、「コスメを買う」「両替する」はやりたいこと。
+ *
+ * **カテゴリだけでは分けない。** 推定が当たらない固有名詞は「その他」になり、
+ * 市場は「ショッピング」になる ── カテゴリで分けると、行きたい場所が
+ * やりたいことへ落ちた(実際に試して落ちた)。だから先に**名前の形**を見る:
+ * 「〜を〜」「〜する」「〜を買う」のような動作ならやりたいこと。
+ * それ以外は場所とみなし、体験(アクティビティ)だけはやりたいことに寄せる。
+ */
+const ACTION =
+  /を|(する|しよう|したい|買う|食べる|食べたい|食べ歩き|飲む|見る|観る|行く|乗る|撮る|泊まる|会う|予約|両替|購入|申請|申込|確認|準備|手配|体験|散策|散歩|観戦|鑑賞|作り)$/;
+
+export type IdeaGroup = 'place' | 'todo';
+
+export function ideaGroupOf(event: { name: string; category: CategoryId }): IdeaGroup {
+  if (ACTION.test(event.name.trim())) return 'todo';
+  return event.category === 'activity' ? 'todo' : 'place';
+}
+
+/** アイコン(カテゴリ)の順。カテゴリ選択の並びと同じ */
+export function categoryRank(id: CategoryId): number {
+  return CATEGORY_IDS.indexOf(id);
+}
+
 export function familyOf(id: CategoryId): CategoryFamily {
   return CATEGORIES[id].family;
 }
@@ -56,9 +81,14 @@ const RULES: ReadonlyArray<{ test: RegExp; id: CategoryId }> = [
   },
   { test: /城$|城跡|城址|天守|櫓$|castle/i, id: 'castle' },
   {
-    test: /寺$|寺院|大仏|神社|神宮|東照宮|八幡宮|稲荷|大社|参道|temple|shrine/i,
+    test: /寺$|寺院|大仏|神社|神宮|東照宮|八幡宮|天満宮|稲荷|大社|参道|temple|shrine/i,
     id: 'shrine',
   },
+  /*
+   * 宮殿(景福宮・昌徳宮など)。**寺社のあとに置く** ── 神宮・天満宮を先に寺社で拾うため。
+   * 「大宮」「宇都宮」は駅・街なので除く(寺社の注記と同じ理由)
+   */
+  { test: /宮殿|王宮|(?<![大都])宮$|palace/i, id: 'castle' },
   {
     test: /美術館|博物館|記念館|資料館|ギャラリー|科学館|水族館|動物園|museum|gallery|aquarium|zoo/i,
     id: 'museum',
@@ -80,7 +110,7 @@ const RULES: ReadonlyArray<{ test: RegExp; id: CategoryId }> = [
     id: 'restaurant',
   },
   {
-    test: /商店街|市場|モール|百貨店|デパート|アウトレット|土産|物産|ドンキ|免税|market|mall|shopping|outlet|souvenir/i,
+    test: /商店街|市場|モール|百貨店|デパート|アウトレット|土産|物産|ドンキ|免税|コスメ|化粧品|market|mall|shopping|outlet|souvenir/i,
     id: 'shopping',
   },
   {

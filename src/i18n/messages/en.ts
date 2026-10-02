@@ -113,9 +113,10 @@ export const en: DeepPartial<Messages> = {
   },
 
   ideas: {
+    places: 'Places to go',
+    todos: 'Things to do',
     tab: 'Notes',
     tabSub: 'To-do',
-    list: 'Things to do, places to go',
     empty: 'Nothing here yet',
     emptyHint:
       'Jot ideas down here. Once you decide, grab the handle on the right and drag it onto a Day tab above.',
@@ -194,6 +195,7 @@ export const en: DeepPartial<Messages> = {
     guessedCategory: 'Guessed',
     changeCategory: 'Tap to change',
     time: 'Time',
+    clearTime: 'No time',
     noTimeToggle: 'No specific time',
     duration: 'How long',
     category: 'Category',

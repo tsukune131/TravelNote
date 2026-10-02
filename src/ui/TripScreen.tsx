@@ -12,7 +12,8 @@ import {
   setTripNote,
 } from '../db/repo';
 import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
-import { guessCategory } from '../lib/category';
+import { categoryRank, guessCategory, ideaGroupOf } from '../lib/category';
+import type { IdeaGroup } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
 import { openLink, openMap } from '../lib/openExternal';
@@ -73,6 +74,8 @@ export function TripScreen({
   const eventWeather = useEventWeather(trip, dayIndex, events, unlocked);
 
   const [draft, setDraft] = useState('');
+  /** 旅のメモを書いているあいだ。下の入力欄を引っ込める */
+  const [noteFocused, setNoteFocused] = useState(false);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [categoryEventId, setCategoryEventId] = useState<string | null>(null);
@@ -110,6 +113,21 @@ export function TripScreen({
             : (e.assigneeIds ?? []).includes(assigneeFilter),
         )
       : events;
+  /*
+   * メモタブは「行きたいところ / やりたいこと」に分け、それぞれアイコンの順に並べる
+   * (同じアイコンどうしは入れた順のまま)。日の予定は時刻で並ぶので触らない
+   */
+  const ideaGroups: { group: IdeaGroup; events: TripEvent[] }[] | null =
+    ideas && shownEvents && shownEvents.length > 0
+      ? (['place', 'todo'] as const)
+          .map((group) => ({
+            group,
+            events: shownEvents
+              .filter((e) => ideaGroupOf(e) === group)
+              .sort((a, b) => categoryRank(a.category) - categoryRank(b.category)),
+          }))
+          .filter((g) => g.events.length > 0)
+      : null;
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
   const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
   const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
@@ -218,6 +236,38 @@ export function TripScreen({
     setDraft('');
     // 連続追加。計画段階で行きたい場所をまとめて放り込めることが大事
     inputRef.current?.focus();
+  }
+
+  /** メモタブは見出しごとに、日の予定は1本で描く */
+  function renderTimeline(list: TripEvent[]) {
+    return (
+      <Timeline
+        tripId={tripId}
+        events={list}
+        members={members ?? []}
+        dayIndex={dayIndex}
+        ideas={ideas}
+        isToday={!ideas && dayDate === todayDate}
+        isLastDay={dayIndex === total - 1}
+        mapProvider={mapProvider}
+        onOpen={(e) => {
+          noteAdAction();
+          setOpenEventId(e.id);
+        }}
+        onOpenMap={handleOpenMap}
+        onOpenLinks={handleOpenLinks}
+        onAssign={ideas ? (e) => setAssignEventId(e.id) : undefined}
+        onLongPress={(e) => {
+          // 使えたなら、もう教える必要はない
+          dismissHint();
+          setActionEventId(e.id);
+        }}
+        onPickCategory={(e) => setCategoryEventId(e.id)}
+        onHoverDay={setDropDay}
+        onMovedToDay={(e, to) => setMoved({ name: e.name, dayIndex: to })}
+        weatherFor={unlocked ? eventWeather : undefined}
+      />
+    );
   }
 
   return (
@@ -349,42 +399,19 @@ export function TripScreen({
             <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
           )}
 
-          {ideas && events && events.length > 0 && (
-            <p className="section-label">{t('ideas.list')}</p>
-          )}
 
           {anyAssigned && members && (
             <AssigneeFilter members={members} value={assigneeFilter} onChange={setAssigneeFilter} />
           )}
 
-          {shownEvents && (
-            <Timeline
-              tripId={tripId}
-              events={shownEvents}
-              members={members ?? []}
-              dayIndex={dayIndex}
-              ideas={ideas}
-              isToday={!ideas && dayDate === todayDate}
-              isLastDay={dayIndex === total - 1}
-              mapProvider={mapProvider}
-              onOpen={(e) => {
-                noteAdAction();
-                setOpenEventId(e.id);
-              }}
-              onOpenMap={handleOpenMap}
-              onOpenLinks={handleOpenLinks}
-              onAssign={ideas ? (e) => setAssignEventId(e.id) : undefined}
-              onLongPress={(e) => {
-                // 使えたなら、もう教える必要はない
-                dismissHint();
-                setActionEventId(e.id);
-              }}
-              onPickCategory={(e) => setCategoryEventId(e.id)}
-              onHoverDay={setDropDay}
-              onMovedToDay={(e, to) => setMoved({ name: e.name, dayIndex: to })}
-              weatherFor={unlocked ? eventWeather : undefined}
-            />
-          )}
+          {ideaGroups
+            ? ideaGroups.map(({ group, events: list }) => (
+                <div key={group}>
+                  <p className="section-label">{t(group === 'place' ? 'ideas.places' : 'ideas.todos')}</p>
+                  {renderTimeline(list)}
+                </div>
+              ))
+            : shownEvents && renderTimeline(shownEvents)}
 
           {/*
             旅のメモ(集合場所・連絡先など)。以前は準備(⋯)の中にあった。
@@ -398,7 +425,11 @@ export function TripScreen({
                 key={trip.id}
                 defaultValue={trip.note ?? ''}
                 placeholder={t('prepare.notePlaceholder')}
-                onBlur={(e) => void setTripNote(trip.id, e.target.value)}
+                onFocus={() => setNoteFocused(true)}
+                onBlur={(e) => {
+                  setNoteFocused(false);
+                  void setTripNote(trip.id, e.target.value);
+                }}
               />
             </div>
           )}
@@ -414,6 +445,11 @@ export function TripScreen({
         </div>
       </div>
 
+      {/*
+        **メモを書いているあいだは出さない。** キーボードと一緒に持ち上がって
+        書いている行の上に重なり、メモが見えなくなっていた(実機で報告)
+      */}
+      {!noteFocused && (
       <div className="addbar">
         <input
           ref={inputRef}
@@ -430,8 +466,9 @@ export function TripScreen({
           {t('common.add')}
         </button>
       </div>
+      )}
 
-      {draft.trim().length > 0 && (
+      {!noteFocused && draft.trim().length > 0 && (
         <p
           className="guess addbar-hint"
           style={{

@@ -1501,6 +1501,14 @@ body.sheet-open .addbar-hint {
   display: block;
 }
 
+/* 欄の下に添える小さな操作(「時刻なしにする」など) */
+.btn.small {
+  margin-top: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  min-height: 0;
+}
+
 .btn.with-icon {
   display: flex;
   align-items: center;

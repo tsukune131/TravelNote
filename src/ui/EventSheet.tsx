@@ -66,6 +66,15 @@ export function EventSheet({
               void setEventTime(event.id, e.target.value === '' ? null : fromTimeValue(e.target.value))
             }
           />
+          {/*
+            iOS の時刻の入力には「消去」が無く、一度入れると空に戻せなかった(実機で報告)。
+            時刻未定はこのアプリの売りなので、戻す道をはっきり置く
+          */}
+          {hasTime && (
+            <button type="button" className="btn ghost small" onClick={() => void setEventTime(event.id, null)}>
+              {t('event.clearTime')}
+            </button>
+          )}
         </div>
         <div className="field">
           <label htmlFor="ev-dur">{t('event.duration')}</label>

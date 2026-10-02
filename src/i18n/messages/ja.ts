@@ -139,9 +139,10 @@ export const ja = {
    * 思いついたものを放り込み、決まったら Day タブへドラッグして振り分ける
    */
   ideas: {
+    places: '行きたいところ',
+    todos: 'やりたいこと',
     tab: 'メモ',
     tabSub: 'ToDo',
-    list: 'やりたいこと・行きたいところ',
     empty: 'まだ何もありません',
     emptyHint:
       '思いついたものを下から入れておき、決まったら右のつまみを掴んで上の Day タブへドラッグすると、その日に移せます。',
@@ -226,6 +227,7 @@ export const ja = {
     guessedCategory: '推定',
     changeCategory: 'タップで変更',
     time: '時刻',
+    clearTime: '時刻なしにする',
     noTimeToggle: '時刻を決めない',
     duration: '所要時間',
     category: 'カテゴリ',
