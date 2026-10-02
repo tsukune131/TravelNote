@@ -1,6 +1,6 @@
 import type { Transaction } from 'dexie';
 import { App as CapApp } from '@capacitor/app';
-import { db } from '../db/db';
+import { db, getSetting, setSetting } from '../db/db';
 import type { DayVariant, Member, Trip, TripEvent } from '../db/types';
 import { orderKeyBetween } from '../lib/fractionalIndex';
 import { CloudSync, cloudAvailable } from './native';
@@ -41,6 +41,27 @@ const LOCAL_FIELDS: Record<TableName, ReadonlySet<string>> = {
   events: new Set(['id']),
   members: new Set(['id']),
   dayVariants: new Set(['id']),
+};
+
+/**
+ * **同期する欄の一覧。CloudKit のスキーマと1対1。**
+ *
+ * ⚠️ 型(src/db/types.ts)に欄を足したら、ここにも足すこと。足さないと、
+ * 開発環境では動くのに**本番でだけ**その欄を含む記録が送れない
+ * (本番は見たことのない欄を受け付けない)。手順:
+ *   1. ここに足す → 2. デバッグビルドを1回起動(`seedSchema` が開発環境に欄を作る)
+ *   3. CloudKit コンソールで Deploy Schema Changes → 4. リリース
+ * 一覧に無い欄を送ろうとしたら、開発中にコンソールへエラーを出す(`recordOf`)。
+ */
+export const SCHEMA: Record<RecordType, readonly string[]> = {
+  Trip: ['title', 'startDate', 'endDate', 'updatedAt', 'updatedBy', 'ownerDeviceId', 'ownerPro', 'place', 'placeChanges', 'links', 'packing', 'note'],
+  Event: [
+    'tripId', 'dayIndex', 'startMinutes', 'durationMinutes', 'category', 'categoryLocked', 'name', 'note',
+    'lat', 'lng', 'address', 'links', 'booking', 'travelMinutes', 'travelMode', 'pinned', 'done', 'costYen',
+    'order', 'assigneeIds', 'variantId', 'updatedAt', 'updatedBy', 'deletedAt',
+  ],
+  Member: ['tripId', 'deviceId', 'displayName', 'role', 'icon', 'updatedAt', 'updatedBy', 'deletedAt'],
+  DayVariant: ['tripId', 'dayIndex', 'label', 'createdBy', 'active', 'updatedAt', 'updatedBy', 'deletedAt'],
 };
 
 /**
@@ -106,8 +127,10 @@ function recordOf(table: TableName, row: Row, at: CloudLocation, fields: Set<str
   const local = LOCAL_FIELDS[table];
   const keys = fields === 'all' ? Object.keys(row) : [...fields];
   const out: Record<string, string> = {};
+  const known = SCHEMA[TYPE_OF[table]];
   for (const k of keys) {
     if (local.has(k)) continue;
+    if (!known.includes(k)) console.error(`[cloud] ${TYPE_OF[table]}.${k} は SCHEMA に無い欄です(本番では送れません)`);
     out[k] = encode((row as Record<string, unknown>)[k]);
   }
   if (Object.keys(out).length === 0) return null;
@@ -389,4 +412,20 @@ export async function startCloudSync(): Promise<void> {
   await refreshAccount();
   await pull();
   void CloudSync.syncNow().then(pull);
+  void seedSchemaOnce();
+}
+
+/** デバッグビルド(開発環境)で、欄の一覧が変わったときだけ全部の欄を作る */
+async function seedSchemaOnce() {
+  if (!accountReady) return;
+  const { environment } = await CloudSync.status();
+  if (environment !== 'development') return;
+  const signature = JSON.stringify(SCHEMA);
+  if ((await getSetting('cloud.schemaSeeded')) === signature) return;
+  try {
+    await CloudSync.seedSchema({ types: SCHEMA });
+    await setSetting('cloud.schemaSeeded', signature);
+  } catch (err) {
+    console.error('[cloud] seedSchema failed', err);
+  }
 }

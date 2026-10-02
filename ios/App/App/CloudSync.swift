@@ -516,6 +516,31 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
     }
 
     /**
+     **開発環境に、同期する欄を全部作る**(デバッグビルドの起動時。JS の `SCHEMA` から)。
+
+     本番(Production)は**まだ見たことのない欄を受け付けない**。開発環境は書いた欄を
+     その場で作るので、試験で一度も書かれなかった欄(予約・費用など)はスキーマに無く、
+     そのまま Deploy すると**本番でだけ**その欄を含む記録が送れなくなる。
+     だから全部の欄に1回ずつ書いてから、使い捨てのゾーンごと消す(型は残る)。
+     */
+    func seedSchema(_ types: [String: [String]]) async throws {
+        guard Self.environment == "development" else { return }
+        let zoneID = CKRecordZone.ID(zoneName: "schema-seed", ownerName: CKCurrentUserDefaultName)
+        let db = container.privateCloudDatabase
+        _ = try await db.modifyRecordZones(saving: [CKRecordZone(zoneID: zoneID)], deleting: [])
+        let records = types.map { type, fields -> CKRecord in
+            let record = CKRecord(recordType: type, recordID: CKRecord.ID(recordName: "seed-\(type)", zoneID: zoneID))
+            for field in fields { record[field] = "null" as NSString }
+            return record
+        }
+        let result = try await db.modifyRecords(saving: records, deleting: [], savePolicy: .allKeys)
+        for (_, saved) in result.saveResults {
+            if case .failure(let error) = saved { throw error }
+        }
+        _ = try await db.modifyRecordZones(saving: [], deleting: [zoneID])
+    }
+
+    /**
      招待リンク(`https://www.icloud.com/share/...`)から参加する。
 
      **LINE で受け取ったリンクは、タップしてもアプリに渡らない**(LINE の中のブラウザで
@@ -596,6 +621,7 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
         CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "manageShare", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "acceptLink", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "seedSchema", returnType: CAPPluginReturnPromise),
     ]
 
     private var shareTitle = ""
@@ -737,6 +763,21 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
                     self.bridge?.viewController?.present(controller, animated: true)
                     call.resolve(["result": "presented"])
                 }
+            } catch {
+                let code = (error as? CKError).map { "ck\($0.code.rawValue)" } ?? "unknown"
+                call.reject(error.localizedDescription, code)
+            }
+        }
+    }
+
+    @objc func seedSchema(_ call: CAPPluginCall) {
+        let raw = call.getObject("types") ?? [:]
+        var types: [String: [String]] = [:]
+        for (type, value) in raw { types[type] = value as? [String] ?? [] }
+        Task {
+            do {
+                try await CloudSync.shared.seedSchema(types)
+                call.resolve(["environment": CloudSync.environment])
             } catch {
                 let code = (error as? CKError).map { "ck\($0.code.rawValue)" } ?? "unknown"
                 call.reject(error.localizedDescription, code)
