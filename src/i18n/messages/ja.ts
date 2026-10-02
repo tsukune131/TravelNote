@@ -266,22 +266,12 @@ export const ja = {
 
   share: {
     title: 'しおりを共有',
-    send: 'しおりを送る',
-    sendHint: 'LINE や AirDrop で送れます。相手はアプリを入れるだけ。登録も支払いも要りません。',
-    sendAgain: '最新のしおりを送る',
-    receive: 'ファイルから取り込む',
-    receiveHint: '受け取ったしおりを開きます。取り込んでも、あなたの変更は消えません。',
-    unsent: '未送信の変更 {n}件',
-    unsentNone: '送ったあとの変更はありません',
-    neverShared: 'まだ誰にも送っていません',
-    lastSharedAt: '{when} に送りました',
     displayName: '表示名',
     displayNameHint: '共有したしおりで「誰が直したか」を示すのに使います。',
     displayNameDefault: 'ゲスト',
     members: '参加している人',
     roleOwner: '作成者',
     roleEditor: '編集できる',
-    downloaded: 'しおりを書き出しました',
     icloud: 'iCloud でみんなと共有',
     icloudHint:
       'メッセージや LINE で招待を送れます。参加した人も編集でき、直したことはすぐに全員に届きます。共有は無料です。',
@@ -289,7 +279,6 @@ export const ja = {
     icloudNotOwner: 'この旅は共有に参加しています。招待は旅を作った人から送れます。',
     icloudJoined: '共有中の旅です。直したことは参加している全員に届きます。',
     icloudFailed: '共有を始められませんでした({code})。電波のよいところでもう一度お試しください。',
-    fileSection: 'ファイルで送る(これまでの方法)',
     icloudMessage:
       'つばメイトで「{title}」のしおりを一緒に作りましょう。リンクを開くと参加できます。LINE で開けないときは、画面のメニューから「Safari で開く」を選ぶか、リンクを長押しでコピーして、つばメイトの「招待リンクで参加」に貼り付けてください。',
     icloudManage: '参加している人・共有の管理',
@@ -311,20 +300,6 @@ export const ja = {
     banner: '作成者が共有を終えたので、この旅はあなたの旅として残しています。',
   },
 
-  importResult: {
-    title: '取り込みました',
-    nothing: '新しい変更はありませんでした',
-    added: '追加 {n}件',
-    updated: '変更 {n}件',
-    removed: '削除 {n}件',
-    conflicted: '{n}日ぶん、2つの案に分かれました',
-    conflictHint: '同じ日を二人が直していました。見比べて、どちらかを採用してください。',
-    newTrip: '新しい旅として取り込みました',
-    failed: '取り込めませんでした',
-    readFailed:
-      'ファイルを読み込めませんでした。共有アプリからいったん「ファイル」に保存して、取り込み画面から選んでみてください。',
-    ok: '閉じる',
-  },
 
   variant: {
     label: '{name}の案',

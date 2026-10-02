@@ -13,9 +13,6 @@ import { JoinSheet } from './JoinSheet';
 import { cloudAvailable } from '../cloud/native';
 import { InboxBar, InboxSheet } from './Inbox';
 import { IconPlus, IconSettings } from './Icon';
-import { ImportButton } from './ImportButton';
-import { ImportResult } from './ImportResult';
-import type { ImportOutcome } from './ShareSheet';
 import { Paywall } from './Paywall';
 import { useProStatus } from '../pro/store';
 import { isProActive } from '../pro/entitlement';
@@ -26,7 +23,6 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
   const trips = useLiveQuery(() => listTrips(), []);
   const [creating, setCreating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -67,10 +63,9 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
               <b>{t('tripList.empty')}</b>
               <p>{t('tripList.emptyHint')}</p>
               {/*
-                しおりを送られた人は、まさにこの画面に着く。
-                ここに取り込み口が無いと何もできない
+                招待された人は、まさにこの画面に着く。
+                ここに参加の入口が無いと何もできない
               */}
-              <ImportButton className="seed" onImported={setImported} />
               {cloudAvailable() && (
                 <button type="button" className="seed" onClick={() => setJoining(true)}>
                   🔗 {t('join.title')}
@@ -150,18 +145,12 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       </div>
 
       <div className="addbar">
-        {/*
-          招待リンクで参加(iCloud 共有)。ファイルの取り込みは E-2b で撤去するので、
-          同期が使える端末ではこちらを置く
-        */}
-        {trips !== undefined && trips.length > 0 &&
-          (cloudAvailable() ? (
-            <button type="button" className="btn ghost" onClick={() => setJoining(true)}>
-              🔗 {t('join.short')}
-            </button>
-          ) : (
-            <ImportButton className="btn ghost" onImported={setImported} />
-          ))}
+        {/* 招待リンクで参加(iCloud 共有)。ブラウザ版では共有できないので出さない */}
+        {trips !== undefined && trips.length > 0 && cloudAvailable() && (
+          <button type="button" className="btn ghost" onClick={() => setJoining(true)}>
+            🔗 {t('join.short')}
+          </button>
+        )}
         <button type="button" className="btn wide with-icon" onClick={() => setCreating(true)}>
           <IconPlus size={18} />
           {t('tripList.create')}
@@ -193,18 +182,6 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
         買えたあとに続ける操作が無い ── onProceed は閉じるだけでいい。
       */}
       {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
-
-      {imported && (
-        <ImportResult
-          outcome={imported}
-          onClose={() => {
-            const tripId = imported.kind === 'failed' ? null : imported.tripId;
-            setImported(null);
-            // 取り込んだしおりをそのまま開く。一覧に戻して探させない
-            if (tripId) onOpen(tripId, 0);
-          }}
-        />
-      )}
     </div>
   );
 }

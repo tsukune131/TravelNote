@@ -34,11 +34,8 @@ import { Sheet } from './Sheet';
 import { CategoryPicker } from './CategoryPicker';
 import { IconBack, IconChecklist, IconPeople, IconSettings, IconShare } from './Icon';
 import { ShareSheet } from './ShareSheet';
-import type { ImportOutcome } from './ShareSheet';
-import { ImportResult } from './ImportResult';
 import { VariantBar } from './VariantBar';
 import { AutoGrowTextarea } from './AutoGrowTextarea';
-import { countUnsentChanges } from '../share/snapshot';
 import { listInbox } from '../share/inbox';
 import { MembersSheet } from './MembersSheet';
 import { AssigneeFilter, AssigneePicker, AssigneeStack } from './Assignees';
@@ -64,7 +61,6 @@ export function TripScreen({
   const trip = useLiveQuery(() => db.trips.get(tripId), [tripId]);
   const events = useLiveQuery(() => listEventsOfDay(tripId, dayIndex), [tripId, dayIndex]);
   const variants = useLiveQuery(() => listVariants(tripId, dayIndex), [tripId, dayIndex]);
-  const unsent = useLiveQuery(() => countUnsentChanges(tripId), [tripId]);
   const inbox = useLiveQuery(() => listInbox(), []);
   const members = useLiveQuery(() => listMembers(tripId), [tripId]);
   const pro = useProStatus();
@@ -78,7 +74,6 @@ export function TripScreen({
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [categoryEventId, setCategoryEventId] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
-  const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [editingTrip, setEditingTrip] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
@@ -295,10 +290,6 @@ export function TripScreen({
             aria-label={t('share.title')}
           >
             <IconShare />
-            {/* 送ったあとに変わった件数。「送り返すのを忘れる」への手当て */}
-            {unsent !== undefined && unsent > 0 && trip.sharedAt !== null && (
-              <span className="dot" aria-hidden="true" />
-            )}
           </button>
           <button
             type="button"
@@ -540,17 +531,8 @@ export function TripScreen({
       )}
 
       {sharing && (
-        <ShareSheet
-          trip={trip}
-          onClose={() => setSharing(false)}
-          onImported={(outcome) => {
-            setSharing(false);
-            setImported(outcome);
-          }}
-        />
+        <ShareSheet trip={trip} onClose={() => setSharing(false)} />
       )}
-
-      {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
 
       {preparing && <Prepare trip={trip} onClose={() => setPreparing(false)} />}
 

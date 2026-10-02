@@ -4,77 +4,29 @@ import { useI18n } from '../i18n/context';
 import { Sheet } from './Sheet';
 import { getDisplayName } from '../db/settings';
 import { ensureOwner, listMembers, setMyDisplayName } from '../db/repo';
-import { countUnsentChanges } from '../share/snapshot';
-import { commitShared, exportSnapshotText, importSnapshotText } from '../share/apply';
-import { readFileFromPicker, sendSnapshot } from '../share/transport';
-import type { MergeSummary } from '../share/merge';
 import type { Trip } from '../db/types';
 import { manageTripShare, shareTrip } from '../cloud/sync';
 import { cloudAvailable } from '../cloud/native';
 
-export type ImportOutcome =
-  | { kind: 'ok'; summary: MergeSummary; conflictedDays: number[]; tripId: string }
-  | { kind: 'new'; count: number; tripId: string }
-  | { kind: 'failed'; message: string };
-
 /**
- * しおりの受け渡し画面。
+ * 旅の共有画面。**共有は iCloud(CloudKit)だけ**(ROADMAP E-2)。
+ * 招待の送り方・参加者の管理・共有の停止は iOS 標準の画面に任せ、
+ * ここは入口と「いま誰がいるか」だけを持つ。共有は無料(2026-09-24)。
  *
- * **サーバーは無い。** 送るのはファイルで、経路は使う人が選ぶ。
- * **送るのも受け取るのも無料**(2026-09-24)。
+ * ファイルで送り合う方式(しおりのファイル)は 2026-10-02 に撤去した(E-2b)。
  */
-export function ShareSheet({
-  trip,
-  onClose,
-  onImported,
-}: {
-  trip: Trip;
-  onClose: () => void;
-  onImported: (outcome: ImportOutcome) => void;
-}) {
-  const { t, date } = useI18n();
+export function ShareSheet({ trip, onClose }: { trip: Trip; onClose: () => void }) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
-  const [unsent, setUnsent] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const members = useLiveQuery(() => listMembers(trip.id), [trip.id]);
 
   useEffect(() => {
     void getDisplayName().then(setName);
-    void countUnsentChanges(trip.id).then(setUnsent);
   }, [trip.id]);
 
-  /** 共有は無料(2026-09-24)。ペイウォールは挟まない */
-  async function send() {
-    setBusy(true);
-    try {
-      const myName = name.trim() || t('share.displayNameDefault');
-      /*
-       * 送る前に**自分を参加者として登録する。**
-       * これが抜けていたので、送っても参加者が0人のしおりが飛んでいた ──
-       * 受け取った側にも「誰から来たのか」が残らない。
-       * 一度作れば以後は同じレコードを使い回す。
-       */
-      await ensureOwner(trip.id, myName);
-      const { text, snapshot } = await exportSnapshotText(trip.id, myName);
-      const result = await sendSnapshot(trip, text);
-      /*
-       * **送れたときだけ記録する。** 共有シートを閉じただけ('cancelled')で
-       * 「送った」ことにすると、未送信バッジが消えてしまう(監査で見つかった)。
-       */
-      if (result === 'cancelled') return;
-      await commitShared(trip.id, snapshot);
-      if (result === 'downloaded') setNote(t('share.downloaded'));
-      setUnsent(await countUnsentChanges(trip.id));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /**
-   * iCloud で共有する(ROADMAP E-2)。招待の送り方・参加者の管理・共有の停止は
-   * iOS 標準の画面に任せる。**参加者は招待を出せない**(作成者のゾーンなので)。
-   */
+  /** 招待を送る。**参加者は招待を出せない**(作成者のゾーンなので) */
   async function shareWithICloud() {
     setBusy(true);
     setNote(null);
@@ -106,109 +58,58 @@ export function ShareSheet({
     }
   }
 
-  async function receive() {
-    const text = await readFileFromPicker();
-    if (text === null) return;
-    setBusy(true);
-    try {
-      const before = trip.id;
-      // 案のラベルになる。名前を決めていない人は「わたしの案」のほうが分かりやすい
-      const r = await importSnapshotText(text, name.trim() || t('variant.mine'));
-      onImported(
-        r.tripId === before
-          ? { kind: 'ok', summary: r.summary, conflictedDays: r.conflictedDays, tripId: r.tripId }
-          : { kind: 'new', count: r.summary.added, tripId: r.tripId },
-      );
-    } catch (err) {
-      onImported({ kind: 'failed', message: err instanceof Error ? err.message : '' });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
-    <>
-      <Sheet title={t('share.title')} onClose={onClose}>
+    <Sheet title={t('share.title')} onClose={onClose}>
+      <div className="field">
+        <label htmlFor="share-name">{t('share.displayName')}</label>
+        <input
+          id="share-name"
+          value={name}
+          placeholder={t('share.displayNameDefault')}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => void setMyDisplayName(name)}
+        />
+        <p className="guess">{t('share.displayNameHint')}</p>
+      </div>
+
+      {/* ブラウザ版(開発用)には iCloud が無いので、共有の入口そのものを出さない */}
+      {cloudAvailable() ? (
         <div className="field">
-          <label htmlFor="share-name">{t('share.displayName')}</label>
-          <input
-            id="share-name"
-            value={name}
-            placeholder={t('share.displayNameDefault')}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => void setMyDisplayName(name)}
-          />
-          <p className="guess">{t('share.displayNameHint')}</p>
+          {trip.cloud?.scope === 'shared' ? (
+            <p className="guess">{t('share.icloudJoined')}</p>
+          ) : (
+            <>
+              <button type="button" className="btn wide" onClick={() => void shareWithICloud()} disabled={busy}>
+                ☁️ {t('share.icloud')}
+              </button>
+              <p className="guess">{t('share.icloudHint')}</p>
+              <button type="button" className="btn ghost" onClick={() => void manageShare()} disabled={busy}>
+                {t('share.icloudManage')}
+              </button>
+            </>
+          )}
         </div>
+      ) : (
+        <p className="guess">{t('share.icloudUnavailable')}</p>
+      )}
 
-        {cloudAvailable() && (
-          <div className="field">
-            {trip.cloud?.scope === 'shared' ? (
-              <p className="guess">{t('share.icloudJoined')}</p>
-            ) : (
-              <>
-                <button type="button" className="btn wide" onClick={() => void shareWithICloud()} disabled={busy}>
-                  ☁️ {t('share.icloud')}
-                </button>
-                <p className="guess">{t('share.icloudHint')}</p>
-                <button type="button" className="btn ghost" onClick={() => void manageShare()} disabled={busy}>
-                  {t('share.icloudManage')}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ファイル共有は E-2b で撤去する。それまでは並べて残す */}
+      {/*
+        誰と共有しているか。**まだ誰もいないうちは出さない**(ひとりで使う旅では
+        意味のない見出しになる)。役割は表示だけ。参加している人は全員編集できる
+      */}
+      {members !== undefined && members.length > 0 && (
         <div className="field">
-          {cloudAvailable() && <label>{t('share.fileSection')}</label>}
-          <button type="button" className="btn ghost wide" onClick={() => void send()} disabled={busy}>
-            📤 {trip.sharedAt === null ? t('share.send') : t('share.sendAgain')}
-          </button>
-          <p className="guess">{t('share.sendHint')}</p>
-          <p className={unsent && unsent > 0 ? 'unsent-badge' : 'guess'}>
-            {trip.sharedAt === null
-              ? t('share.neverShared')
-              : unsent === null
-                ? ''
-                : unsent > 0
-                  ? t('share.unsent', { n: unsent })
-                  : t('share.unsentNone')}
-            {trip.sharedAt !== null &&
-              ` ・ ${t('share.lastSharedAt', { when: date(new Date(trip.sharedAt), { month: 'numeric', day: 'numeric' }) })}`}
-          </p>
+          <label>{t('share.members')}</label>
+          {members.map((m) => (
+            <div className="linkrow" key={m.id}>
+              <span className="lbl">{t(m.role === 'owner' ? 'share.roleOwner' : 'share.roleEditor')}</span>
+              <span className="url">{m.displayName || t('share.displayNameDefault')}</span>
+            </div>
+          ))}
         </div>
+      )}
 
-        <div className="field">
-          <button type="button" className="btn ghost wide" onClick={() => void receive()} disabled={busy}>
-            📥 {t('share.receive')}
-          </button>
-          <p className="guess">{t('share.receiveHint')}</p>
-        </div>
-
-        {/*
-          誰と共有しているか。**まだ誰もいないうちは出さない**(ひとりで使う旅では
-          意味のない見出しになる)。役割は表示だけ ── サーバーが無い以上、
-          渡した相手の端末では何でもできるので、権限として機能させない
-          (docs/ux-design.md §6.5「守れる顔をしたUIを作らない」)。
-        */}
-        {members !== undefined && members.length > 0 && (
-          <div className="field">
-            <label>{t('share.members')}</label>
-            {members.map((m) => (
-              <div className="linkrow" key={m.id}>
-                <span className="lbl">
-                  {t(m.role === 'owner' ? 'share.roleOwner' : 'share.roleEditor')}
-                </span>
-                <span className="url">{m.displayName}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {note && <p className="guess">{note}</p>}
-      </Sheet>
-
-    </>
+      {note && <p className="guess">{note}</p>}
+    </Sheet>
   );
 }

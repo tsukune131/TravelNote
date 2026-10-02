@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { I18nProvider } from './i18n/react';
-import { useI18n } from './i18n/context';
 import { TripList } from './ui/TripList';
 import { TripScreen } from './ui/TripScreen';
 import { Welcome } from './ui/Welcome';
-import { ImportResult } from './ui/ImportResult';
-import type { ImportOutcome } from './ui/ShareSheet';
 import { findLandingPoint, listTrips, syncOwnerPro } from './db/repo';
-import { FLAGS, getDisplayName, getFlag, getTheme, setFlag } from './db/settings';
+import { FLAGS, getFlag, getTheme, setFlag } from './db/settings';
 import { applyTheme } from './lib/theme';
-import { importSnapshotText } from './share/apply';
-import { listenForIncomingFile } from './share/transport';
 import { drainSharedInbox } from './share/inbox';
 import { syncProStatus, useProStatus } from './pro/store';
 import { showsAds } from './pro/entitlement';
@@ -39,9 +34,7 @@ export default function App({ onReady }: { onReady?: () => void }) {
  * 受け取ったしおりの取り込みは**アプリのどこにいても起きうる**ので、ここで面倒を見る。
  */
 function Shell({ onReady }: { onReady?: () => void }) {
-  const { t } = useI18n();
   const [route, setRoute] = useState<Route | null>(null);
-  const [imported, setImported] = useState<ImportOutcome | null>(null);
   const pro = useProStatus();
   const adsOn = showsAds(pro, Date.now());
 
@@ -84,40 +77,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
       onReady?.();
     })();
   }, [onReady]);
-
-  /**
-   * 共有されたファイルをタップしてアプリが開かれたときの受け口。
-   *
-   * **これが無いと、受け取り側は何も起きない。** iOS では
-   * しおりのファイル(`.json`。古いものは `.tabishiori`)を開くと
-   * アプリが起動し、ここに中身が届く
-   * (書類タイプの宣言は ios/App/App/Info.plist)。
-   * ⚠️ この経路は**実機でしか確かめられない**(ROADMAP C-5)。
-   */
-  useEffect(() => {
-    const onFile = (text: string) => {
-      void (async () => {
-        try {
-          const name = (await getDisplayName()) || t('variant.mine');
-          const r = await importSnapshotText(text, name);
-          setRoute({ screen: 'trip', tripId: r.tripId, dayIndex: 0 });
-          setImported(
-            r.summary.conflicted > 0 || r.summary.updated > 0 || r.summary.removed > 0
-              ? { kind: 'ok', summary: r.summary, conflictedDays: r.conflictedDays, tripId: r.tripId }
-              : { kind: 'new', count: r.summary.added, tripId: r.tripId },
-          );
-        } catch (err) {
-          setImported({ kind: 'failed', message: err instanceof Error ? err.message : '' });
-        }
-      })();
-    };
-
-    // ファイルそのものが読めなかった場合。**黙って終わらせない**
-    const onFailed = () =>
-      setImported({ kind: 'failed', message: t('importResult.readFailed') });
-
-    return listenForIncomingFile(onFile, onFailed);
-  }, [t]);
 
   /**
    * 共有シートから届いたものを拾う。
@@ -187,7 +146,6 @@ function Shell({ onReady }: { onReady?: () => void }) {
         />
       )}
 
-      {imported && <ImportResult outcome={imported} onClose={() => setImported(null)} />}
 
       {import.meta.env.DEV && <DevAdLayer />}
     </>

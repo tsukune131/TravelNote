@@ -233,22 +233,12 @@ export const en: DeepPartial<Messages> = {
 
   share: {
     title: 'Share this trip',
-    send: 'Send the itinerary',
-    sendHint: 'Send it however you like. They just install the app — no sign-up, no payment.',
-    sendAgain: 'Send the latest version',
-    receive: 'Open a file',
-    receiveHint: "Open an itinerary someone sent you. Your own changes won't be lost.",
-    unsent: '{n} changes not sent',
-    unsentNone: 'Nothing changed since you last sent it',
-    neverShared: "You haven't sent this to anyone yet",
-    lastSharedAt: 'Sent {when}',
     displayName: 'Display name',
     displayNameHint: 'Shown next to what you changed, in shared itineraries.',
     displayNameDefault: 'Guest',
     members: 'People on this trip',
     roleOwner: 'Owner',
     roleEditor: 'Can edit',
-    downloaded: 'Itinerary saved',
     icloud: 'Share with iCloud',
     icloudHint:
       'Send an invite by Messages or LINE. Everyone who joins can edit, and changes reach everyone right away. Sharing is free.',
@@ -256,7 +246,6 @@ export const en: DeepPartial<Messages> = {
     icloudNotOwner: 'You joined this trip. Invites come from the person who created it.',
     icloudJoined: 'This trip is shared. Your changes reach everyone in it.',
     icloudFailed: 'Could not start sharing ({code}). Please try again with a better connection.',
-    fileSection: 'Send as a file (the old way)',
     icloudMessage:
       'Let us plan "{title}" together in TsubaMate. Open the link to join. If it does not open from LINE, choose "Open in Safari" from the menu, or copy the link and paste it into "Join with an invite link" in TsubaMate.',
     icloudManage: 'People and sharing settings',
@@ -278,18 +267,6 @@ export const en: DeepPartial<Messages> = {
     banner: 'The creator stopped sharing, so this trip is kept as your own.',
   },
 
-  importResult: {
-    title: 'Brought it in',
-    nothing: 'Nothing new',
-    added: '{n} added',
-    updated: '{n} changed',
-    removed: '{n} removed',
-    conflicted: '{n} day(s) split into two plans',
-    conflictHint: 'You both edited the same day. Compare them and pick one.',
-    newTrip: 'Added as a new trip',
-    failed: "Couldn't open that file",
-    ok: 'Close',
-  },
 
   variant: {
     label: "{name}'s plan",

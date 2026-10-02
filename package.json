@@ -18,7 +18,6 @@
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.1.2",
-    "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.2",
     "@capgo/native-purchases": "^8.6.5",
     "dexie": "^4.4.4",

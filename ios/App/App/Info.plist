@@ -29,78 +29,9 @@
 	<false/>
 
 	<!--
-	  しおりファイル(.tabishiori)を受け取れるようにする。
-	  これが無いと、LINE や AirDrop で送られたファイルの「共有」に
-	  つばメイト が出てこない ── 共有機能そのものが片道になる。
-
-	  UTExportedTypeDeclarations: この形式は自分たちが定義したものだと宣言する
-	  CFBundleDocumentTypes:      その形式を開けるアプリだと宣言する
-
-	  中身は JSON なので public.json に適合させる。
-	  自分の形式(.tabishiori)だけ LSHandlerRank = Owner。
-	  あとから足した public.json は Apple の型なので Alternate にしてある。
+	  しおりのファイル(.json / .tabishiori)の受け口(書類タイプ)は 2026-10-02 に撤去した。
+	  共有は iCloud(CloudKit)だけ(ROADMAP E-2b)。
 	-->
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.tsukune.travelnote.shiori</string>
-			<key>UTTypeDescription</key>
-			<string>つばメイト</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.json</string>
-			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>tabishiori</string>
-				</array>
-				<key>public.mime-type</key>
-				<array>
-					<string>application/json</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>つばメイト</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.tsukune.travelnote.shiori</string>
-			</array>
-		</dict>
-		<!--
-		  書き出しは `.json` にした ── **LINE が独自拡張子のファイルを送れず、
-		  共有の主経路が塞がっていた**(実機で確認)。詳細は
-		  src/share/snapshot.ts の snapshotFileName。
-
-		  `public.json` は Apple の型なので Owner を名乗らない。
-		  **Alternate** にして、JSON を扱う他のアプリの邪魔をしない
-		  (共有シートには出るが、既定にはならない)。
-		  しおりでない JSON を開かれても parseSnapshot が弾く。
-		-->
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>しおりのファイル (JSON)</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>public.json</string>
-			</array>
-		</dict>
-	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
