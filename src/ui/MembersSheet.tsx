@@ -56,7 +56,8 @@ export function MembersSheet({ tripId, onClose }: { tripId: string; onClose: () 
               >
                 <Avatar member={m} size={40} />
                 <span className="member-name">
-                  <b>{m.displayName || t('members.me')}</b>
+                  {/* 名前が空なのは自分とは限らない(表示名を決めていない参加者もいる) */}
+                  <b>{m.displayName || (mine ? t('members.me') : t('members.noName'))}</b>
                   {/* 名前が未設定の自分は、名前の欄にもう「あなた」と出ている */}
                   {!(mine && !m.displayName) && (
                     <small>
@@ -80,6 +81,7 @@ export function MembersSheet({ tripId, onClose }: { tripId: string; onClose: () 
           tripId={tripId}
           member={editing === 'new' ? null : editing}
           canRemove={editing !== 'new' && editing.deviceId === ''}
+          isSelf={editing !== 'new' && editing.deviceId === deviceId}
           onClose={() => setEditing(null)}
         />
       )}
@@ -91,11 +93,14 @@ function MemberEditor({
   tripId,
   member,
   canRemove,
+  isSelf,
   onClose,
 }: {
   tripId: string;
   member: Member | null;
   canRemove: boolean;
+  /** 自分の行。名前は空でもよい(「あなた」と出す)。外すことはできない */
+  isSelf?: boolean;
   onClose: () => void;
 }) {
   const { t } = useI18n();
@@ -118,7 +123,7 @@ function MemberEditor({
 
   async function save() {
     const trimmed = name.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length === 0 && !isSelf) return;
     if (member) await updateMember(member.id, { displayName: trimmed, icon });
     else await addManualMember(tripId, trimmed, icon);
     onClose();
@@ -173,7 +178,7 @@ function MemberEditor({
         {error && <p className="err">{error}</p>}
       </div>
 
-      <button type="button" className="btn wide" disabled={name.trim().length === 0} onClick={() => void save()}>
+      <button type="button" className="btn wide" disabled={name.trim().length === 0 && !isSelf} onClick={() => void save()}>
         {t('common.save')}
       </button>
 

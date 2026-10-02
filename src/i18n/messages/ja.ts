@@ -267,7 +267,7 @@ export const ja = {
   share: {
     title: 'しおりを共有',
     displayName: '表示名',
-    displayNameHint: '共有したしおりで「誰が直したか」を示すのに使います。',
+    displayNameHint: '一緒に旅する人のメンバー一覧に、この名前で表示されます。「私」ではなく、みんなに呼ばれている名前にしてください。',
     displayNameDefault: 'ゲスト',
     members: '参加している人',
     roleOwner: '作成者',
@@ -351,6 +351,7 @@ export const ja = {
   },
 
   members: {
+    noName: '名前未設定',
     title: 'メンバー',
     hint: '一緒に行く人。スマホを持っていない人(子どもなど)も足せます。メモの担当を割り振るのに使います。',
     me: 'あなた',

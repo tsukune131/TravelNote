@@ -510,9 +510,33 @@ export async function ensureOwner(tripId: string, displayName: string): Promise<
    * **確かめて足す、を1つのトランザクションで。** メンバー画面と共有画面の
    * 両方から呼ばれ、続けて2回呼ばれると自分が2人並んだ(実際に踏んだ)。
    */
-  return db.transaction('rw', db.members, async () => {
+  return db.transaction('rw', db.members, db.events, async () => {
     const rows = await db.members.where('tripId').equals(tripId).toArray();
-    const existing = rows.find((m) => m.deviceId === deviceId && m.deletedAt === ALIVE);
+    const mineHere = rows.filter((m) => m.deviceId === deviceId && m.deletedAt === ALIVE);
+    if (mineHere.length > 1) {
+      /*
+       * **自分が2人いたら1人にまとめる**(実機で「自分が2人」と報告があった)。
+       * 名前かアイコンを決めてあるほうを残し、残りは外す。担当は残すほうへ付け替える
+       */
+      const keep = [...mineHere].sort(
+        (a, b) => Number(!!b.displayName || !!b.icon) - Number(!!a.displayName || !!a.icon) || a.id.localeCompare(b.id),
+      )[0];
+      const drop = new Set(mineHere.filter((m) => m.id !== keep.id).map((m) => m.id));
+      await db.members.bulkUpdate([...drop].map((key) => ({ key, changes: { ...s, deletedAt: s.updatedAt } })));
+      const events = await db.events.where('tripId').equals(tripId).toArray();
+      const touched = events.filter((e) => e.assigneeIds?.some((id) => drop.has(id)));
+      await db.events.bulkUpdate(
+        touched.map((e) => ({
+          key: e.id,
+          changes: {
+            assigneeIds: [...new Set((e.assigneeIds ?? []).map((id) => (drop.has(id) ? keep.id : id)))],
+            ...s,
+          },
+        })),
+      );
+      return keep;
+    }
+    const existing = mineHere[0];
     if (existing) return existing;
     const member: Member = {
       id: newId(),

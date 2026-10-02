@@ -234,7 +234,7 @@ export const en: DeepPartial<Messages> = {
   share: {
     title: 'Share this trip',
     displayName: 'Display name',
-    displayNameHint: 'Shown next to what you changed, in shared itineraries.',
+    displayNameHint: 'This is how you appear in the member list of people you travel with. Use the name they call you, not "me".',
     displayNameDefault: 'Guest',
     members: 'People on this trip',
     roleOwner: 'Owner',
@@ -316,6 +316,7 @@ export const en: DeepPartial<Messages> = {
   },
 
   members: {
+    noName: 'No name yet',
     title: 'Members',
     hint: 'People on this trip. You can add people without a phone (like kids). Used to assign notes.',
     me: 'You',

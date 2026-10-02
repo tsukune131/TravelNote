@@ -50,6 +50,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
           onChange={(e) => setName(e.target.value)}
           onBlur={() => void setMyDisplayName(name)}
         />
+        <p className="guess">{t('share.displayNameHint')}</p>
       </div>
 
       {cloudAvailable() && <CloudStatusField />}
