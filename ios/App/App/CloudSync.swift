@@ -523,14 +523,27 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
         try? await privateEngine?.sendChanges()
 
         let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: zoneID)
+        var share: CKShare
         do {
-            if let existing = try await db.record(for: shareID) as? CKShare { return existing }
+            guard let existing = try await db.record(for: shareID) as? CKShare else {
+                throw CKError(.unknownItem)
+            }
+            // 招待した人のみ(publicPermission = none)で作ってしまった共有のうち、
+            // まだ誰も参加していないものは、標準のリンク方式に直す(2026-10-02 の方針変更より前の分)
+            let joined = existing.participants.filter { $0.role != .owner && $0.acceptanceStatus == .accepted }
+            guard existing.publicPermission == .none, joined.isEmpty else { return existing }
+            share = existing
         } catch let error as CKError where error.code == .unknownItem {
-            // まだ共有していない
+            share = CKShare(recordZoneID: zoneID)
         }
-        let share = CKShare(recordZoneID: zoneID)
         share[CKShare.SystemFieldKey.title] = title as NSString
-        share.publicPermission = .none
+        /*
+         **標準は「リンクを知っている人は誰でも参加・編集できる」**(ユーザー判断 2026-10-02)。
+         非公開(招待した人のみ)だと相手を連絡先から選ぶ必要があり、
+         LINE のグループにそのまま貼れなかった。iOS の画面の「共有オプション」で
+         「招待した人のみ」に切り替えることはできる(availablePermissions)。
+         */
+        share.publicPermission = .readWrite
         let result = try await db.modifyRecords(saving: [share], deleting: [])
         if case .success(let saved)? = result.saveResults[share.recordID], let savedShare = saved as? CKShare {
             return savedShare
@@ -650,7 +663,7 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
                 await MainActor.run {
                     self.shareTitle = title
                     let controller = UICloudSharingController(share: share, container: CloudSync.shared.container)
-                    controller.availablePermissions = [.allowReadWrite, .allowPrivate]
+                    controller.availablePermissions = [.allowPublic, .allowPrivate, .allowReadWrite, .allowReadOnly]
                     controller.delegate = self
                     controller.modalPresentationStyle = .formSheet
                     self.bridge?.viewController?.present(controller, animated: true)
