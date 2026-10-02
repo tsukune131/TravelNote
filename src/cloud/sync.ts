@@ -306,6 +306,32 @@ export async function manageTripShare(trip: Trip): Promise<'presented' | 'noShar
   }
 }
 
+/** 文の中から iCloud の招待リンクを1本取り出す。無ければ null */
+export function findShareLink(text: string): string | null {
+  const m = /https:\/\/www\.icloud\.com\/share\/[^\s<>"「」『』【】()（）、。]+/i.exec(text);
+  return m ? m[0] : null;
+}
+
+export type JoinResult =
+  | { kind: 'joined'; tripId: string | null }
+  | { kind: 'mine'; tripId: string | null }
+  | { kind: 'unavailable' };
+
+/**
+ * 招待リンクから参加する。参加した旅が届いていれば、その id を返す
+ * (届くのが遅れたら null。旅一覧には少しあとで出る)。
+ */
+export async function joinByLink(url: string): Promise<JoinResult> {
+  if (!cloudAvailable()) return { kind: 'unavailable' };
+  await refreshAccount();
+  if (!accountReady) return { kind: 'unavailable' };
+  const r = await CloudSync.acceptLink({ url });
+  await pull();
+  const at: CloudLocation = { scope: r.isOwner ? 'private' : 'shared', owner: r.owner, zone: r.zone };
+  const trip = (await db.trips.toArray()).find((t) => t.deletedAt === 0 && sameLocation(t.cloud, at));
+  return { kind: r.isOwner ? 'mine' : 'joined', tripId: trip?.id ?? null };
+}
+
 /* ────────── 起動 ────────── */
 
 let resetHandled = false;

@@ -62,6 +62,8 @@ type CloudSyncPlugin = {
   deleteZone(options: CloudLocation): Promise<void>;
   /** 招待を送る共有シートを出す(無ければ共有を作る) */
   share(options: { zone: string; title: string; message: string }): Promise<{ result: string }>;
+  /** 招待リンクを貼り付けて参加する(LINE ではリンクがアプリに渡らないため) */
+  acceptLink(options: { url: string }): Promise<{ owner: string; zone: string; isOwner: boolean; title: string }>;
   /** 参加者・共有オプション・停止。まだ共有していなければ code `noShare` で reject */
   manageShare(options: { zone: string; title: string }): Promise<{ result: string }>;
   addListener(

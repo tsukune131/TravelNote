@@ -9,6 +9,8 @@ import { TripForm } from './TripForm';
 import { openLink } from '../lib/openExternal';
 import { primaryLink } from '../lib/maps';
 import { Settings } from './Settings';
+import { JoinSheet } from './JoinSheet';
+import { cloudAvailable } from '../cloud/native';
 import { InboxBar, InboxSheet } from './Inbox';
 import { IconPlus, IconSettings } from './Icon';
 import { ImportButton } from './ImportButton';
@@ -27,6 +29,7 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
   const [imported, setImported] = useState<ImportOutcome | null>(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [joining, setJoining] = useState(false);
   const inbox = useLiveQuery(() => listInbox(), []);
   const pro = useProStatus();
   const now = today();
@@ -68,6 +71,11 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
                 ここに取り込み口が無いと何もできない
               */}
               <ImportButton className="seed" onImported={setImported} />
+              {cloudAvailable() && (
+                <button type="button" className="seed" onClick={() => setJoining(true)}>
+                  🔗 {t('join.title')}
+                </button>
+              )}
             </div>
           )}
 
@@ -142,9 +150,18 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       </div>
 
       <div className="addbar">
-        {trips !== undefined && trips.length > 0 && (
-          <ImportButton className="btn ghost" onImported={setImported} />
-        )}
+        {/*
+          招待リンクで参加(iCloud 共有)。ファイルの取り込みは E-2b で撤去するので、
+          同期が使える端末ではこちらを置く
+        */}
+        {trips !== undefined && trips.length > 0 &&
+          (cloudAvailable() ? (
+            <button type="button" className="btn ghost" onClick={() => setJoining(true)}>
+              🔗 {t('join.short')}
+            </button>
+          ) : (
+            <ImportButton className="btn ghost" onImported={setImported} />
+          ))}
         <button type="button" className="btn wide with-icon" onClick={() => setCreating(true)}>
           <IconPlus size={18} />
           {t('tripList.create')}
@@ -162,6 +179,15 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
       )}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       {inboxOpen && <InboxSheet onClose={() => setInboxOpen(false)} />}
+      {joining && (
+        <JoinSheet
+          onClose={() => setJoining(false)}
+          onJoined={(tripId) => {
+            setJoining(false);
+            onOpen(tripId, 0);
+          }}
+        />
+      )}
       {/*
         共有シートの外からの唯一の入口。ここでは「送ろうとした旅」が無いので、
         買えたあとに続ける操作が無い ── onProceed は閉じるだけでいい。

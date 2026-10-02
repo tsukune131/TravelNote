@@ -515,6 +515,22 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
         }
     }
 
+    /**
+     招待リンク(`https://www.icloud.com/share/...`)から参加する。
+
+     **LINE で受け取ったリンクは、タップしてもアプリに渡らない**(LINE の中のブラウザで
+     iCloud の Web ページが開くだけ。2026-10-02 に実機で確認)。だからリンクを貼り付けて
+     もらい、ここで中身を問い合わせて受諾する。経路に左右されない。
+     */
+    func acceptLink(_ url: URL) async throws -> CKShare.Metadata {
+        let metadata = try await container.shareMetadata(for: url)
+        if metadata.participantRole != .owner {
+            _ = try await container.accept(metadata)
+        }
+        try? await sharedEngine?.fetchChanges()
+        return metadata
+    }
+
     /// 旅のゾーンの共有。まだ無ければ nil
     func existingShare(zone: String) async throws -> CKShare? {
         let zoneID = Self.zoneID(owner: "", zone: zone)
@@ -579,6 +595,7 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
         CAPPluginMethod(name: "deleteZone", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "manageShare", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "acceptLink", returnType: CAPPluginReturnPromise),
     ]
 
     private var shareTitle = ""
@@ -720,6 +737,28 @@ public class CloudSyncPlugin: CAPPlugin, CAPBridgedPlugin, UICloudSharingControl
                     self.bridge?.viewController?.present(controller, animated: true)
                     call.resolve(["result": "presented"])
                 }
+            } catch {
+                let code = (error as? CKError).map { "ck\($0.code.rawValue)" } ?? "unknown"
+                call.reject(error.localizedDescription, code)
+            }
+        }
+    }
+
+    @objc func acceptLink(_ call: CAPPluginCall) {
+        guard let raw = call.getString("url"), let url = URL(string: raw) else {
+            call.reject("url is required", "badUrl")
+            return
+        }
+        Task {
+            do {
+                let metadata = try await CloudSync.shared.acceptLink(url)
+                let zoneID = metadata.share.recordID.zoneID
+                call.resolve([
+                    "owner": metadata.participantRole == .owner ? "" : zoneID.ownerName,
+                    "zone": zoneID.zoneName,
+                    "isOwner": metadata.participantRole == .owner,
+                    "title": metadata.share[CKShare.SystemFieldKey.title] as? String ?? "",
+                ])
             } catch {
                 let code = (error as? CKError).map { "ck\($0.code.rawValue)" } ?? "unknown"
                 call.reject(error.localizedDescription, code)
