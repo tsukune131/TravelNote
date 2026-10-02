@@ -21,7 +21,7 @@
 		5E1A0001AAAA0000AAAA0021 /* SharedInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1A0001AAAA0000AAAA0020 /* SharedInbox.swift */; };
 		5E1A0001AAAA0000AAAA0033 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1A0001AAAA0000AAAA0032 /* MainViewController.swift */; };
 		5E1A0001AAAA0000AAAA0041 /* WeatherPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1A0001AAAA0000AAAA0040 /* WeatherPlugin.swift */; };
-		5E1A0001AAAA0000AAAA0031 /* CloudKitProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1A0001AAAA0000AAAA0030 /* CloudKitProbe.swift */; };
+		5E1A0001AAAA0000AAAA0031 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1A0001AAAA0000AAAA0030 /* CloudSync.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,7 +44,7 @@
 		5E1A0001AAAA0000AAAA0020 /* SharedInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedInbox.swift; sourceTree = "<group>"; };
 		5E1A0001AAAA0000AAAA0032 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		5E1A0001AAAA0000AAAA0040 /* WeatherPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherPlugin.swift; sourceTree = "<group>"; };
-		5E1A0001AAAA0000AAAA0030 /* CloudKitProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitProbe.swift; sourceTree = "<group>"; };
+		5E1A0001AAAA0000AAAA0030 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -106,7 +106,7 @@
 				5E1A0001AAAA0000AAAA0020 /* SharedInbox.swift */,
 				5E1A0001AAAA0000AAAA0032 /* MainViewController.swift */,
 				5E1A0001AAAA0000AAAA0040 /* WeatherPlugin.swift */,
-				5E1A0001AAAA0000AAAA0030 /* CloudKitProbe.swift */,
+				5E1A0001AAAA0000AAAA0030 /* CloudSync.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -257,7 +257,7 @@
 				5E1A0001AAAA0000AAAA0021 /* SharedInbox.swift in Sources */,
 				5E1A0001AAAA0000AAAA0033 /* MainViewController.swift in Sources */,
 				5E1A0001AAAA0000AAAA0041 /* WeatherPlugin.swift in Sources */,
-				5E1A0001AAAA0000AAAA0031 /* CloudKitProbe.swift in Sources */,
+				5E1A0001AAAA0000AAAA0031 /* CloudSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

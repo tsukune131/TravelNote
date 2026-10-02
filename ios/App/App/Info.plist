@@ -178,5 +178,10 @@
 	-->
 	<key>CKSharingSupported</key>
 	<true/>
+	<!-- 裏にいるあいだも、サイレントプッシュで旅の変更を取りに行く(CloudSync) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

@@ -1,6 +1,7 @@
 import type { CategoryId } from '../lib/category';
 import type { LinkLabelId, TravelMode } from '../lib/maps';
 import type { PlainDate } from '../lib/plainDate';
+import type { CloudLocation } from '../cloud/native';
 
 /**
  * すべてのレコードが持つ同期用の欄。**あとから足すと全レコードの移行が要る**ので
@@ -138,6 +139,20 @@ export type Trip = SyncFields & {
 
   /** 旅全体のメモ(集合場所・連絡先など)。予定に紐づかないもの */
   note?: string;
+
+  /**
+   * この旅が iCloud のどのゾーンにあるか(src/cloud/sync.ts)。**端末だけの欄**。
+   * 自分の旅は private、受け取った旅は shared。無ければまだ iCloud に上げていない
+   * (iCloud にサインインしていない・同期の前に作った旅)。
+   */
+  cloud?: CloudLocation;
+
+  /**
+   * **作成者が共有をやめた・旅を消した**時刻。**端末だけの欄**。
+   * 参加者の端末では旅を消さずに写しとして残し、自分の旅として続けられる
+   * (ROADMAP E-1)。その案内を出すための印。
+   */
+  sharedEndedAt?: number;
 };
 
 /**

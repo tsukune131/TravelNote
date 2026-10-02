@@ -18,6 +18,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+
+        // アプリが閉じていた状態で共有リンクから起動したときは、ここに来る
+        if let metadata = connectionOptions.cloudKitShareMetadata {
+            CloudSync.shared.start()
+            CloudSync.shared.accept(metadata)
+        }
     }
 
     /**
@@ -37,22 +43,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     /**
-     共有リンクをタップされたとき(ROADMAP E-0)。
+     共有リンクをタップされたとき(ROADMAP E-2)。
 
      ⚠️ **`CKSharingSupported` を Info.plist に立てていないと、ここは呼ばれない。**
      リンクをタップしても Safari が iCloud の Web ページを開くだけになる。
 
-     受諾は非同期で、**そのときアプリが起動したばかりだと WebView がまだ居ない**。
-     だから結果を `AcceptedShares` に置いて、JS が起動後に取りに来る形にした
-     (共有拡張のインボックスと同じ考え方)。
+     受諾したあとの旅は、shared の取得(CKSyncEngine)で届き、
+     JS が起動していればすぐ、していなければ起動後に取りに来る。
      */
     func windowScene(_ windowScene: UIWindowScene, userDidAcceptCloudKitShareWith metadata: CKShare.Metadata) {
-        let operation = CKAcceptSharesOperation(shareMetadatas: [metadata])
-        operation.perShareCompletionBlock = { metadata, _, error in
-            guard error == nil else { return }
-            let title = metadata.share[CKShare.SystemFieldKey.title] as? String
-            AcceptedShares.add(title ?? "")
-        }
-        CKContainer(identifier: "iCloud.com.tsukune.travelnote").add(operation)
+        CloudSync.shared.start()
+        CloudSync.shared.accept(metadata)
     }
 }

@@ -19,6 +19,7 @@ import { maybeShowInterstitial, noteAdAction, startAds, stopAds } from './ads/ad
 import { DevAdLayer } from './ui/DevAds';
 import { App as CapApp } from '@capacitor/app';
 import { today } from './lib/plainDate';
+import { startCloudSync } from './cloud/sync';
 
 type Route =
   | { screen: 'welcome' }
@@ -61,6 +62,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
    *
    * ようこそ画面はその手前。初回だけで、旅が1つでもあれば二度と出さない。
    */
+  /**
+   * iCloud の同期(ROADMAP E-2)。**ほかのどの書き込みよりも先に始める** ──
+   * 変更を拾う hook がここで付くので、これより前の書き込みは送られない。
+   */
+  useEffect(() => {
+    void startCloudSync();
+  }, []);
+
   useEffect(() => {
     void (async () => {
       // 色はスプラッシュが閉じる前に。桜色が一瞬見えてから替わるのを避ける

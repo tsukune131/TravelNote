@@ -44,5 +44,14 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+
+	<!--
+		CloudKit の変更通知(サイレントプッシュ)。誰かが旅を直したら、
+		ほかの人の端末に数秒で届く(CKSyncEngine がこれで取りに行く)。
+		App Store 向けの書き出しでは自動で production になる。
+		⚠️ ポータルで App ID の Push Notifications を有効にしてから lane=refresh_profiles
+	-->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

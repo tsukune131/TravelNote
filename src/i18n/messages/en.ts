@@ -270,6 +270,18 @@ export const en: DeepPartial<Messages> = {
     roleOwner: 'Owner',
     roleEditor: 'Can edit',
     downloaded: 'Itinerary saved',
+    icloud: 'Share with iCloud',
+    icloudHint:
+      'Send an invite by Messages or LINE. Everyone who joins can edit, and changes reach everyone right away. Sharing is free.',
+    icloudUnavailable: 'Sign in to iCloud to share (Settings → your name).',
+    icloudNotOwner: 'You joined this trip. Invites come from the person who created it.',
+    icloudJoined: 'This trip is shared. Your changes reach everyone in it.',
+    icloudFailed: 'Could not start sharing ({code}). Please try again with a better connection.',
+    fileSection: 'Send as a file (the old way)',
+  },
+
+  sharedEnded: {
+    banner: 'The creator stopped sharing, so this trip is kept as your own.',
   },
 
   importResult: {
@@ -400,6 +412,13 @@ export const en: DeepPartial<Messages> = {
     restore: 'Restore Purchases',
     manageSubscription: 'Manage subscription',
     version: 'Version',
+    cloud: 'iCloud sync',
+    cloudSignedOut: 'Not signed in to iCloud. Your trips are only on this device.',
+    cloudPending: '{n} waiting to send (sent once you are back online)',
+    cloudSynced: 'Synced ({when})',
+    cloudWaiting: 'Starting to sync…',
+    cloudError: 'Last error: {error}',
+    cloudSyncNow: 'Sync now',
     adDiag: {
       title: 'Diagnostics (ads, place search)',
       stage: 'Stage',
@@ -421,19 +440,6 @@ export const en: DeepPartial<Messages> = {
     yellow: 'Yellow',
   },
 
-  cloudProbe: {
-    title: 'CloudKit check',
-    lead: 'Checks CloudKit on a real device, one step at a time. Your trips are not touched.',
-    nativeOnly: 'This check only runs on a device (nothing happens in a browser).',
-    account: '1. iCloud account status',
-    dryRun: '2. Write dry run',
-    createShare: '3. Create a share link',
-    fetchShared: '4. Read what was shared with me',
-    pending: '5. Collect accepted shares',
-    cleanUp: '6. Delete the test data',
-    shareUrl: 'Share link',
-    sampleTitle: 'TravelNote (check)',
-  },
 
   common: {
     save: 'Save',

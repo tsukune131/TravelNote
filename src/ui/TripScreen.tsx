@@ -338,6 +338,13 @@ export function TripScreen({
             />
           )}
 
+          {/* 作成者が共有を終えた旅。消さずに残したことを1回だけ説明する場所 */}
+          {trip.sharedEndedAt !== undefined && (
+            <p className="guess" role="note">
+              {t('sharedEnded.banner')}
+            </p>
+          )}
+
           {variants && variants.length >= 2 && (
             <VariantBar variants={variants} tripId={tripId} dayIndex={dayIndex} />
           )}

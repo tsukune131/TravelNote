@@ -9,6 +9,8 @@ import { commitShared, exportSnapshotText, importSnapshotText } from '../share/a
 import { readFileFromPicker, sendSnapshot } from '../share/transport';
 import type { MergeSummary } from '../share/merge';
 import type { Trip } from '../db/types';
+import { shareTrip } from '../cloud/sync';
+import { cloudAvailable } from '../cloud/native';
 
 export type ImportOutcome =
   | { kind: 'ok'; summary: MergeSummary; conflictedDays: number[]; tripId: string }
@@ -69,6 +71,26 @@ export function ShareSheet({
     }
   }
 
+  /**
+   * iCloud で共有する(ROADMAP E-2)。招待の送り方・参加者の管理・共有の停止は
+   * iOS 標準の画面に任せる。**参加者は招待を出せない**(作成者のゾーンなので)。
+   */
+  async function shareWithICloud() {
+    setBusy(true);
+    setNote(null);
+    try {
+      await ensureOwner(trip.id, name.trim() || t('share.displayNameDefault'));
+      const result = await shareTrip(trip);
+      if (result === 'unavailable') setNote(t('share.icloudUnavailable'));
+      if (result === 'notOwner') setNote(t('share.icloudNotOwner'));
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? '';
+      setNote(t('share.icloudFailed', { code }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function receive() {
     const text = await readFileFromPicker();
     if (text === null) return;
@@ -104,8 +126,25 @@ export function ShareSheet({
           <p className="guess">{t('share.displayNameHint')}</p>
         </div>
 
+        {cloudAvailable() && (
+          <div className="field">
+            {trip.cloud?.scope === 'shared' ? (
+              <p className="guess">{t('share.icloudJoined')}</p>
+            ) : (
+              <>
+                <button type="button" className="btn wide" onClick={() => void shareWithICloud()} disabled={busy}>
+                  ☁️ {t('share.icloud')}
+                </button>
+                <p className="guess">{t('share.icloudHint')}</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ファイル共有は E-2b で撤去する。それまでは並べて残す */}
         <div className="field">
-          <button type="button" className="btn wide" onClick={() => void send()} disabled={busy}>
+          {cloudAvailable() && <label>{t('share.fileSection')}</label>}
+          <button type="button" className="btn ghost wide" onClick={() => void send()} disabled={busy}>
             📤 {trip.sharedAt === null ? t('share.send') : t('share.sendAgain')}
           </button>
           <p className="guess">{t('share.sendHint')}</p>

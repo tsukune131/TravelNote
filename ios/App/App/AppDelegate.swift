@@ -7,7 +7,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // 同期(CloudSync)の変更通知を受ける。CKSyncEngine はプッシュが来たら自分で取りに行く。
+        // 音も表示も無いサイレント通知なので、利用者に許可は求めない
+        application.registerForRemoteNotifications()
         return true
     }
 

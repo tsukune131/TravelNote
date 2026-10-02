@@ -303,6 +303,18 @@ export const ja = {
     roleOwner: '作成者',
     roleEditor: '編集できる',
     downloaded: 'しおりを書き出しました',
+    icloud: 'iCloud でみんなと共有',
+    icloudHint:
+      'メッセージや LINE で招待を送れます。参加した人も編集でき、直したことはすぐに全員に届きます。共有は無料です。',
+    icloudUnavailable: 'iCloud にサインインすると共有できます(設定アプリ → 自分の名前)',
+    icloudNotOwner: 'この旅は共有に参加しています。招待は旅を作った人から送れます。',
+    icloudJoined: '共有中の旅です。直したことは参加している全員に届きます。',
+    icloudFailed: '共有を始められませんでした({code})。電波のよいところでもう一度お試しください。',
+    fileSection: 'ファイルで送る(これまでの方法)',
+  },
+
+  sharedEnded: {
+    banner: '作成者が共有を終えたので、この旅はあなたの旅として残しています。',
   },
 
   importResult: {
@@ -437,6 +449,13 @@ export const ja = {
     restore: '購入を復元',
     manageSubscription: 'サブスクリプションの管理',
     version: 'バージョン',
+    cloud: 'iCloud の同期',
+    cloudSignedOut: 'iCloud にサインインしていません。旅はこの端末の中だけにあります。',
+    cloudPending: '送信待ち {n}件(電波が戻ると送ります)',
+    cloudSynced: '同期済み({when})',
+    cloudWaiting: '同期を始めています…',
+    cloudError: '直近のエラー: {error}',
+    cloudSyncNow: '今すぐ同期',
     adDiag: {
       title: '診断(広告・地名検索)',
       stage: '状態',
@@ -462,19 +481,6 @@ export const ja = {
    * CloudKit の実現可能性を確かめる画面(ROADMAP E-0)。
    * **E-0 のブランチにしか無い。main に入れない。E-1 で捨てる。**
    */
-  cloudProbe: {
-    title: 'CloudKit の確認',
-    lead: '実機で CloudKit が使えるかを1段ずつ確かめます。旅程には触れません。',
-    nativeOnly: 'この確認は実機でしか動きません(ブラウザでは何も起きません)。',
-    account: '① iCloud の状態を見る',
-    dryRun: '② 書き込みのドライラン',
-    createShare: '③ 共有リンクを作る',
-    fetchShared: '④ 共有されたものを読む',
-    pending: '⑤ 受諾したぶんを引き取る',
-    cleanUp: '⑥ 試したデータを消す',
-    shareUrl: '共有リンク',
-    sampleTitle: 'たびのしおり(確認用)',
-  },
 
   common: {
     save: '保存',

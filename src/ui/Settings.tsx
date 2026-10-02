@@ -5,7 +5,6 @@ import { Paywall } from './Paywall';
 import { getDisplayName, getMapProvider, getTheme, setMapProvider, setTheme } from '../db/settings';
 import { THEMES, THEME_SWATCH, applyTheme } from '../lib/theme';
 import type { ThemeId } from '../lib/theme';
-import { CloudProbe } from './CloudProbe';
 import { setMyDisplayName } from '../db/repo';
 import { openSubscriptionSettings, restore } from '../pro/purchases';
 import { setProStatus, useProStatus } from '../pro/store';
@@ -14,6 +13,9 @@ import { LEGAL_BASE, openLink } from '../lib/openExternal';
 import type { MapProvider } from '../lib/maps';
 import { useAdDiagnostics } from '../ads/ads';
 import { useLastPlaceSearch } from '../weather/weather';
+import { CloudSync, cloudAvailable } from '../cloud/native';
+import type { AccountStatus, CloudDiagnostics } from '../cloud/native';
+import { pull } from '../cloud/sync';
 
 
 export function Settings({ onClose }: { onClose: () => void }) {
@@ -25,7 +27,6 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [paywall, setPaywall] = useState(false);
   /** バージョンの行を押した回数。5回で広告の診断を出す(下のコメント) */
   const [versionTaps, setVersionTaps] = useState(0);
-  const [probe, setProbe] = useState(false);
   const pro = useProStatus();
 
   useEffect(() => {
@@ -48,6 +49,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
           onBlur={() => void setMyDisplayName(name)}
         />
       </div>
+
+      {cloudAvailable() && <CloudStatusField />}
 
       <MapProviderField
         value={provider}
@@ -119,21 +122,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
           {t('settings.version')}
           <span className="sub">{__APP_VERSION__}</span>
         </button>
-        {/*
-          ROADMAP E-0 の確認用(CloudKit の疎通と cloudkit.share の生成)。
-          E-1 に進むときに消す。
-        */}
-        <button type="button" className="menu-item" onClick={() => setProbe(true)}>
-          {t('cloudProbe.title')}
-          <span className="sub">›</span>
-        </button>
       </div>
 
       {versionTaps >= 5 && <AdDiagnosticsPanel />}
 
       {note && <p className="guess">{note}</p>}
       {paywall && <Paywall reason="ads" onClose={() => setPaywall(false)} />}
-      {probe && <CloudProbe onClose={() => setProbe(false)} />}
     </Sheet>
   );
 
@@ -261,6 +255,61 @@ function AdDiagnosticsPanel() {
           </div>
         ))}
       </dl>
+    </div>
+  );
+}
+
+/**
+ * iCloud の同期の状態(ROADMAP E-2)。**送れていないことを黙らせない**(C-5 の教訓)。
+ * 送信待ちが残っている・エラーが出ている、がここで分かる。
+ */
+function CloudStatusField() {
+  const { t, date } = useI18n();
+  const [account, setAccount] = useState<AccountStatus | null>(null);
+  const [diag, setDiag] = useState<CloudDiagnostics | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    setAccount((await CloudSync.status()).account);
+    setDiag(await CloudSync.diagnostics());
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  async function syncNow() {
+    setBusy(true);
+    try {
+      await CloudSync.syncNow();
+      await pull();
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const summary =
+    account === null || diag === null
+      ? ''
+      : account !== 'available'
+        ? t('settings.cloudSignedOut')
+        : diag.pendingRecords > 0
+          ? t('settings.cloudPending', { n: diag.pendingRecords })
+          : diag.lastSyncAt
+            ? t('settings.cloudSynced', {
+                when: date(new Date(diag.lastSyncAt), { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+              })
+            : t('settings.cloudWaiting');
+
+  return (
+    <div className="field">
+      <label>{t('settings.cloud')}</label>
+      <p className="guess">{summary}</p>
+      {diag?.lastError ? <p className="guess">{t('settings.cloudError', { error: diag.lastError })}</p> : null}
+      <button type="button" className="btn ghost" onClick={() => void syncNow()} disabled={busy}>
+        {t('settings.cloudSyncNow')}
+      </button>
     </div>
   );
 }

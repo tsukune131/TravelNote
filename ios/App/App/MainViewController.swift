@@ -18,6 +18,6 @@ import UIKit
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(WeatherPlugin())
-        bridge?.registerPluginInstance(CloudKitProbePlugin())
+        bridge?.registerPluginInstance(CloudSyncPlugin())
     }
 }
