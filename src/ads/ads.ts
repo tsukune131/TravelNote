@@ -189,7 +189,7 @@ export async function startAds(): Promise<void> {
       setDiag({ att: (await AdMob.trackingAuthorizationStatus()).status });
 
       await AdMob.addListener(BannerAdPluginEvents.SizeChanged, (size) =>
-        setBannerHeight(running ? size.height : 0),
+        setBannerHeight(running && !suppressed ? size.height : 0),
       );
       await AdMob.addListener(BannerAdPluginEvents.Loaded, () => setDiag({ banner: 'loaded' }));
       await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (info) => {
@@ -214,6 +214,35 @@ export async function startAds(): Promise<void> {
     // 出せないなら出さないだけ。画面は帯なしのまま
     setBannerHeight(0);
     setDiag({ stage: 'error', banner: describeError(err) });
+  }
+}
+
+/**
+ * 帯を一時的に隠す(購入画面を開いているあいだ)。
+ * **購入画面の上に広告が重なっていた**(実機)── 規約・復元の行の上に帯が来て、
+ * そもそも購入画面に広告が出るのも不自然。閉じたら戻す。
+ * 帯の高さも 0 にして、シートの下の余白を詰める
+ */
+let lastBannerHeight = 0;
+let suppressed = false;
+
+export async function suppressBanner(on: boolean): Promise<void> {
+  if (suppressed === on) return;
+  suppressed = on;
+  if (!running) return;
+  if (on) {
+    lastBannerHeight = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ad-h-live')) || 0;
+    setBannerHeight(0);
+    setDev({ banner: false });
+  } else {
+    setBannerHeight(lastBannerHeight);
+    if (!native && import.meta.env.DEV) setDev({ banner: true });
+  }
+  if (!native) return;
+  try {
+    await (on ? AdMob.hideBanner() : AdMob.resumeBanner());
+  } catch {
+    // 帯が無ければ何もしない
   }
 }
 
