@@ -279,7 +279,7 @@ export const en: DeepPartial<Messages> = {
     icloudFailed: 'Could not start sharing ({code}). Please try again with a better connection.',
     fileSection: 'Send as a file (the old way)',
     icloudMessage:
-      'Let us plan "{title}" together in TsubaMate. Open the link to join. If it does not open from LINE, copy the link and paste it into "Join with an invite link" in TsubaMate.',
+      'Let us plan "{title}" together in TsubaMate. Open the link to join. If it does not open from LINE, choose "Open in Safari" from the menu, or copy the link and paste it into "Join with an invite link" in TsubaMate.',
     icloudManage: 'People and sharing settings',
     icloudNotYet: 'Not shared yet. Send an invite above, then you can see who joined here.',
   },
