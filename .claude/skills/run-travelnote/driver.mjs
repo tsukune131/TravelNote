@@ -32,6 +32,11 @@ const HEADED = process.env.TN_HEADED === '1';
 const PROD = process.env.TN_PROD === '1' || process.argv[2] === 'perf';
 const DARK = process.env.TN_DARK === '1';
 const LOCALE = process.env.TN_LOCALE ?? 'ja-JP';
+// 起動済みの Chrome に CDP でつなぐ(例: http://127.0.0.1:9333)。
+// VS Code の Claude Code から子プロセスとして Chrome を起動すると
+// 「FATAL: Failed to get the path for 1001」で即死する。`open -na` で
+// LaunchServices 経由に起動したものにつなげば動く(SKILL.md の Gotchas)
+const CDP = process.env.TN_CDP;
 
 /** Dexie のデータベース名(src/db/db.ts と揃える) */
 const DB_NAME = 'tabinoshiori';
@@ -181,12 +186,15 @@ function registerCleanup(child) {
 async function open() {
   mkdirSync(SHOTS, { recursive: true });
   // ブラウザの解決を先に済ませる。dev サーバを立ててから落ちると後片付けが要る
-  const executablePath = findBrowser();
+  const executablePath = CDP ? undefined : findBrowser();
   const server = await startServer();
   // 例外でも Ctrl-C でも、出力を head でちょん切られて EPIPE で死んでも、
   // dev サーバを道連れにする。残るとポートを掴んだままになる
   registerCleanup(server);
-  const browser = await chromium.launch({ executablePath, headless: !HEADED });
+  // CDP でつないだときの close() は切断だけで、Chrome 本体は残る
+  const browser = CDP
+    ? await chromium.connectOverCDP(CDP)
+    : await chromium.launch({ executablePath, headless: !HEADED });
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 844 }, // iPhone 15 相当
     deviceScaleFactor: 2,
