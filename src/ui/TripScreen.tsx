@@ -5,13 +5,14 @@ import { categoryLabelKey } from '../i18n/keys';
 import { db } from '../db/db';
 import {
   addEvent,
+  ensureOwner,
   listEventsOfDay,
   listMembers,
   listVariants,
   setEventCategory,
   setTripNote,
 } from '../db/repo';
-import { getMapProvider, setMapProvider } from '../db/settings';
+import { getDisplayName, getMapProvider, setMapProvider } from '../db/settings';
 import { categoryRank, guessCategory, ideaGroupOf } from '../lib/category';
 import type { IdeaGroup } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
@@ -40,7 +41,7 @@ import { AutoGrowTextarea } from './AutoGrowTextarea';
 import { countUnsentChanges } from '../share/snapshot';
 import { listInbox } from '../share/inbox';
 import { MembersSheet } from './MembersSheet';
-import { AssigneeFilter, AssigneePicker } from './Assignees';
+import { AssigneeFilter, AssigneePicker, AssigneeStack } from './Assignees';
 import { WeatherBar } from './WeatherBar';
 import { useTripWeather, weatherEmoji } from '../weather/weather';
 import { useEventWeather } from '../weather/eventWeather';
@@ -134,6 +135,14 @@ export function TripScreen({
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
   }, []);
+
+  /*
+   * 開いた旅には自分を必ずメンバーとして入れる。トップバーに最初から自分の顔が出る
+   * (メンバーの画面を開くまで人のマークのままだった)。アイコンはほかの旅から引き継ぐ
+   */
+  useEffect(() => {
+    void getDisplayName().then((name) => ensureOwner(tripId, name));
+  }, [tripId]);
 
   useEffect(() => {
     if (!moved) return;
@@ -251,9 +260,26 @@ export function TripScreen({
           </button>
           <h1>{trip.title}</h1>
           {/*
-            準備・メンバー・旅の設定は**トップバーに直接並べる**(以前は ⋯ のメニュー)。
+            メンバー・準備・共有・旅の設定は**トップバーに直接並べる**(以前は ⋯ のメニュー)。
             1段深いメニューは、旅行中に片手で探すには遠い
           */}
+          {/*
+            並びは メンバー → 準備 → 共有 → 設定(ユーザー判断 2026-10-02)。
+            メンバーは**顔を重ねて出す** ── 旅を開いた瞬間に「誰と行く旅か」が分かり、
+            選んだアイコンや写真が目に入る。まだ誰もいない旅は人のマーク
+          */}
+          <button
+            type="button"
+            className={`iconbtn plain${members && members.length > 0 ? ' faces' : ''}`}
+            onClick={() => setMembersOpen(true)}
+            aria-label={t('trip.members')}
+          >
+            {members && members.length > 0 ? (
+              <AssigneeStack ids={members.map((m) => m.id)} members={members} size={26} />
+            ) : (
+              <IconPeople />
+            )}
+          </button>
           <button
             type="button"
             className="iconbtn plain"
@@ -261,14 +287,6 @@ export function TripScreen({
             aria-label={t('prepare.title')}
           >
             <IconChecklist />
-          </button>
-          <button
-            type="button"
-            className="iconbtn plain"
-            onClick={() => setMembersOpen(true)}
-            aria-label={t('trip.members')}
-          >
-            <IconPeople />
           </button>
           <button
             type="button"

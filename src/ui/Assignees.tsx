@@ -61,7 +61,7 @@ export function AssigneePicker({ event }: { event: TripEvent }) {
 }
 
 /** 行に出す、担当の小さな顔ぶれ。3人まで並べて、あとは +n */
-export function AssigneeStack({ ids, members }: { ids: string[]; members: Member[] }) {
+export function AssigneeStack({ ids, members, size = 20 }: { ids: string[]; members: Member[]; size?: number }) {
   const shown = ids
     .map((id) => members.find((m) => m.id === id))
     .filter((m): m is Member => m !== undefined);
@@ -69,7 +69,7 @@ export function AssigneeStack({ ids, members }: { ids: string[]; members: Member
   return (
     <span className="assignee-stack">
       {shown.slice(0, 3).map((m) => (
-        <Avatar key={m.id} member={m} size={20} />
+        <Avatar key={m.id} member={m} size={size} />
       ))}
       {shown.length > 3 && <small>+{shown.length - 3}</small>}
     </span>

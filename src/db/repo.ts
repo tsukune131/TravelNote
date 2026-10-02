@@ -490,10 +490,22 @@ export async function listMembers(tripId: string): Promise<Member[]> {
     });
 }
 
-/** 旅を作った端末を作成者として登録する。アカウント登録は求めない */
+/**
+ * 自分(この端末)を旅のメンバーにする。アカウント登録は求めない。
+ *
+ * - 役割は、自分の旅なら作成者、**iCloud で参加した旅なら参加者**(ROADMAP E-3)
+ * - 名前が空なら、ほかの旅で名乗っている名前を使う。**アイコンもほかの旅から引き継ぐ**
+ *   (旅ごとに選び直させない。「自分のアイコン」は1つ)
+ */
 export async function ensureOwner(tripId: string, displayName: string): Promise<Member> {
   const deviceId = await getDeviceId();
   const s = await stamp();
+  const trip = await db.trips.get(tripId);
+  const role: Member['role'] = trip?.cloud?.scope === 'shared' || trip?.imported ? 'editor' : 'owner';
+  const mine = (await db.members.where('deviceId').equals(deviceId).toArray())
+    .filter((m) => m.deletedAt === ALIVE)
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  const name = displayName.trim() || mine?.displayName || '';
   /*
    * **確かめて足す、を1つのトランザクションで。** メンバー画面と共有画面の
    * 両方から呼ばれ、続けて2回呼ばれると自分が2人並んだ(実際に踏んだ)。
@@ -502,7 +514,15 @@ export async function ensureOwner(tripId: string, displayName: string): Promise<
     const rows = await db.members.where('tripId').equals(tripId).toArray();
     const existing = rows.find((m) => m.deviceId === deviceId && m.deletedAt === ALIVE);
     if (existing) return existing;
-    const member: Member = { id: newId(), tripId, deviceId, displayName, role: 'owner', ...s };
+    const member: Member = {
+      id: newId(),
+      tripId,
+      deviceId,
+      displayName: name,
+      role,
+      ...(mine?.icon && { icon: mine.icon }),
+      ...s,
+    };
     await db.members.add(member);
     return member;
   });
@@ -559,7 +579,15 @@ export async function updateMember(
   id: string,
   patch: Partial<Pick<Member, 'displayName' | 'icon'>>,
 ): Promise<void> {
-  await db.members.update(id, { ...patch, ...(await stamp()) });
+  const s = await stamp();
+  const member = await db.members.get(id);
+  const deviceId = await getDeviceId();
+  // **自分のアイコンは1つ。** どこかの旅で変えたら、自分が入っている旅すべてにそろえる
+  if (member && member.deviceId === deviceId && patch.icon !== undefined) {
+    const mine = await db.members.where('deviceId').equals(deviceId).primaryKeys();
+    await db.members.bulkUpdate(mine.map((key) => ({ key, changes: { icon: patch.icon, ...s } })));
+  }
+  await db.members.update(id, { ...patch, ...s });
 }
 
 /**

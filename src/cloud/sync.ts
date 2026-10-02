@@ -1,6 +1,8 @@
 import type { Transaction } from 'dexie';
 import { App as CapApp } from '@capacitor/app';
-import { db, getSetting, setSetting } from '../db/db';
+import { db, getDeviceId, getSetting, setSetting } from '../db/db';
+import { getDisplayName } from '../db/settings';
+import { ensureOwner } from '../db/repo';
 import type { DayVariant, Member, Trip, TripEvent } from '../db/types';
 import { orderKeyBetween } from '../lib/fractionalIndex';
 import { CloudSync, cloudAvailable } from './native';
@@ -252,6 +254,22 @@ async function pullOnce() {
 
   await CloudSync.ack({ upTo: items[items.length - 1].seq });
   for (const tripId of endedShares) await adoptTrip(tripId);
+  await joinSharedTrips();
+}
+
+/**
+ * iCloud で参加した旅に、**自分をメンバーとして入れる**(ROADMAP E-3)。
+ * 参加者の端末が自分の記録を書くので、全員の端末に「誰が参加しているか」が届く
+ * (CKShare の参加者一覧を読みに行かずに済み、名前もアイコンも本人が決める)。
+ */
+async function joinSharedTrips() {
+  const deviceId = await getDeviceId();
+  const shared = (await db.trips.where('deletedAt').equals(0).toArray()).filter((t) => t.cloud?.scope === 'shared');
+  for (const trip of shared) {
+    const members = await db.members.where('tripId').equals(trip.id).toArray();
+    if (members.some((m) => m.deviceId === deviceId && m.deletedAt === 0)) continue;
+    await ensureOwner(trip.id, await getDisplayName());
+  }
 }
 
 async function applyRecord(type: RecordType, id: string, fields: Record<string, unknown>, at: CloudLocation) {
