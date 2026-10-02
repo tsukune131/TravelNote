@@ -168,7 +168,7 @@ export const en: DeepPartial<Messages> = {
 
   event: {
     namePlaceholder: 'A place, or something to do',
-    nameHint: 'Press return to keep adding. Type "9:00 Nijo Castle" to set the time too.',
+    nameHint: 'Press return to keep adding. Type "9:00 Nijo Castle" to set the time too. Paste a link to add it with the link.',
     guessedCategory: 'Guessed',
     changeCategory: 'Tap to change',
     time: 'Time',
@@ -250,6 +250,17 @@ export const en: DeepPartial<Messages> = {
       'Let us plan "{title}" together in TsubaMate. Open the link to join. If it does not open from LINE, choose "Open in Safari" from the menu, or copy the link and paste it into "Join with an invite link" in TsubaMate.',
     icloudManage: 'People and sharing settings',
     icloudNotYet: 'Not shared yet. Send an invite above, then you can see who joined here.',
+  },
+
+  shareTip: {
+    title: 'Send places straight from Safari or Maps',
+    lead: 'On a page for a shop or place, tap Share and pick TsubaMate. It lands in "From Share" on your trip list. You can also copy a link and paste it into the add bar.',
+    pinTitle: 'To put TsubaMate first in the share sheet',
+    pin1: 'Tap Share, scroll the app row to the end and tap "More"',
+    pin2: 'Tap "Edit" at the top right',
+    pin3: 'Add TsubaMate to Favorites and drag it to the top',
+    gotIt: 'Got it',
+    open: 'Sending from the share sheet',
   },
 
   join: {

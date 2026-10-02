@@ -2423,3 +2423,26 @@ body.sheet-open .addbar-hint {
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* 一度きりの案内のカード(共有シートから送る方法など) */
+.tipcard {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--rule);
+  font-size: 0.9rem;
+}
+
+.tipcard p {
+  margin: 0.4rem 0;
+}
+
+.steps {
+  margin: 0.2rem 0 0.4rem;
+  padding-left: 1.3rem;
+}
+
+.steps li + li {
+  margin-top: 0.25rem;
+}

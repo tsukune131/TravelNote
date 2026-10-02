@@ -6,6 +6,7 @@ import { db } from '../db/db';
 import {
   addEvent,
   ensureOwner,
+  updateEvent,
   listEventsOfDay,
   listMembers,
   listVariants,
@@ -17,8 +18,8 @@ import { categoryRank, guessCategory, ideaGroupOf } from '../lib/category';
 import type { IdeaGroup } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
 import { dateOfDay, dayCount, toDate, today } from '../lib/plainDate';
-import { openLink, openMap } from '../lib/openExternal';
-import { mapLinkOf } from '../lib/maps';
+import { extractUrl, normalizeUrl, openLink, openMap } from '../lib/openExternal';
+import { guessLinkLabel, mapLinkOf, placeNameFromMapUrl } from '../lib/maps';
 import type { MapProvider } from '../lib/maps';
 import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
@@ -207,6 +208,26 @@ export function TripScreen({
   }
 
   async function submitDraft() {
+    /*
+     * **リンクを貼ったら、リンク付きの予定にする**(コピーしたリンクから予定を作る入口。
+     * 共有シートでつばメイトを探さなくても済む)。名前はリンクと一緒に貼られた文字
+     * (LINE の共有は「店名 + URL」)→ 地図のリンクの中の場所名 → サイトのドメインの順。
+     * ページを読みに行って題名を取ることはしない(通信先を増やさない)
+     */
+    const found = extractUrl(draft);
+    const url = found ? normalizeUrl(found) : null;
+    if (found && url) {
+      // 名前とリンクのあいだの区切り(「店名 | URL」「店名｜URL」「店名 - URL」など)は落とす
+      const rest = draft.split(found).join(' ').replace(/^[\s|｜:：\-–—・/／]+|[\s|｜:：\-–—・/／]+$/g, '');
+      const parsed = parseLeadingTime(rest);
+      const label = parsed.name || placeNameFromMapUrl(url) || new URL(url).hostname.replace(/^www\./, '');
+      const event = await addEvent(tripId, dayIndex, label, parsed.minutes);
+      await updateEvent(event.id, { links: [{ url, label: guessLinkLabel(url) }] });
+      noteAdAction();
+      setDraft('');
+      inputRef.current?.focus();
+      return;
+    }
     // 「9:00 二条城」のように、時刻ごと1行で入れられる。
     // 時刻を入れるためだけに詳細シートを開かせない
     const { minutes, name } = parseLeadingTime(draft);

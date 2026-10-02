@@ -16,6 +16,7 @@ import { useLastPlaceSearch } from '../weather/weather';
 import { CloudSync, cloudAvailable } from '../cloud/native';
 import type { AccountStatus, CloudDiagnostics } from '../cloud/native';
 import { pull } from '../cloud/sync';
+import { ShareTipSheet } from './ShareTip';
 
 
 export function Settings({ onClose }: { onClose: () => void }) {
@@ -25,6 +26,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [note, setNote] = useState<string | null>(null);
   const [theme, setThemeState] = useState<ThemeId | null>(null);
   const [paywall, setPaywall] = useState(false);
+  const [shareTip, setShareTip] = useState(false);
   /** バージョンの行を押した回数。5回で広告の診断を出す(下のコメント) */
   const [versionTaps, setVersionTaps] = useState(0);
   const pro = useProStatus();
@@ -113,6 +115,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <span className="sub">›</span>
           </button>
         )}
+        <button type="button" className="menu-item" onClick={() => setShareTip(true)}>
+          {t('shareTip.open')}
+          <span className="sub">›</span>
+        </button>
         {/*
           バージョンの行を**5回押すと広告の診断**が出る(隠し)。
           広告は読めなくても黙って帯を 0 にするので、実機で出ないときに
@@ -128,6 +134,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
       {note && <p className="guess">{note}</p>}
       {paywall && <Paywall reason="ads" onClose={() => setPaywall(false)} />}
+      {shareTip && <ShareTipSheet onClose={() => setShareTip(false)} />}
     </Sheet>
   );
 

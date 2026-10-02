@@ -290,6 +290,28 @@ export function isAppLink(url: string): boolean {
   }
 }
 
+/**
+ * 地図のリンクから場所の名前を取り出す(通信しない。URL の中に書いてあるときだけ)。
+ * - Google マップ: `/maps/place/景福宮/@37.5,...`
+ * - Apple マップ: `?q=景福宮` / `?name=...`
+ * 短縮リンク(maps.app.goo.gl)には名前が無いので null。
+ */
+export function placeNameFromMapUrl(url: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  const place = /\/maps\/place\/([^/@]+)/.exec(u.pathname);
+  if (place) return decodeURIComponent(place[1].replace(/\+/g, ' ')).trim() || null;
+  if (/maps\.apple\.com$/.test(u.hostname)) {
+    const q = u.searchParams.get('q') ?? u.searchParams.get('name');
+    if (q) return q.trim() || null;
+  }
+  return null;
+}
+
 /** URL からリンクの種別を推定する。UI 側で i18n の `linkLabel.*` に引く */
 export function guessLinkLabel(url: string): LinkLabelId {
   let host: string;

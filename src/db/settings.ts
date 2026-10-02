@@ -45,12 +45,13 @@ export async function setDisplayName(name: string): Promise<void> {
  *
  * ヒントは**必要な場面で1回だけ**出す。上前のカルーセルにしないのは、
  * 読まれないうえに、このアプリの非自明な価値(時刻を決めなくていい・
- * 長押しでまとめてずらせる)は**その場面が来たときに教えるほうが効く**から。
+ * 共有シートから放り込める)は**その場面が来たときに教えるほうが効く**から。
  */
 export const FLAGS = {
   /** ようこそ画面を見終わった */
   onboarded: 'flag.onboarded',
-  /** 長押しでアクションメニューが出ることを知っている */
+  /** 共有シートからつばメイトへ送れること(と先頭に固定する方法)の案内を閉じた */
+  knowsShareSheet: 'flag.knowsShareSheet',
 } as const;
 
 export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];

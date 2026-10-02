@@ -10,6 +10,7 @@ import { openLink } from '../lib/openExternal';
 import { primaryLink } from '../lib/maps';
 import { Settings } from './Settings';
 import { JoinSheet } from './JoinSheet';
+import { ShareTipCard } from './ShareTip';
 import { cloudAvailable } from '../cloud/native';
 import { InboxBar, InboxSheet } from './Inbox';
 import { IconPlus, IconSettings } from './Icon';
@@ -57,6 +58,8 @@ export function TripList({ onOpen }: { onOpen: (tripId: string, dayIndex: number
             端末の画面であるここに置く(旅の中に出すと、旅の数だけ同じ帯が並ぶ)
           */}
           <InboxBar count={inbox?.length ?? 0} onOpen={() => setInboxOpen(true)} />
+          {/* 旅が1つできてから。最初の画面で一度に教えすぎない */}
+          {trips !== undefined && trips.length > 0 && <ShareTipCard />}
 
           {trips !== undefined && trips.length === 0 && (
             <div className="empty">
