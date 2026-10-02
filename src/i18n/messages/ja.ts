@@ -403,7 +403,7 @@ export const ja = {
     teaser: '天気予報を表示(Pro)',
     unavailable: 'この端末では天気を取得できません',
     atEvent: '{time}の天気 {temp}° 降水 {p}%',
-    source: 'データソース',
+    source: '出典',
   },
 
   ads: {

@@ -368,7 +368,7 @@ export const en: DeepPartial<Messages> = {
     teaser: 'Show weather forecast (Pro)',
     unavailable: "Weather isn't available on this device",
     atEvent: 'Weather at {time}: {temp}°, rain {p}%',
-    source: 'Data sources',
+    source: 'Sources',
   },
 
   ads: {

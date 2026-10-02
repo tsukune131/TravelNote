@@ -20,7 +20,8 @@ import type { Trip } from '../db/types';
  * - Pro: その日の予報。10日より先は「予報は10日先まで」、過ぎた日は何も出さない。
  *   **場所の名前を押すと、この日からの場所を切り替えられる**(DayPlaceSheet)。
  *   場所がどこも決まっていなければ「天気の場所を決める」の1行だけ
- * - ⚠️ Apple Weather のロゴとデータソースへのリンクは**必ず添える**(WeatherKit の規約)
+ * - ⚠️ Apple Weather のロゴとデータソースへのリンクは**必ず添える**(WeatherKit の規約)。
+ *   大きさや置き場所の決まりは無いので、**同じ1行の右端に小さく**置く(2026-10-02)
  */
 export function WeatherBar({
   trip,
@@ -76,7 +77,7 @@ export function WeatherBar({
   /** 場所の名前。押すとこの日からの場所を切り替える */
   const placeButton = (
     <button type="button" className="weather-place" onClick={() => setChoosing(true)}>
-      📍 {place.name}
+      📍 <span className="weather-place-name">{place.name}</span>
       <span className="sub" aria-hidden="true">›</span>
     </button>
   );
@@ -112,10 +113,17 @@ export function WeatherBar({
             {weatherEmoji(f.symbol)}
           </span>
           {placeButton}
-          <span>
-            {t('weather.high')} {Math.round(f.high)}° / {t('weather.low')} {Math.round(f.low)}°
+          {/*
+            **1行に収める**(ユーザー判断 2026-10-02)。「最高」「最低」の文字は外し、
+            気温は「最高 / 最低」の順の数字だけ。読み上げには文字で渡す
+          */}
+          <span
+            className="weather-temp"
+            aria-label={`${t('weather.high')} ${Math.round(f.high)}° / ${t('weather.low')} ${Math.round(f.low)}°`}
+          >
+            {Math.round(f.high)}° / {Math.round(f.low)}°
           </span>
-          <span>{t('weather.rain', { p: Math.round(f.precip * 100) })}</span>
+          <span className="weather-rain">☔{Math.round(f.precip * 100)}%</span>
         </span>
         <span className="weather-attr">
           {stale && <small>{t('weather.fetchedAt', { when: time(minutesOf(forecast.fetchedAt)) })}</small>}
