@@ -2296,9 +2296,11 @@ body.sheet-open .addbar-hint {
 
 /* ────────── 天気 ────────── */
 
+/* **1行に収める**。場所の名前が長ければ「…」で切る(出典は必ず残す) */
 .weather-bar {
-  display: grid;
-  gap: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 0.6rem;
   padding: 0.55rem 0.8rem;
   border-radius: 0.9rem;
@@ -2314,9 +2316,16 @@ body.sheet-open .addbar-hint {
 
 .weather-main {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.2rem 0.6rem;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.weather-temp,
+.weather-rain {
+  flex: 0 0 auto;
 }
 
 .weather-icon {
@@ -2331,6 +2340,15 @@ body.sheet-open .addbar-hint {
   font-weight: 700;
   color: var(--ink);
   min-height: 2rem;
+  min-width: 0;
+}
+
+/* 長い場所名(「トロント(カナダ)」など)は名前の部分だけ「…」で切る */
+.weather-place-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .weather-place .sub {
@@ -2346,9 +2364,19 @@ body.sheet-open .addbar-hint {
 .weather-attr {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  flex: 0 0 auto;
   color: var(--ink-3);
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+/* 出典のリンクは小さく。ただし押せる大きさは残す(上下に余白を足す) */
+.weather-attr .linklike {
+  font-size: inherit;
+  min-height: 0;
+  padding: 0.5rem 0;
+  color: var(--ink-3);
 }
 
 .weather-attr img {
