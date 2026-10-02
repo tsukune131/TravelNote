@@ -2385,3 +2385,28 @@ body.sheet-open .addbar-hint {
   font-family: var(--font-data);
   overflow-wrap: anywhere;
 }
+
+/*
+ * メモタブの見出しの塊。ドラッグの落とし先を兼ねる(TripScreen の data-drop-group)。
+ * 指が乗ったら Day タブと同じ色で縁取る
+ */
+.drop-group {
+  border-radius: 1rem;
+  border: 2px solid transparent;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.drop-group.drop {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.drop-empty {
+  margin: 0 0.2rem 0.8rem;
+  padding: 0.9rem;
+  border: 1.5px dashed var(--rule);
+  border-radius: 0.8rem;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+  text-align: center;
+}

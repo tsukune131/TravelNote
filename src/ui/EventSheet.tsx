@@ -199,15 +199,6 @@ export function EventSheet({
         />
       </div>
 
-      <label className="inline-toggle">
-        <input
-          type="checkbox"
-          checked={event.pinned}
-          onChange={(e) => void updateEvent(event.id, { pinned: e.target.checked })}
-        />
-        📌 {t('timeline.pinned')}
-      </label>
-
       <button
         type="button"
         className="btn danger wide"

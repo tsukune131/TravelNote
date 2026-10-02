@@ -10,19 +10,17 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
  * 実装で気をつけたこと:
  * - **縦スクロールを殺さない。** 最初の数pxで縦か横かを判定し、
  *   縦だと決まったらスワイプを諦めてブラウザにスクロールを返す
- * - 長押し(アクションメニュー)と両立させるため、
- *   指が動き始めたら長押しタイマーを止める
+ *
+ * 長押しのメニューは 2026-10-02 に撤去した(ユーザー判断。一切使っていなかった)。
  */
 const DECIDE_PX = 8;
 const TRIGGER_PX = 72;
 const MAX_PX = 96;
-const LONG_PRESS_MS = 480;
 
 export function SwipeRow({
   children,
   onSwipeRight,
   onSwipeLeft,
-  onLongPress,
   rightLabel,
   leftLabel,
   disabled = false,
@@ -30,7 +28,6 @@ export function SwipeRow({
   children: ReactNode;
   onSwipeRight: () => void;
   onSwipeLeft: () => void;
-  onLongPress: () => void;
   rightLabel: string;
   leftLabel: string;
   disabled?: boolean;
@@ -39,29 +36,12 @@ export function SwipeRow({
   const [sliding, setSliding] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const axis = useRef<'none' | 'x' | 'y'>('none');
-  const timer = useRef<number | null>(null);
-
-  function clearTimer() {
-    if (timer.current !== null) {
-      window.clearTimeout(timer.current);
-      timer.current = null;
-    }
-  }
 
   function down(e: ReactPointerEvent<HTMLDivElement>) {
     if (disabled) return;
     start.current = { x: e.clientX, y: e.clientY };
     axis.current = 'none';
     setSliding(false);
-    clearTimer();
-    timer.current = window.setTimeout(() => {
-      // 長押し。指が動いていないときだけ発火する
-      if (axis.current === 'none') {
-        start.current = null;
-        setDx(0);
-        onLongPress();
-      }
-    }, LONG_PRESS_MS);
   }
 
   function move(e: ReactPointerEvent<HTMLDivElement>) {
@@ -71,7 +51,6 @@ export function SwipeRow({
 
     if (axis.current === 'none') {
       if (Math.abs(ddx) < DECIDE_PX && Math.abs(ddy) < DECIDE_PX) return;
-      clearTimer();
       // 縦のほうが大きければスワイプは諦める(スクロールを妨げない)
       axis.current = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
       if (axis.current === 'y') {
@@ -85,7 +64,6 @@ export function SwipeRow({
   }
 
   function up() {
-    clearTimer();
     const moved = dx;
     start.current = null;
     axis.current = 'none';

@@ -31,10 +31,6 @@ export const en: DeepPartial<Messages> = {
     trainHome: 'Train home',
   },
 
-  hint: {
-    longPress: 'Press and hold a stop to push the schedule, move it to another day, or duplicate it',
-    gotIt: 'Got it',
-  },
 
   tripList: {
     title: 'Trips',
@@ -113,6 +109,7 @@ export const en: DeepPartial<Messages> = {
   },
 
   ideas: {
+    dropHere: 'Drag an item here to move it',
     places: 'Places to go',
     todos: 'Things to do',
     tab: 'Notes',
@@ -140,7 +137,6 @@ export const en: DeepPartial<Messages> = {
     moveToDay: 'Move to another day',
     movedTo: 'Moved to {day}',
     show: 'Show',
-    pinned: 'Pinned',
   },
 
   connector: {
@@ -164,31 +160,10 @@ export const en: DeepPartial<Messages> = {
     noGap: "One of these has no time set, so we can't tell if you'll make it",
   },
 
-  reflow: {
-    action: 'Push this and everything after',
-    by: '{n} min',
-    ahead: '{n} min earlier',
-    done: 'Moved {count} stops by {n} minutes',
-    preview: '{count} stops from here will move',
-    nothing: 'Nothing here to move',
-    undo: 'Undo',
-    pinnedSkipped: '{n} pinned stops were left alone',
-  },
 
   actions: {
-    title: '{name}',
-    done: 'Mark as done',
     undone: 'Mark as not done',
-    duplicate: 'Duplicate',
-    up: 'Move up',
-    down: 'Move down',
-    moveToDay: 'Move to another day',
-    toTodos: 'Move to Things to do',
-    toPlaces: 'Move to Places to go',
     reorder: 'Reorder',
-    pin: '📌 Pin (never reflow)',
-    unpin: '📌 Unpin',
-    edit: 'Edit details',
   },
 
   event: {

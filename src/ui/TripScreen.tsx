@@ -11,7 +11,7 @@ import {
   setEventCategory,
   setTripNote,
 } from '../db/repo';
-import { FLAGS, getFlag, getMapProvider, setFlag, setMapProvider } from '../db/settings';
+import { getMapProvider, setMapProvider } from '../db/settings';
 import { categoryRank, guessCategory, ideaGroupOf } from '../lib/category';
 import type { IdeaGroup } from '../lib/category';
 import { parseLeadingTime } from '../lib/ordering';
@@ -23,10 +23,8 @@ import { IDEAS_DAY } from '../db/types';
 import type { TripEvent } from '../db/types';
 import { linkLabelKey } from '../i18n/keys';
 import { dayLabel } from './dayLabel';
-import type { ReflowResult } from '../db/repo';
 import { Timeline } from './Timeline';
 import { EventSheet } from './EventSheet';
-import { EventActions, UndoBar } from './EventActions';
 import { TripForm } from './TripForm';
 import { Prepare } from './Prepare';
 import { InboxBar, InboxSheet } from './Inbox';
@@ -77,7 +75,6 @@ export function TripScreen({
   /** 旅のメモを書いているあいだ。下の入力欄を引っ込める */
   const [noteFocused, setNoteFocused] = useState(false);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
-  const [actionEventId, setActionEventId] = useState<string | null>(null);
   const [categoryEventId, setCategoryEventId] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [imported, setImported] = useState<ImportOutcome | null>(null);
@@ -89,12 +86,12 @@ export function TripScreen({
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
   const [pendingMapFor, setPendingMapFor] = useState<TripEvent | null>(null);
   const [mapProvider, setMapProviderState] = useState<MapProvider | null>(null);
-  const [undo, setUndo] = useState<{ result: ReflowResult; delta: number } | null>(null);
-  const [knowsLongPress, setKnowsLongPress] = useState(true); // 読み込むまでは出さない
   const [linksEventId, setLinksEventId] = useState<string | null>(null);
   const [assignEventId, setAssignEventId] = useState<string | null>(null);
   /** ドラッグ中に指が乗っているタブ。そのタブを光らせる */
   const [dropDay, setDropDay] = useState<number | null>(null);
+  /** ドラッグ中に指が乗っている見出し(メモタブ) */
+  const [dropGroup, setDropGroup] = useState<IdeaGroup | null>(null);
   /** タブへ落として別の日へ移したあとに出す「移しました」 */
   const [moved, setMoved] = useState<{ name: string; dayIndex: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,7 +112,9 @@ export function TripScreen({
       : events;
   /*
    * メモタブは「行きたいところ / やりたいこと」に分け、それぞれアイコンの順に並べる
-   * (同じアイコンどうしは入れた順のまま)。日の予定は時刻で並ぶので触らない
+   * (同じアイコンどうしは入れた順のまま)。日の予定は時刻で並ぶので触らない。
+   * 見出しは**片方が空でも2つとも出す** ── ドラッグ中だけ出すと、上の見出しが
+   * 途中で現れて掴んでいる行の位置がずれる
    */
   const ideaGroups: { group: IdeaGroup; events: TripEvent[] }[] | null =
     ideas && shownEvents && shownEvents.length > 0
@@ -126,38 +125,15 @@ export function TripScreen({
               .filter((e) => ideaGroupOf(e) === group)
               .sort((a, b) => categoryRank(a.category) - categoryRank(b.category)),
           }))
-          .filter((g) => g.events.length > 0)
       : null;
   const openEvent = events?.find((e) => e.id === openEventId) ?? null;
-  const actionEvent = events?.find((e) => e.id === actionEventId) ?? null;
   const categoryEvent = events?.find((e) => e.id === categoryEventId) ?? null;
   const linksEvent = events?.find((e) => e.id === linksEventId) ?? null;
   const assignEvent = events?.find((e) => e.id === assignEventId) ?? null;
 
   useEffect(() => {
     void getMapProvider().then(setMapProviderState);
-    void getFlag(FLAGS.knowsLongPress).then((v) => setKnowsLongPress(v));
   }, []);
-
-  /**
-   * 長押しヒントは**必要な場面でだけ**出す。
-   * 時刻の入った予定が2件以上ある日 ── つまり「ずらす」が意味を持つ状態になって
-   * はじめて見せる。空の日や1件だけの日に出しても邪魔なだけ。
-   */
-  const showHint =
-    !knowsLongPress && (events?.filter((e) => e.startMinutes !== null).length ?? 0) >= 2;
-
-  function dismissHint() {
-    void setFlag(FLAGS.knowsLongPress);
-    setKnowsLongPress(true);
-  }
-
-  // 「元に戻す」は数秒で消える。押さなければそのまま確定
-  useEffect(() => {
-    if (!undo) return;
-    const id = window.setTimeout(() => setUndo(null), 6000);
-    return () => window.clearTimeout(id);
-  }, [undo]);
 
   useEffect(() => {
     if (!moved) return;
@@ -257,13 +233,9 @@ export function TripScreen({
         onOpenMap={handleOpenMap}
         onOpenLinks={handleOpenLinks}
         onAssign={ideas ? (e) => setAssignEventId(e.id) : undefined}
-        onLongPress={(e) => {
-          // 使えたなら、もう教える必要はない
-          dismissHint();
-          setActionEventId(e.id);
-        }}
         onPickCategory={(e) => setCategoryEventId(e.id)}
         onHoverDay={setDropDay}
+        onHoverGroup={setDropGroup}
         onMovedToDay={(e, to) => setMoved({ name: e.name, dayIndex: to })}
         weatherFor={unlocked ? eventWeather : undefined}
       />
@@ -404,11 +376,16 @@ export function TripScreen({
             <AssigneeFilter members={members} value={assigneeFilter} onChange={setAssigneeFilter} />
           )}
 
+          {/*
+            見出しの塊は**ドラッグの落とし先を兼ねる**(data-drop-group)。予定のつまみを
+            掴んでもう一方の見出しへ重ねて離すと、そちらへ移る(Day タブへ落とすのと同じ)
+          */}
           {ideaGroups
             ? ideaGroups.map(({ group, events: list }) => (
-                <div key={group}>
+                <div key={group} data-drop-group={group} className={dropGroup === group ? 'drop-group drop' : 'drop-group'}>
                   <p className="section-label">{t(group === 'place' ? 'ideas.places' : 'ideas.todos')}</p>
-                  {renderTimeline(list)}
+                  {/* 空の見出しも出す。移す先が見えていないと、ドラッグで移せると気づけない */}
+                  {list.length > 0 ? renderTimeline(list) : <p className="drop-empty">{t('ideas.dropHere')}</p>}
                 </div>
               ))
             : shownEvents && renderTimeline(shownEvents)}
@@ -434,14 +411,6 @@ export function TripScreen({
             </div>
           )}
 
-          {showHint && (
-            <div className="hintbar" role="note">
-              <span>💡 {t('hint.longPress')}</span>
-              <button type="button" onClick={dismissHint}>
-                {t('hint.gotIt')}
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -484,11 +453,7 @@ export function TripScreen({
         </p>
       )}
 
-      {undo && (
-        <UndoBar result={undo.result} deltaMinutes={undo.delta} onDismiss={() => setUndo(null)} />
-      )}
-
-      {moved && !undo && (
+      {moved && (
         <div className="undobar" role="status">
           <span>
             {moved.name} — {t('timeline.movedTo', { day: dayLabel(t, moved.dayIndex) })}
@@ -534,20 +499,6 @@ export function TripScreen({
             ))}
           </div>
         </Sheet>
-      )}
-
-      {actionEvent && events && (
-        <EventActions
-          event={actionEvent}
-          events={events}
-          dayCount={total}
-          onClose={() => setActionEventId(null)}
-          onEdit={() => {
-            setOpenEventId(actionEvent.id);
-            setActionEventId(null);
-          }}
-          onReflowed={(result, delta) => setUndo({ result, delta })}
-        />
       )}
 
       {categoryEvent && (

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { useI18n } from '../i18n/context';
-import { CATEGORIES } from '../lib/category';
+import { CATEGORIES, ideaGroupOf } from '../lib/category';
+import type { IdeaGroup } from '../lib/category';
 import { nowLineIndex } from '../lib/ordering';
 import { nowMinutes } from '../lib/plainDate';
 import {
@@ -11,6 +12,7 @@ import {
   moveEventToDay,
   setEventTime,
   toggleDone,
+  updateEvent,
 } from '../db/repo';
 import { Connector } from './Connector';
 import { IconAssign, IconCopy, IconDrag, IconLink, IconMap } from './Icon';
@@ -46,9 +48,9 @@ export function Timeline({
   onOpenMap,
   onOpenLinks,
   onAssign,
-  onLongPress,
   onPickCategory,
   onHoverDay,
+  onHoverGroup,
   onMovedToDay,
   weatherFor,
   members = [],
@@ -65,10 +67,11 @@ export function Timeline({
   onOpenLinks: (event: TripEvent) => void;
   /** メモタブの行の「担当」ボタン。メモタブでだけ渡す */
   onAssign?: (event: TripEvent) => void;
-  onLongPress: (event: TripEvent) => void;
   onPickCategory: (event: TripEvent) => void;
   /** ドラッグ中に指が乗っている Day タブ。離れたら null */
   onHoverDay: (dayIndex: number | null) => void;
+  /** ドラッグ中に指が乗っている、もう一方の見出し(メモタブ)。離れたら null */
+  onHoverGroup?: (group: IdeaGroup | null) => void;
   /** Day タブに落として、別の日へ移したあと */
   onMovedToDay: (event: TripEvent, toDayIndex: number) => void;
   /** 担当の顔を行に出すため。担当が付いていない旅では空でよい */
@@ -78,7 +81,7 @@ export function Timeline({
 }) {
   const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
-  const drag = useDragReorder(events, dayIndex, listRef, onHoverDay, onMovedToDay);
+  const drag = useDragReorder(events, dayIndex, listRef, onHoverDay, onMovedToDay, ideas ? onHoverGroup : undefined);
 
   if (events.length === 0) {
     return ideas ? (
@@ -111,7 +114,7 @@ export function Timeline({
           key={event.id}
           data-row={event.id}
           className={`tl-row${drag.isHeld(event.id) ? ' held' : ''}${
-            drag.isHeld(event.id) && drag.overDay !== null ? ' over-tab' : ''
+            drag.isHeld(event.id) && (drag.overDay !== null || drag.overGroup !== null) ? ' over-tab' : ''
           }`}
           style={drag.styleFor(i, event.id)}
         >
@@ -127,7 +130,6 @@ export function Timeline({
             onOpenMap={onOpenMap}
             onOpenLinks={onOpenLinks}
             onAssign={onAssign}
-            onLongPress={onLongPress}
             onPickCategory={onPickCategory}
             onDragStart={(x, y) => drag.begin(i, x, y)}
             onDragMove={drag.move}
@@ -167,6 +169,8 @@ type Held = {
   startY: number;
   /** 指が乗っている Day タブ。乗っているあいだは並べ替えを止める */
   overDay: number | null;
+  /** 指が乗っている、もう一方の見出し(メモタブ)。Day タブと同じ扱い */
+  overGroup: IdeaGroup | null;
   /** 指を離したあと、落ちる先へ滑っている最中 */
   settling: boolean;
 };
@@ -182,6 +186,17 @@ function dropDayAt(x: number, y: number): number | null {
     const r = el.getBoundingClientRect();
     if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
       return Number(el.dataset.dropDay);
+    }
+  }
+  return null;
+}
+
+/** 指の下にある見出しの塊(`data-drop-group`。メモタブの行きたいところ / やりたいこと) */
+function dropGroupAt(x: number, y: number): IdeaGroup | null {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-drop-group]')) {
+    const r = el.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+      return el.dataset.dropGroup as IdeaGroup;
     }
   }
   return null;
@@ -220,12 +235,15 @@ function useDragReorder(
   listRef: React.RefObject<HTMLDivElement | null>,
   onHoverDay: (dayIndex: number | null) => void,
   onMovedToDay: (event: TripEvent, toDayIndex: number) => void,
+  /** メモタブだけ。もう一方の見出しへ落とせるようにする */
+  onHoverGroup?: (group: IdeaGroup | null) => void,
 ) {
   const [held, setHeld] = useState<Held | null>(null);
   /** 保存が返ってくるまでのあいだ見せる並び。ここが無いと一瞬だけ元の並びに戻る */
   const [optimistic, setOptimistic] = useState<TripEvent[] | null>(null);
   const commit = useRef<(() => void) | null>(null);
   const hovering = useRef<number | null>(null);
+  const hoveringGroup = useRef<IdeaGroup | null>(null);
 
   // 本物が届いたら先取りした並びは捨てる
   useEffect(() => setOptimistic(null), [events]);
@@ -239,6 +257,12 @@ function useDragReorder(
     if (hovering.current === day) return;
     hovering.current = day;
     onHoverDay(day);
+  }
+
+  function hoverGroup(group: IdeaGroup | null) {
+    if (hoveringGroup.current === group) return;
+    hoveringGroup.current = group;
+    onHoverGroup?.(group);
   }
 
   function begin(index: number, clientX: number, clientY: number) {
@@ -260,6 +284,7 @@ function useDragReorder(
       startX: clientX,
       startY: clientY,
       overDay: null,
+      overGroup: null,
       settling: false,
     });
   }
@@ -271,26 +296,40 @@ function useDragReorder(
     // いま開いている日のタブに戻したときは、ただの並べ替えとして扱う
     const overDay = found === dayIndex ? null : found;
     hover(overDay);
+    // 見出しは、掴んでいる予定がいま居ない側に乗ったときだけ落とし先になる
+    const heldEvent = held ? shown.find((e) => e.id === held.id) : undefined;
+    const group = overDay === null && onHoverGroup ? dropGroupAt(clientX, clientY) : null;
+    const overGroup = group && heldEvent && group !== ideaGroupOf(heldEvent) ? group : null;
+    hoverGroup(overGroup);
 
     setHeld((d) => {
       if (!d || d.settling) return d;
       const dx = clientX - d.startX;
       const dy = clientY - d.startY;
-      if (overDay !== null) return { ...d, dx, dy, to: d.from, overDay };
+      if (overDay !== null || overGroup !== null) return { ...d, dx, dy, to: d.from, overDay, overGroup };
       const center = d.centers[d.from] + dy;
       // 自分より上に中心がある行の数 = そこへ入ったときの位置
       let to = 0;
       for (let i = 0; i < d.centers.length; i++) {
         if (i !== d.from && d.centers[i] < center) to++;
       }
-      return { ...d, dx, dy, to, overDay: null };
+      return { ...d, dx, dy, to, overDay: null, overGroup: null };
     });
   }
 
   function end() {
     const d = held;
     hover(null);
+    hoverGroup(null);
     if (!d || d.settling) return;
+
+    if (d.overGroup !== null) {
+      // もう一方の見出しへ。行はそちらの塊へ移るので、ここからは消す
+      setOptimistic(shown.filter((e) => e.id !== d.id));
+      setHeld(null);
+      void updateEvent(d.id, { ideaGroup: d.overGroup });
+      return;
+    }
 
     if (d.overDay !== null) {
       const moved = shown[d.from];
@@ -353,6 +392,7 @@ function useDragReorder(
     shown,
     active: held !== null,
     overDay: held?.overDay ?? null,
+    overGroup: held?.overGroup ?? null,
     isHeld: (id: string) => held?.id === id && !held.settling,
     begin,
     move,
@@ -387,10 +427,7 @@ type RowProps = {
   onDragEnd: () => void;
 };
 
-function Row({
-  onLongPress,
-  ...props
-}: RowProps & { onLongPress: (event: TripEvent) => void }) {
+function Row(props: RowProps) {
   const { t } = useI18n();
   const { event, dragging } = props;
   return (
@@ -399,7 +436,6 @@ function Row({
       leftLabel={`${t('timeline.delete')} ✕`}
       onSwipeRight={() => void toggleDone(event.id)}
       onSwipeLeft={() => void deleteEvent(event.id)}
-      onLongPress={() => onLongPress(event)}
       disabled={dragging}
     >
       <EventRow {...props} />
@@ -482,7 +518,6 @@ function EventRow({
           </div>
           <div className="ev-sub">
             {event.note && <span>{firstLine(event.note)}</span>}
-            {event.pinned && <span className="badge">📌 {t('timeline.pinned')}</span>}
             {event.booking?.booked && <span className="badge book">🎫 {t('event.booked')}</span>}
             {/* メモタブでは担当ボタンに顔が出るので、ここには出さない */}
             {!onAssign && <AssigneeStack ids={event.assigneeIds ?? []} members={members} />}

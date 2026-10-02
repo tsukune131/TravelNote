@@ -68,24 +68,3 @@ export function connectorBetween(prev: TripEvent, next: TripEvent): Connector {
   };
 }
 
-/**
- * リフロー(ここから後ろへずらす)で何件動くかを、実行前に数える。
- * 「30分ずらす」を押す前に何が起きるか見せるため。
- */
-export function reflowPreview(
-  events: readonly TripEvent[],
-  fromEventId: string,
-): { willMove: number; pinnedSkipped: number; untimedSkipped: number } {
-  const start = events.findIndex((e) => e.id === fromEventId);
-  if (start < 0) return { willMove: 0, pinnedSkipped: 0, untimedSkipped: 0 };
-
-  let willMove = 0;
-  let pinnedSkipped = 0;
-  let untimedSkipped = 0;
-  for (const e of events.slice(start)) {
-    if (e.startMinutes === null) untimedSkipped += 1;
-    else if (e.pinned) pinnedSkipped += 1;
-    else willMove += 1;
-  }
-  return { willMove, pinnedSkipped, untimedSkipped };
-}

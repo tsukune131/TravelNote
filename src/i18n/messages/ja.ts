@@ -31,10 +31,6 @@ export const ja = {
     trainHome: '帰りの新幹線',
   },
 
-  hint: {
-    longPress: '予定を長押しすると、まとめてずらす・別の日へ移す・複製ができます',
-    gotIt: 'わかった',
-  },
 
   tripList: {
     title: '旅の一覧',
@@ -139,6 +135,7 @@ export const ja = {
    * 思いついたものを放り込み、決まったら Day タブへドラッグして振り分ける
    */
   ideas: {
+    dropHere: 'ここへドラッグすると移せます',
     places: '行きたいところ',
     todos: 'やりたいこと',
     tab: 'メモ',
@@ -168,7 +165,6 @@ export const ja = {
     /** ドラッグで別のタブへ落としたあと */
     movedTo: '{day} へ移しました',
     show: '見る',
-    pinned: '固定',
   },
 
   connector: {
@@ -196,31 +192,10 @@ export const ja = {
     noGap: 'どちらかの時刻が未定なので、間に合うかは判定できません',
   },
 
-  reflow: {
-    action: 'ここから後ろへずらす',
-    by: '{n}分',
-    ahead: '{n}分前へ',
-    done: '{count}件を{n}分ずらしました',
-    preview: 'これ以降の{count}件が動きます',
-    nothing: 'ずらせる予定がありません',
-    undo: '元に戻す',
-    pinnedSkipped: '📌 固定の{n}件はそのままです',
-  },
 
   actions: {
-    title: '{name}',
-    done: '行ったことにする',
     undone: '「行った」を取り消す',
-    duplicate: '複製する',
-    up: 'ひとつ上へ',
-    down: 'ひとつ下へ',
-    moveToDay: '別の日へ移す',
-    toTodos: '「やりたいこと」へ移す',
-    toPlaces: '「行きたいところ」へ移す',
     reorder: '並べ替え',
-    pin: '📌 固定する(ずらさない)',
-    unpin: '📌 固定をやめる',
-    edit: '詳しく編集',
   },
 
   event: {

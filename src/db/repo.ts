@@ -434,31 +434,6 @@ export async function moveEventToDay(id: string, toDayIndex: number): Promise<vo
   });
 }
 
-/**
- * ひとつ上/下へ。
- *
- * ドラッグ&ドロップにしていないのは、**同じ行で横スワイプ(完了・削除)を
- * 使っているため縦ドラッグとジェスチャが衝突する**から。
- * 時刻ありの予定は時刻順に並ぶので、手で並べ替えたいのは実質「時刻未定」だけで、
- * それには上下ボタンで足りる。
- */
-export async function nudgeEvent(id: string, direction: -1 | 1): Promise<void> {
-  const event = await db.events.get(id);
-  if (!event) return;
-  const siblings = (await listEventsOfDay(event.tripId, event.dayIndex)).filter(
-    (e) => (e.startMinutes === null) === (event.startMinutes === null),
-  );
-  const i = siblings.findIndex((e) => e.id === id);
-  const j = i + direction;
-  if (i < 0 || j < 0 || j >= siblings.length) return;
-
-  // 入れ替え先の「向こう隣」との間に入る
-  const target = siblings[j];
-  const beyond = siblings[j + direction] ?? null;
-  const [before, after] = direction === 1 ? [target, beyond] : [beyond, target];
-  await updateEvent(id, { order: orderKeyBetween(before?.order ?? null, after?.order ?? null) });
-}
-
 /** 複製。同じ日の、元の直後に置く */
 export async function duplicateEvent(id: string): Promise<TripEvent | null> {
   const event = await db.events.get(id);
@@ -495,59 +470,6 @@ export async function setTravel(
     travelMinutes: cleared ? null : minutes,
     travelMode: cleared ? null : mode,
   });
-}
-
-/* ────────── リフロー(旅程は必ず押す) ────────── */
-
-export type ReflowResult = {
-  /** 元に戻すための、変更前の (id, startMinutes) */
-  undo: ReadonlyArray<{ id: string; startMinutes: number }>;
-  movedCount: number;
-  pinnedSkipped: number;
-};
-
-/**
- * `fromEventId` 以降の「時刻が入っている予定」をまとめて `deltaMinutes` ずらす。
- * 📌 固定(pinned)の予定と、時刻未定の予定は動かさない。
- *
- * 旅行中にいちばん使う操作(docs/ux-design.md §3.4)。競合に相当機能が見当たらない。
- */
-export async function reflowFrom(
-  tripId: string,
-  dayIndex: number,
-  fromEventId: string,
-  deltaMinutes: number,
-): Promise<ReflowResult> {
-  const events = await listEventsOfDay(tripId, dayIndex);
-  const start = events.findIndex((e) => e.id === fromEventId);
-  if (start < 0) return { undo: [], movedCount: 0, pinnedSkipped: 0 };
-
-  const undo: Array<{ id: string; startMinutes: number }> = [];
-  let pinnedSkipped = 0;
-  const s = await stamp();
-
-  const changes = events.slice(start).flatMap((e) => {
-    if (e.startMinutes === null) return [];
-    if (e.pinned) {
-      pinnedSkipped += 1;
-      return [];
-    }
-    undo.push({ id: e.id, startMinutes: e.startMinutes });
-    // 日をまたがせない。ずらしすぎたら 23:59 で止める
-    const next = Math.min(23 * 60 + 59, Math.max(0, e.startMinutes + deltaMinutes));
-    return [{ key: e.id, changes: { startMinutes: next, ...s } }];
-  });
-
-  if (changes.length > 0) await db.events.bulkUpdate(changes);
-  return { undo, movedCount: changes.length, pinnedSkipped };
-}
-
-export async function applyUndo(undo: ReflowResult['undo']): Promise<void> {
-  if (undo.length === 0) return;
-  const s = await stamp();
-  await db.events.bulkUpdate(
-    undo.map((u) => ({ key: u.id, changes: { startMinutes: u.startMinutes, ...s } })),
-  );
 }
 
 /* ────────── 参加者 ────────── */

@@ -368,10 +368,19 @@ async function dragRow(page, from, to) {
  * tab は data-drop-day の値(-1 = メモ、0 = Day 1 ...)。
  */
 async function dropOnTab(page, from, tab) {
+  await dragHandleTo(page, from, `[data-drop-day="${tab}"]`);
+}
+
+/** メモタブの見出し(行きたいところ = place / やりたいこと = todo)へ落とす */
+async function dropOnGroup(page, from, group) {
+  await dragHandleTo(page, from, `[data-drop-group="${group}"] .section-label`);
+}
+
+async function dragHandleTo(page, from, target) {
   const handle = page.locator('.ev-drag').nth(from);
   const src = await handle.boundingBox();
-  const dst = await page.locator(`[data-drop-day="${tab}"]`).boundingBox();
-  if (!src || !dst) throw new Error(`行かタブが見つかりません: ${from} → ${tab}`);
+  const dst = await page.locator(target).first().boundingBox();
+  if (!src || !dst) throw new Error(`行か落とし先が見つかりません: ${from} → ${target}`);
   const x0 = src.x + src.width / 2;
   const y0 = src.y + src.height / 2;
   const x1 = dst.x + dst.width / 2;
@@ -752,10 +761,11 @@ const HELP = `
   time  :: <予定名> :: <HH:MM>  予定に時刻を入れる
   dur   :: <予定名> :: <分>     所要時間を入れる(15/30/45/60/90/120/180/240)
   click :: <selector>          クリック(Playwright セレクタ)
-  longpress :: <selector>      長押し → 予定のアクションメニュー
+  longpress :: <selector>      長押し(予定の長押しメニューは 2026-10-02 に撤去。今は何も出ない)
   swipe :: <selector> :: right|left   右=行った / 左=削除
   drag  :: <行番号> :: <行番号>  つまみで並べ替え(0始まり)
   droptab :: <行番号> :: <タブ>  つまみで Day タブへ落とす(タブ: -1=メモ, 0=Day 1)
+  dropgroup :: <行番号> :: place|todo  メモタブで、つまみをもう一方の見出しへ落とす
   fill  :: <selector> :: <値>  入力
   press :: <selector> :: <キー> キー送信(Enter など)
   text  :: <selector>          一致した要素のテキストを全部出す
@@ -817,6 +827,9 @@ async function repl() {
           break;
         case 'droptab':
           await dropOnTab(page, Number(args[0]), Number(args[1]));
+          break;
+        case 'dropgroup':
+          await dropOnGroup(page, Number(args[0]), args[1]);
           break;
         case 'fill':
           await page.locator(args[0]).first().fill(args[1] ?? '');

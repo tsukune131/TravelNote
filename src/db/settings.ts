@@ -51,7 +51,6 @@ export const FLAGS = {
   /** ようこそ画面を見終わった */
   onboarded: 'flag.onboarded',
   /** 長押しでアクションメニューが出ることを知っている */
-  knowsLongPress: 'flag.knowsLongPress',
 } as const;
 
 export type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
