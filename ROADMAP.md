@@ -449,6 +449,9 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
         `merge.ts` の3方向マージを移植 / 「案」を残すか)
 - [ ] E-2 **CloudKit 共有(読み書き)**
   > **2026-10-02 に実機2台(別の Apple ID)で確認: 共有して、参加者の編集が数秒で相手に届いた。**
+  > **同日、TestFlight 版(Production 環境)でも共有とリアルタイム同期を確認。**
+  > スキーマは `seedSchema` で全欄を開発環境に作ってから Deploy 済み。
+  > Push Notifications は App ID で有効、`refresh_profiles` 済み
   > 開発用ビルド(Development 環境)。分かったこと:
   > - **LINE でリンクをタップしても、アプリに渡らない**(LINE の中のブラウザで icloud.com が開く)。
   >   LINE のメニューから「Safari で開く」ならアプリが開く。→ 招待の文にその案内を書き、
@@ -901,3 +904,5 @@ Web/PWAのまま、毎日使って気持ちいいレベルまで磨く。**広�
 - 2026-10-02 **E-0 の関門を越えた。** Mac を常用にし、Xcode のデバッグビルドで共有リンクを作って
   `cloudkit.share` を Production に生やした。対応 iOS を 17 に上げ、同期は `CKSyncEngine`、
   同時編集は**項目ごとのあと勝ち**と決めた(ユーザー判断)
+- 2026-10-02 **iCloud 共有とリアルタイム同期が TestFlight(本番)で動いた。** `feature/cloudkit-sync` を main へ。
+  残りは E-2b(ファイル共有の撤去)・E-3(参加者を自動でメンバーに)・E-8 の共有まわりの書き直し
