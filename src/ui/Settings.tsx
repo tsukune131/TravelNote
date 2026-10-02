@@ -306,7 +306,13 @@ function CloudStatusField() {
     <div className="field">
       <label>{t('settings.cloud')}</label>
       <p className="guess">{summary}</p>
-      {diag?.lastError ? <p className="guess">{t('settings.cloudError', { error: diag.lastError })}</p> : null}
+      {diag?.lastError ? (
+        <p className="guess">
+          {/ck25\b/.test(diag.lastError)
+            ? t('settings.cloudQuota')
+            : t('settings.cloudError', { error: diag.lastError })}
+        </p>
+      ) : null}
       <button type="button" className="btn ghost" onClick={() => void syncNow()} disabled={busy}>
         {t('settings.cloudSyncNow')}
       </button>

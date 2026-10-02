@@ -456,6 +456,8 @@ export const ja = {
     cloudWaiting: '同期を始めています…',
     cloudError: '直近のエラー: {error}',
     cloudSyncNow: '今すぐ同期',
+    cloudQuota:
+      'iCloud の容量がいっぱいで送れません。設定アプリ → 自分の名前 → iCloud で空きを作ると、たまっている変更を自動で送ります。旅はこの端末に残っています。',
     adDiag: {
       title: '診断(広告・地名検索)',
       stage: '状態',

@@ -85,7 +85,7 @@ export function ShareSheet({
       if (result === 'notOwner') setNote(t('share.icloudNotOwner'));
     } catch (err) {
       const code = (err as { code?: string }).code ?? '';
-      setNote(t('share.icloudFailed', { code }));
+      setNote(code === 'ck25' ? t('settings.cloudQuota') : t('share.icloudFailed', { code }));
     } finally {
       setBusy(false);
     }

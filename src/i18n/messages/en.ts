@@ -419,6 +419,8 @@ export const en: DeepPartial<Messages> = {
     cloudWaiting: 'Starting to sync…',
     cloudError: 'Last error: {error}',
     cloudSyncNow: 'Sync now',
+    cloudQuota:
+      'Your iCloud storage is full, so changes cannot be sent. Free up space in Settings → your name → iCloud and they will be sent automatically. Your trips stay on this device.',
     adDiag: {
       title: 'Diagnostics (ads, place search)',
       stage: 'Stage',
