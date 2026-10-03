@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.tsukune.travelnote',
@@ -24,6 +25,16 @@ const config: CapacitorConfig = {
        * ここだけ前の生成り色 #eceee9 が残っていた
        */
       backgroundColor: '#fff7f5',
+    },
+    Keyboard: {
+      /**
+       * **キーボードが出たら、画面を押し上げずに WebView ごと縮める。**
+       * 既定では iOS が入力欄を見せようとして画面全体を上へ押し上げ、旅の名前や
+       * Day タブがステータスバーの裏へ潜っていた(実機: 予定の時刻と時計が重なった)。
+       * 縮めれば、上は見えたまま、下に固定した追加バーがキーボードの上に乗る
+       */
+      resize: KeyboardResize.Native,
+      resizeOnFullScreen: true,
     },
   },
 };
