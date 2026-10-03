@@ -1448,8 +1448,18 @@ button {
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--rule-soft);
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* 打っているあいだの説明。帯の1行目(入力欄の上)に、帯の幅いっぱいで出す */
+.addbar-hint {
+  flex: 0 0 100%;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .addbar input {

@@ -202,7 +202,7 @@ export const ja = {
     namePlaceholder: '場所の名前ややりたいことなど',
     /** 追加のバーだけ。リンクを貼れることも伝える(詳細画面の名前の欄には使わない) */
     addPlaceholder: '場所・やりたいこと・URL',
-    nameHint: '改行で続けて追加。「9:00 二条城」と書けば時刻ごと入ります。リンクを貼るとリンク付きで入ります。',
+    nameHint: '「9:00 二条城」で時刻ごと、URL を貼るとリンク付きで入ります',
     guessedCategory: '推定',
     changeCategory: 'タップで変更',
     time: '時刻',

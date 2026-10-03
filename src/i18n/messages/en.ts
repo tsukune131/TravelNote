@@ -169,7 +169,7 @@ export const en: DeepPartial<Messages> = {
   event: {
     namePlaceholder: 'A place, or something to do',
     addPlaceholder: 'A place, a thing to do, or a link',
-    nameHint: 'Press return to keep adding. Type "9:00 Nijo Castle" to set the time too. Paste a link to add it with the link.',
+    nameHint: 'Type "9:00 Nijo Castle" to set the time, or paste a link to attach it',
     guessedCategory: 'Guessed',
     changeCategory: 'Tap to change',
     time: 'Time',

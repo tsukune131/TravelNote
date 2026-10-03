@@ -450,6 +450,15 @@ export function TripScreen({
       */}
       {!noteFocused && (
       <div className="addbar">
+        {/*
+          打っているあいだの説明。**帯の中に置く**(帯には背景がある)。以前は画面に
+          浮かせて置いていて、文字だけが最後の予定の上に重なっていた(実機で報告)
+        */}
+        {draft.trim().length > 0 && (
+          <p className="addbar-hint">
+            {t('event.guessedCategory')}: {t(categoryLabelKey(guessCategory(draft)))} ・ {t('event.nameHint')}
+          </p>
+        )}
         <input
           ref={inputRef}
           value={draft}
@@ -467,21 +476,6 @@ export function TripScreen({
       </div>
       )}
 
-      {!noteFocused && draft.trim().length > 0 && (
-        <p
-          className="guess addbar-hint"
-          style={{
-            position: 'fixed',
-            left: '0.9rem',
-            right: '0.9rem',
-            bottom: 'calc(var(--safe-bottom) + 3.6rem)',
-            textAlign: 'right',
-          }}
-        >
-          {t('event.guessedCategory')}: {t(categoryLabelKey(guessCategory(draft)))} ・{' '}
-          {t('event.nameHint')}
-        </p>
-      )}
 
       {moved && (
         <div className="undobar" role="status">
