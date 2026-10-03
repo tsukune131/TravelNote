@@ -256,7 +256,7 @@ export const en: DeepPartial<Messages> = {
   shareTip: {
     line: 'Tip: send places from Safari or Maps with the Share button',
     title: 'Send places straight from Safari or Maps',
-    lead: 'On a page for a shop or place, tap Share and pick TsubaMate. It lands in "From Share" on your trip list. You can also copy a link and paste it into the add bar.',
+    lead: 'On a page for a shop or place, tap Share and pick TsubaMate. It lands in "Shared links" on your trip list. You can also copy a link and paste it into the add bar.',
     pinTitle: 'To put TsubaMate first in the share sheet',
     pin1: 'Tap Share, scroll the app row to the end and tap "More"',
     pin2: 'Tap "Edit" at the top right',
