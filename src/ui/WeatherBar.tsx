@@ -21,7 +21,10 @@ import type { Trip } from '../db/types';
  *   **場所の名前を押すと、この日からの場所を切り替えられる**(DayPlaceSheet)。
  *   場所がどこも決まっていなければ「天気の場所を決める」の1行だけ
  * - ⚠️ Apple Weather のロゴとデータソースへのリンクは**必ず添える**(WeatherKit の規約)。
- *   大きさや置き場所の決まりは無いので、**同じ1行の右端に小さく**置く(2026-10-02)
+ *   大きさや置き場所の決まりは無いので、**同じ1行の右端に小さく**置く(2026-10-02)。
+ *   **予報を取れていれば、その日の予報が無い行にも出す。** Day タブの天気の絵文字は
+ *   どの日を開いていても見えるので、出典が予報のある日にしか無いと、審査で
+ *   「出典が無い」と返された(5.2.5、2026-10-08。旅先がもう翌日の時差で、Day 1 に予報が無かった)
  */
 export function WeatherBar({
   trip,
@@ -82,12 +85,35 @@ export function WeatherBar({
     </button>
   );
 
+  const stale = !!forecast && Date.now() - forecast.fetchedAt > 6 * 60 * 60 * 1000;
+  const attribution = forecast && (
+    <span className="weather-attr">
+      {stale && <small>{t('weather.fetchedAt', { when: time(minutesOf(forecast.fetchedAt)) })}</small>}
+      {forecast.attribution.logoLight ? (
+        <picture>
+          <source srcSet={forecast.attribution.logoDark} media="(prefers-color-scheme: dark)" />
+          <img src={forecast.attribution.logoLight} alt="Apple Weather" />
+        </picture>
+      ) : (
+        <small> Weather</small>
+      )}
+      <button type="button" className="linklike" onClick={() => void openLink(forecast.attribution.legalUrl)}>
+        {t('weather.source')}
+      </button>
+    </span>
+  );
+
   const f = forecast?.days.find((d) => d.date === day);
   if (!forecast || !f) {
-    // 予報が無くても場所は切り替えられるようにする(10日より先の日にこそ決めておきたい)
+    /*
+     * 予報が無くても場所は切り替えられるようにする(10日より先の日にこそ決めておきたい)。
+     * 「10日先まで」と言うのは**予報の最後の日より先**のときだけ。時差で旅先では
+     * もう過ぎた日(端末ではまだ今日)にも予報は無いが、それは「先すぎる」のではない
+     */
+    const last = forecast?.days[forecast.days.length - 1]?.date;
     const reason = unavailable
       ? t('weather.unavailable')
-      : forecast
+      : last && day > last
         ? `🗓 ${t('weather.tooFar')}`
         : null;
     return (
@@ -97,13 +123,12 @@ export function WeatherBar({
             {placeButton}
             {reason && <span>{reason}</span>}
           </span>
+          {attribution}
         </div>
         {sheet}
       </>
     );
   }
-
-  const stale = Date.now() - forecast.fetchedAt > 6 * 60 * 60 * 1000;
 
   return (
     <>
@@ -125,20 +150,7 @@ export function WeatherBar({
           </span>
           <span className="weather-rain">☔{Math.round(f.precip * 100)}%</span>
         </span>
-        <span className="weather-attr">
-          {stale && <small>{t('weather.fetchedAt', { when: time(minutesOf(forecast.fetchedAt)) })}</small>}
-          {forecast.attribution.logoLight ? (
-            <picture>
-              <source srcSet={forecast.attribution.logoDark} media="(prefers-color-scheme: dark)" />
-              <img src={forecast.attribution.logoLight} alt="Apple Weather" height={12} />
-            </picture>
-          ) : (
-            <small> Weather</small>
-          )}
-          <button type="button" className="linklike" onClick={() => void openLink(forecast.attribution.legalUrl)}>
-            {t('weather.source')}
-          </button>
-        </span>
+        {attribution}
       </div>
       {sheet}
     </>
