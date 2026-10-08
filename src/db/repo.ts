@@ -568,7 +568,8 @@ export async function setMyDisplayName(name: string): Promise<void> {
   if (trimmed.length === 0) return;
 
   const deviceId = await getDeviceId();
-  const mine = await db.members.where('deviceId').equals(deviceId).toArray();
+  // 外したレコードには触らない(stamp は deletedAt を戻すので、まとめて消した自分が生き返る)
+  const mine = (await db.members.where('deviceId').equals(deviceId).toArray()).filter((m) => m.deletedAt === ALIVE);
   if (mine.length === 0) return;
 
   const s = await stamp();
@@ -608,7 +609,14 @@ export async function updateMember(
   const deviceId = await getDeviceId();
   // **自分のアイコンは1つ。** どこかの旅で変えたら、自分が入っている旅すべてにそろえる
   if (member && member.deviceId === deviceId && patch.icon !== undefined) {
-    const mine = await db.members.where('deviceId').equals(deviceId).primaryKeys();
+    /*
+     * **生きているレコードだけ。** stamp は deletedAt を ALIVE に戻すので、
+     * ensureOwner がまとめて外した「2人目の自分」まで生き返り、
+     * アイコンを変えた直後に自分が2人並んだ(実機で踏んだ)
+     */
+    const mine = (await db.members.where('deviceId').equals(deviceId).toArray())
+      .filter((m) => m.deletedAt === ALIVE)
+      .map((m) => m.id);
     await db.members.bulkUpdate(mine.map((key) => ({ key, changes: { icon: patch.icon, ...s } })));
   }
   await db.members.update(id, { ...patch, ...s });
