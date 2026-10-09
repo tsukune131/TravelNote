@@ -37,9 +37,11 @@ const photo = async (name) => `data:image/png;base64,${(await readFile(`photo/${
  */
 const SHOTS = [
   {
-    caption: ['旅行中は、', '片手で3秒'],
-    mark: '片手で3秒',
-    sub: '次の予定も、移動時間も。電波がなくても',
+    // 2行目(シンプルに作って、かんたん共有)が15字で入らないので「、」で折って3行。
+    // 3行だと小見出しの場所が無いので、小見出しは置かない
+    caption: ['旅行の予定を', 'シンプルに作って、', 'かんたん共有'],
+    mark: 'かんたん共有',
+    captionTop: 330,
     screen: { file: 'IMG_2871.PNG', top: 0.05, bottom: 0 },
     loupe: { file: 'IMG_2871.PNG', from: 0.795, to: 0.885 },
     // 共有がどう起きるかも伝える(iCloud)。2行目でうれしさを言う
@@ -207,11 +209,14 @@ const birds = await page.evaluate(async (src) => {
 await mkdir(OUT, { recursive: true });
 for (const [i, shot] of SHOTS.entries()) {
   const cap = shot.caption.map((l) => l.replace(shot.mark, `<span class="em">${shot.mark}</span>`)).join('<br>');
-  const capStyle = shot.captionSize ? ` style="font-size:${shot.captionSize}px"` : '';
+  const capStyle = [
+    shot.captionSize && `font-size:${shot.captionSize}px`,
+    shot.captionTop && `top:${shot.captionTop}px`,
+  ].filter(Boolean).join(';');
   const html = `<style>${CSS}</style><div class="canvas">
     <svg class="route" viewBox="0 0 ${W} 300"><path d="M -40 250 C 260 270, 560 200, 820 150 S 1010 110, 1040 120" /></svg>
     <img class="birds" src="${birds}">
-    <h1${capStyle}>${cap}</h1><p class="sub">${shot.sub}</p>
+    <h1${capStyle ? ` style="${capStyle}"` : ''}>${cap}</h1>${shot.sub ? `<p class="sub">${shot.sub}</p>` : ''}
     ${phoneHtml(await photo(shot.screen.file), shot.screen)}
     ${shot.loupe ? loupeHtml(await photo(shot.loupe.file), shot.loupe, shot.screen) : ''}
     ${shot.callout ? `<div class="callout" style="top:${shot.callout.top}px;${calloutPointer(shot.callout)}"><span class="dot"></span><span><b>${shot.callout.title}</b><small>${shot.callout.note}</small></span></div>` : ''}
