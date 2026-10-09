@@ -37,7 +37,7 @@ const photo = async (name) => `data:image/png;base64,${(await readFile(`photo/${
  * top: 端末の上端。cut: 元画像の上を落とす割合(ステータスバー)
  */
 const PHONES = [
-  { file: 'IMG_2872.PNG', left: 2700, top: 1000, width: 820, cut: 0.05 },
+  { file: 'IMG_2872.PNG', left: 2880, top: 1000, width: 820, cut: 0.05 },
   { file: 'IMG_2876.PNG', left: 3966, top: 1000, width: 820, cut: 0.05 },
   // 真ん中(いちばん前):旅行中の一日
   { file: 'IMG_2871.PNG', left: 3270, top: 660, width: 960, cut: 0.05, front: true },
@@ -62,7 +62,7 @@ body { width: ${W}px; height: ${H}px; overflow: hidden; }
 .route path { fill: none; stroke: rgba(255,255,255,.55); stroke-width: 22; stroke-linecap: round; stroke-dasharray: 0 62; }
 .birds { position: absolute; left: 1800px; top: 420px; width: 520px; }
 .copy { position: absolute; left: ${SAFE.left + 110}px; top: 900px; z-index: 2; }
-.lead { font-size: 132px; font-weight: 700; line-height: 1.45; text-shadow: 0 8px 40px rgba(120, 20, 60, .2); }
+.lead { font-size: 150px; font-weight: 700; line-height: 1.45; text-shadow: 0 8px 40px rgba(120, 20, 60, .2); }
 /* アプリの名前(黄色・いちばん大きく) */
 h1 { margin-top: 60px; font-weight: 800; font-size: 330px; line-height: 1.1; letter-spacing: .02em; color: #fff6c9;
   text-shadow: 0 12px 60px rgba(120, 20, 60, .25); }
